@@ -1,0 +1,5 @@
+package column
+
+func defaultEq() {
+
+}
