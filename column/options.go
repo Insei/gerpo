@@ -2,12 +2,15 @@ package column
 
 import (
 	"strings"
+
+	"github.com/insei/gerpo/types"
 )
 
 type options struct {
-	table string
-	alias string
-	name  string
+	table           string
+	alias           string
+	name            string
+	notAvailActions []types.SQLAction
 }
 
 type Option interface {
@@ -44,5 +47,17 @@ func WithColumnName(name string) Option {
 		if len(name) > 0 {
 			c.name = strings.TrimSpace(name)
 		}
+	})
+}
+
+func WithInsertProtection() Option {
+	return columnOptionFn(func(c *options) {
+		c.notAvailActions = append(c.notAvailActions, types.SQLActionInsert)
+	})
+}
+
+func WithUpdateProtection() Option {
+	return columnOptionFn(func(c *options) {
+		c.notAvailActions = append(c.notAvailActions, types.SQLActionUpdate)
 	})
 }

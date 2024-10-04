@@ -13,11 +13,11 @@ type column struct {
 	base *types.ColumnBase
 }
 
-func (c *column) GetFilterFn(operation filter.Operation) (func(value any) (string, bool, error), bool) {
+func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
 	return c.base.Filters.GetFilterFn(operation)
 }
 
-func (c *column) IsAllowedAction(act types.AllowedAction) bool {
+func (c *column) IsAllowedAction(act types.SQLAction) bool {
 	return slices.Contains(c.base.AllowedActions, act)
 }
 
@@ -29,12 +29,16 @@ func (c *column) GetPtr(model any) any {
 	return c.base.GetPtr(model)
 }
 
+func (c *column) GetField() fmap.Field {
+	return c.base.Field
+}
+
 func New(field fmap.Field, opts ...Option) types.Column {
-	base := types.NewColumnBase(field, nil)
+	base := types.NewColumnBase(field, nil, filter.NewForField(field))
 	c := &column{
 		base: base,
 	}
-	c.base.AllowedActions = []types.AllowedAction{types.ActionRead}
+	c.base.AllowedActions = []types.SQLAction{types.SQLActionSelect}
 	for _, opt := range opts {
 		opt.apply(c)
 	}

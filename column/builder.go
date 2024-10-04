@@ -33,6 +33,16 @@ func (b *Builder) WithColumnName(column string) *Builder {
 	return b
 }
 
+func (b *Builder) WithInsertProtection() *Builder {
+	b.opts = append(b.opts, WithInsertProtection())
+	return b
+}
+
+func (b *Builder) WithUpdateProtection() *Builder {
+	b.opts = append(b.opts, WithUpdateProtection())
+	return b
+}
+
 func (b *Builder) Build() types.Column {
 	return New(b.field, b.opts...)
 }

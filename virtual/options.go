@@ -3,7 +3,7 @@ package virtual
 import (
 	"context"
 
-	"github.com/insei/gerpo/filter"
+	"github.com/insei/gerpo/types"
 )
 
 // columnOptionFn is a type that implements the VirtualOption interface.
@@ -19,25 +19,31 @@ type Option interface {
 	apply(c *column)
 }
 
-func WithBoolEqFilter(trueSQL, falseSQL, nilSQL string) Option {
+func WithBoolEqFilter(fn func(b *BoolEQFilterBuilder)) Option {
+	boolEQBuilder := &BoolEQFilterBuilder{}
+	fn(boolEQBuilder)
 	return columnOptionFn(func(c *column) {
-		c.base.Filters.AddFilterFn(filter.OperationEQ, func(value any) (string, bool) {
+		boolEQBuilder.validate(c.base.Field)
+		c.base.Filters.AddFilterFn(types.OperationEQ, func(ctx context.Context, value any) (string, bool) {
 			var b bool
 			v, ok := value.(*bool)
 			if ok && v != nil {
 				b = *v
 			}
-			if v == nil || value == nil {
-				return nilSQL, false
+			if (ok && v == nil) || value == nil {
+				nilSQLStr := boolEQBuilder.nilSQL(ctx)
+				return nilSQLStr, false
 			}
 			vv, ok := value.(bool)
 			if ok {
 				b = vv
 			}
 			if b {
-				return trueSQL, false
+				trueSQLStr := boolEQBuilder.trueSQL(ctx)
+				return trueSQLStr, false
 			}
-			return falseSQL, false
+			falseSQLStr := boolEQBuilder.falseSQL(ctx)
+			return falseSQLStr, false
 		})
 	})
 }

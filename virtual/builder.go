@@ -2,8 +2,8 @@ package virtual
 
 import (
 	"context"
+	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/types"
@@ -26,14 +26,35 @@ func (b *Builder) WithSQL(fn func(ctx context.Context) string) *Builder {
 	return b
 }
 
-func (b *Builder) WithBoolEqFilter(trueSQL, falseSQL, nilSQL string) *Builder {
-	if b.field.GetDereferencedType().Kind() != reflect.Bool {
-		panic("Bool filter is not applicable to this field, types mismatch")
+type BoolEQFilterBuilder struct {
+	trueSQL, falseSQL, nilSQL func(ctx context.Context) string
+}
+
+func (b *BoolEQFilterBuilder) AddTrueSQLFn(fn func(ctx context.Context) string) *BoolEQFilterBuilder {
+	b.trueSQL = fn
+	return b
+}
+func (b *BoolEQFilterBuilder) AddFalseSQLFn(fn func(ctx context.Context) string) *BoolEQFilterBuilder {
+	b.falseSQL = fn
+	return b
+}
+
+func (b *BoolEQFilterBuilder) AddNilSQLFn(fn func(ctx context.Context) string) *BoolEQFilterBuilder {
+	b.nilSQL = fn
+	return b
+}
+
+func (b *BoolEQFilterBuilder) validate(field fmap.Field) {
+	if field.GetDereferencedType().Kind() != reflect.Bool {
+		panic(fmt.Errorf("bool filter is not applicable to %s field, types mismatch", field.GetStructPath()))
 	}
-	if b.field.GetType().Kind() == reflect.Ptr && "" == strings.TrimSpace(nilSQL) {
-		panic("you need to add nilSQL to complete setup, because the field has reference boolean type")
+	if field.GetType().Kind() == reflect.Ptr && nil == b.nilSQL {
+		panic(fmt.Errorf("you need to add nilSQL to complete setup, because the %s field has reference boolean type", field.GetStructPath()))
 	}
-	opt := WithBoolEqFilter(trueSQL, falseSQL, nilSQL)
+}
+
+func (b *Builder) WithBoolEqFilter(fn func(b *BoolEQFilterBuilder)) *Builder {
+	opt := WithBoolEqFilter(fn)
 	b.opts = append(b.opts, opt)
 	return b
 }

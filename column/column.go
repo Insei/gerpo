@@ -3,7 +3,6 @@ package column
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -17,11 +16,11 @@ type column struct {
 	base  *types.ColumnBase
 }
 
-func (c *column) GetFilterFn(operation filter.Operation) (func(value any) (string, bool, error), bool) {
+func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
 	return c.base.Filters.GetFilterFn(operation)
 }
 
-func (c *column) IsAllowedAction(act types.AllowedAction) bool {
+func (c *column) IsAllowedAction(act types.SQLAction) bool {
 	return slices.Contains(c.base.AllowedActions, act)
 }
 
@@ -33,7 +32,11 @@ func (c *column) GetPtr(model any) any {
 	return c.base.GetPtr(model)
 }
 
-func generateQuerySQL(opt *options) string {
+func (c *column) GetField() fmap.Field {
+	return c.base.Field
+}
+
+func generateSQLQuery(opt *options) string {
 	sql := opt.name
 	if opt.table != "" {
 		sql = fmt.Sprintf("%s.%s", strings.TrimSpace(opt.table), sql)
@@ -57,90 +60,19 @@ func New(field fmap.Field, opts ...Option) types.Column {
 		opt.apply(forOpts)
 	}
 
-	query := generateQuerySQL(forOpts)
-	base := types.NewColumnBase(field, generateToSQLFn(query, forOpts.alias))
+	query := generateSQLQuery(forOpts)
+	base := types.NewColumnBase(field, generateToSQLFn(query, forOpts.alias), filter.NewForField(field))
 	c := &column{
 		base:  base,
 		query: query,
 	}
-	c.base.AllowedActions = []types.AllowedAction{types.ActionRead, types.ActionUpdate, types.ActionSort}
+	filters := filter.GetAvailableFilters(field, query)
+	for op, filterFn := range filters {
+		c.base.Filters.AddFilterFn(op, filterFn)
+	}
+	c.base.AllowedActions = []types.SQLAction{types.SQLActionInsert, types.SQLActionSelect, types.SQLActionUpdate, types.SQLActionSort}
+	c.base.AllowedActions = slices.DeleteFunc(c.base.AllowedActions, func(action types.SQLAction) bool {
+		return slices.Contains(forOpts.notAvailActions, action)
+	})
 	return c
-}
-
-func genEQFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		if value == nil {
-			return fmt.Sprintf("%s IS NULL", query), true
-		}
-		return fmt.Sprintf("%s = (?)", query), true
-	}
-}
-
-func genNEQFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		if value == nil {
-			return fmt.Sprintf("%s IS NOT NULL", query), true
-		}
-		return fmt.Sprintf("%s != (?)", query), true
-	}
-}
-
-func genLTFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		return fmt.Sprintf("%s < (?)", query), true
-	}
-}
-func genLTEFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		return fmt.Sprintf("%s <= (?)", query), true
-	}
-}
-
-func genGTFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		return fmt.Sprintf("%s > (?)", query), true
-	}
-}
-func genGTEFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		return fmt.Sprintf("%s >= (?)", query), true
-	}
-}
-
-func genINFn(query string) func(value any) (string, bool) {
-	return func(value any) (string, bool) {
-		reflect.Va
-		return fmt.Sprintf("%s IN (?)", query), true
-	}
-}
-
-func getAvailableFilters(field fmap.Field, query string) map[filter.Operation]func(value any) (string, bool) {
-	filters := make(map[filter.Operation]func(value any) (string, bool))
-	eqFn := genEQFn(query)
-	neqFn := genNEQFn(query)
-	ltFn := genLTFn(query)
-	lteFn := genLTEFn(query)
-	gtFn := genGTFn(query)
-	gteFn := genGTEFn(query)
-	derefType := field.GetDereferencedType()
-	switch derefType.Kind() {
-	case reflect.Bool:
-		filters[filter.OperationEQ] = eqFn
-		filters[filter.OperationNEQ] = neqFn
-	case reflect.String:
-		filters[filter.OperationEQ] = eqFn
-		filters[filter.OperationNEQ] = neqFn
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
-		filters[filter.OperationEQ] = eqFn
-		filters[filter.OperationNEQ] = neqFn
-		filters[filter.OperationLT] = ltFn
-		filters[filter.OperationLTE] = lteFn
-		filters[filter.OperationGT] = gtFn
-		filters[filter.OperationGTE] = gteFn
-	default:
-		panic("unhandled default case")
-
-	}
 }
