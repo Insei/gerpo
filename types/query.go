@@ -49,6 +49,13 @@ const (
 	OperationNBW = Operation("nbw")
 )
 
+type OrderDirection string
+
+const (
+	OrderDirectionASC  = OrderDirection("ASC")
+	OrderDirectionDESC = OrderDirection("DESC")
+)
+
 var supportedOperations = []Operation{
 	OperationEQ,
 	OperationNEQ,
@@ -77,4 +84,39 @@ type SQLFilterManager interface {
 
 type SQLFilterGetter interface {
 	GetFilterFn(operation Operation) (func(ctx context.Context, value any) (string, bool, error), bool)
+	GetAvailableFilterOperations() []Operation
+	IsAvailableFilterOperation(operation Operation) bool
+}
+
+type WhereOperation[TModel any] interface {
+	EQ(val any) ANDOR[TModel]
+	NEQ(val any) ANDOR[TModel]
+	CT(val any) ANDOR[TModel]
+	NCT(val any) ANDOR[TModel]
+	BW(val any) ANDOR[TModel]
+	NBW(val any) ANDOR[TModel]
+	EW(val any) ANDOR[TModel]
+	NEW(val any) ANDOR[TModel]
+	GT(val any) ANDOR[TModel]
+	GTE(val any) ANDOR[TModel]
+	LT(val any) ANDOR[TModel]
+	LTE(val any) ANDOR[TModel]
+}
+type OrderOperation[TModel any] interface {
+	DESC() OrderTarget[TModel]
+	ASC() OrderTarget[TModel]
+}
+
+type OrderTarget[TModel any] interface {
+	Field(fieldPtr any) OrderOperation[TModel]
+}
+
+type WhereTarget[TModel any] interface {
+	Field(fieldPtr any) WhereOperation[TModel]
+	Group(func(t WhereTarget[TModel])) ANDOR[TModel]
+}
+
+type ANDOR[TModel any] interface {
+	OR() WhereTarget[TModel]
+	AND() WhereTarget[TModel]
 }

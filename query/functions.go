@@ -1,4 +1,4 @@
-package filter
+package query
 
 import (
 	"context"
@@ -141,10 +141,10 @@ func GetAvailableFilters(field fmap.Field, query string) map[types.Operation]fun
 			filters[types.OperationLT] = genLTFn(query)
 			filters[types.OperationGT] = genGTFn(query)
 			//case reflect.TypeOf(uuid.UUID{}):
-			//	filters[filter.OperationEQ] = eqFn
-			//	filters[filter.OperationNEQ] = neqFn
-			//	filters[filter.OperationIN] = inFN
-			//	filters[filter.OperationNIN] = ninFN
+			//	filters[whereSQL.OperationEQ] = eqFn
+			//	filters[whereSQL.OperationNEQ] = neqFn
+			//	filters[whereSQL.OperationIN] = inFN
+			//	filters[whereSQL.OperationNIN] = ninFN
 		}
 	}
 	return filters

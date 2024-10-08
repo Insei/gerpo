@@ -20,7 +20,7 @@ func NewColumnBuilder[TModel any](table string, model *TModel, fields fmap.Stora
 	return &ColumnBuilder[TModel]{
 		table:         table,
 		model:         model,
-		columns:       types.NewColumnsStorage(),
+		columns:       types.NewEmptyColumnsStorage(fields),
 		fieldsStorage: fields,
 	}
 }

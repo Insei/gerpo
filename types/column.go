@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/insei/fmap/v3"
@@ -19,6 +20,7 @@ const (
 type Column interface {
 	SQLFilterGetter
 	IsAllowedAction(a SQLAction) bool
+	GetAllowedActions() []SQLAction
 	ToSQL(ctx context.Context) string
 	GetPtr(model any) any
 	GetField() fmap.Field
@@ -49,19 +51,34 @@ func (c *ColumnBase) IsAllowedAction(act SQLAction) bool {
 }
 
 type ColumnsStorage struct {
-	m map[fmap.Field]Column
-	s []Column
+	m       map[fmap.Field]Column
+	s       []Column
+	storage fmap.Storage
+	model   any
 }
 
-func NewColumnsStorage() *ColumnsStorage {
+func NewEmptyColumnsStorage(fields fmap.Storage) *ColumnsStorage {
 	return &ColumnsStorage{
-		s: make([]Column, 0),
-		m: make(map[fmap.Field]Column),
+		s:       make([]Column, 0),
+		m:       make(map[fmap.Field]Column),
+		storage: fields,
 	}
 }
 
 func (c *ColumnsStorage) AsSlice() []Column {
 	return c.s
+}
+
+func (c *ColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (Column, error) {
+	field, err := c.storage.GetFieldByPtr(model, fieldPtr)
+	if err != nil {
+		return nil, err
+	}
+	column, ok := c.m[field]
+	if !ok {
+		return nil, fmt.Errorf("column for field %s was not found in configured columns", field.GetStructPath())
+	}
+	return column, nil
 }
 
 func (c *ColumnsStorage) Get(f fmap.Field) (Column, bool) {

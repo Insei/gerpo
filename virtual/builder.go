@@ -46,7 +46,7 @@ func (b *BoolEQFilterBuilder) AddNilSQLFn(fn func(ctx context.Context) string) *
 
 func (b *BoolEQFilterBuilder) validate(field fmap.Field) {
 	if field.GetDereferencedType().Kind() != reflect.Bool {
-		panic(fmt.Errorf("bool filter is not applicable to %s field, types mismatch", field.GetStructPath()))
+		panic(fmt.Errorf("bool query is not applicable to %s field, types mismatch", field.GetStructPath()))
 	}
 	if field.GetType().Kind() == reflect.Ptr && nil == b.nilSQL {
 		panic(fmt.Errorf("you need to add nilSQL to complete setup, because the %s field has reference boolean type", field.GetStructPath()))
