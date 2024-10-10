@@ -120,3 +120,6 @@ type ANDOR[TModel any] interface {
 	OR() WhereTarget[TModel]
 	AND() WhereTarget[TModel]
 }
+
+type InsertQuery interface {
+}

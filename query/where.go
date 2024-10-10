@@ -1,6 +1,7 @@
 package query
 
 import (
+	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
 
@@ -25,21 +26,21 @@ func (f *WhereBuilderFactory[TModel]) New() *WhereBuilder[TModel] {
 
 type WhereBuilder[TModel any] struct {
 	fabric *WhereBuilderFactory[TModel]
-	opts   []func(b *StringSQLWhereBuilder)
+	opts   []func(b *sql.StringWhereBuilder)
 }
 
-func (q *WhereBuilder[TModel]) Apply(strSQLBuilder *StringSQLWhereBuilder) {
+func (q *WhereBuilder[TModel]) Apply(strSQLBuilder *sql.StringWhereBuilder) {
 	for _, opt := range q.opts {
 		opt(strSQLBuilder)
 	}
 }
 
 func (q *WhereBuilder[TModel]) Group(f func(t types.WhereTarget[TModel])) types.ANDOR[TModel] {
-	q.opts = append(q.opts, func(b *StringSQLWhereBuilder) {
+	q.opts = append(q.opts, func(b *sql.StringWhereBuilder) {
 		b.StartGroup()
 	})
 	f(q)
-	q.opts = append(q.opts, func(b *StringSQLWhereBuilder) {
+	q.opts = append(q.opts, func(b *sql.StringWhereBuilder) {
 		b.EndGroup()
 	})
 	return q
@@ -95,14 +96,14 @@ func (o OperationFn[TModel]) NEW(val any) types.ANDOR[TModel] {
 }
 
 func (q *WhereBuilder[TModel]) AND() types.WhereTarget[TModel] {
-	q.opts = append(q.opts, func(b *StringSQLWhereBuilder) {
+	q.opts = append(q.opts, func(b *sql.StringWhereBuilder) {
 		b.AND()
 	})
 	return q
 }
 
 func (q *WhereBuilder[TModel]) OR() types.WhereTarget[TModel] {
-	q.opts = append(q.opts, func(b *StringSQLWhereBuilder) {
+	q.opts = append(q.opts, func(b *sql.StringWhereBuilder) {
 		b.OR()
 	})
 	return q
@@ -114,7 +115,7 @@ func (q *WhereBuilder[TModel]) Field(fieldPtr any) types.WhereOperation[TModel] 
 		panic(err)
 	}
 	return OperationFn[TModel](func(operation types.Operation, val any) types.ANDOR[TModel] {
-		q.opts = append(q.opts, func(b *StringSQLWhereBuilder) {
+		q.opts = append(q.opts, func(b *sql.StringWhereBuilder) {
 			err := b.AppendCondition(col, operation, val)
 			if err != nil {
 				panic(err)

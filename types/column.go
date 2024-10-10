@@ -13,6 +13,7 @@ type SQLAction string
 const (
 	SQLActionSelect = SQLAction("select")
 	SQLActionInsert = SQLAction("insert")
+	SQLActionGroup  = SQLAction("group")
 	SQLActionUpdate = SQLAction("update")
 	SQLActionSort   = SQLAction("sort")
 )
@@ -24,6 +25,7 @@ type Column interface {
 	ToSQL(ctx context.Context) string
 	GetPtr(model any) any
 	GetField() fmap.Field
+	Name() (string, bool)
 }
 
 func NewColumnBase(field fmap.Field, toSQLFn func(ctx context.Context) string, filters SQLFilterManager) *ColumnBase {

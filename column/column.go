@@ -12,6 +12,7 @@ import (
 )
 
 type column struct {
+	name  string
 	query string
 	base  *types.ColumnBase
 }
@@ -34,6 +35,10 @@ func (c *column) GetPtr(model any) any {
 
 func (c *column) GetField() fmap.Field {
 	return c.base.Field
+}
+
+func (c *column) Name() (string, bool) {
+	return c.name, true
 }
 
 func (c *column) GetAllowedActions() []types.SQLAction {
@@ -75,6 +80,7 @@ func New(field fmap.Field, opts ...Option) types.Column {
 	sqlQuery := generateSQLQuery(forOpts)
 	base := types.NewColumnBase(field, generateToSQLFn(sqlQuery, forOpts.alias), query.NewForField(field))
 	c := &column{
+		name:  forOpts.name,
 		base:  base,
 		query: sqlQuery,
 	}

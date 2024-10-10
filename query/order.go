@@ -1,6 +1,9 @@
 package query
 
-import "github.com/insei/gerpo/types"
+import (
+	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/types"
+)
 
 type OrderBuilderFactory[TModel any] struct {
 	model   *TModel
@@ -23,10 +26,10 @@ func (f *OrderBuilderFactory[TModel]) New() *OrderBuilder[TModel] {
 
 type OrderBuilder[TModel any] struct {
 	fabric *OrderBuilderFactory[TModel]
-	opts   []func(b *StringSQLOrderBuilder)
+	opts   []func(b *sql.StringOrderBuilder)
 }
 
-func (q *OrderBuilder[TModel]) Apply(strSQLBuilder *StringSQLOrderBuilder) {
+func (q *OrderBuilder[TModel]) Apply(strSQLBuilder *sql.StringOrderBuilder) {
 	for _, opt := range q.opts {
 		opt(strSQLBuilder)
 	}
@@ -48,7 +51,7 @@ func (q *OrderBuilder[TModel]) Field(fieldPtr any) types.OrderOperation[TModel] 
 		panic(err)
 	}
 	return OrderDirectionFn[TModel](func(direction types.OrderDirection) *OrderBuilder[TModel] {
-		q.opts = append(q.opts, func(b *StringSQLOrderBuilder) {
+		q.opts = append(q.opts, func(b *sql.StringOrderBuilder) {
 			err := b.OrderByColumn(col, direction)
 			if err != nil {
 				panic(err)

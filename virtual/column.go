@@ -44,6 +44,9 @@ func (c *column) GetField() fmap.Field {
 func (c *column) GetAllowedActions() []types.SQLAction {
 	return c.base.AllowedActions
 }
+func (c *column) Name() (string, bool) {
+	return "", false
+}
 
 func New(field fmap.Field, opts ...Option) types.Column {
 	base := types.NewColumnBase(field, nil, query.NewForField(field))

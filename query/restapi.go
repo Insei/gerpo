@@ -7,6 +7,7 @@ import (
 
 	"github.com/insei/cast"
 	"github.com/insei/fmap/v3"
+	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
 
@@ -110,7 +111,7 @@ type FieldConnector interface {
 
 type APIConnector struct {
 	factory *APIConnectorFactory
-	opts    []func(b *StringSQLWhereBuilder)
+	opts    []func(b *sql.StringWhereBuilder)
 }
 
 type APIConnectorFactory struct {
@@ -233,7 +234,7 @@ func (c *APIConnector) AppendFilters(filters string) *APIConnector {
 	if strings.TrimSpace(filters) == "" {
 		return c
 	}
-	c.opts = append(c.opts, func(b *StringSQLWhereBuilder) {
+	c.opts = append(c.opts, func(b *sql.StringWhereBuilder) {
 		b.AND()
 		b.StartGroup()
 		for lastInd, i := 0, 0; i < len(filters); i++ {
@@ -287,7 +288,7 @@ func (c *APIConnector) AppendFilters(filters string) *APIConnector {
 	return c
 }
 
-func (c *APIConnector) Apply(b *StringSQLWhereBuilder) {
+func (c *APIConnector) ApplyWhere(b *sql.StringWhereBuilder) {
 	for _, op := range c.opts {
 		op(b)
 	}

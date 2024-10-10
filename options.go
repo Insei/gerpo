@@ -93,22 +93,22 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 	})
 }
 
-func WithSoftDelete[TModel any](fieldPtrFn func(d *TModel) any, valueFn func(ctx context.Context) any) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
-		field, err := o.fields.GetFieldByPtr(o.model, fieldPtrFn(o.model))
-		if err != nil {
-			panic(err)
-		}
-		cl, ok := o.columns.Get(field)
-		if !ok {
-			panic("cannot find column for soft deletion setup")
-		}
-		if !cl.IsAllowedAction(types.SQLActionUpdate) {
-			panic(fmt.Errorf("cannot setup soft deletion with %s field, update is not supported", field.GetStructPath()))
-		}
-		o.softDelete[cl] = valueFn
-	})
-}
+//func WithSoftDelete[TModel any](fieldPtrFn func(d *TModel) any, valueFn func(ctx context.Context) any) Option[TModel] {
+//	return optionFn[TModel](func(o *repository[TModel]) {
+//		field, err := o.fields.GetFieldByPtr(o.model, fieldPtrFn(o.model))
+//		if err != nil {
+//			panic(err)
+//		}
+//		cl, ok := o.columns.Get(field)
+//		if !ok {
+//			panic("cannot find column for soft deletion setup")
+//		}
+//		if !cl.IsAllowedAction(types.SQLActionUpdate) {
+//			panic(fmt.Errorf("cannot setup soft deletion with %s field, update is not supported", field.GetStructPath()))
+//		}
+//		o.softDelete[cl] = valueFn
+//	})
+//}
 
 func WithLeftJoin[TModel any](fn func(ctx context.Context) string) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
