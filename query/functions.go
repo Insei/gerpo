@@ -8,6 +8,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/google/uuid"
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/types"
 )
@@ -140,11 +141,11 @@ func GetAvailableFilters(field fmap.Field, query string) map[types.Operation]fun
 		case reflect.TypeOf(time.Time{}):
 			filters[types.OperationLT] = genLTFn(query)
 			filters[types.OperationGT] = genGTFn(query)
-			//case reflect.TypeOf(uuid.UUID{}):
-			//	filters[whereSQL.OperationEQ] = eqFn
-			//	filters[whereSQL.OperationNEQ] = neqFn
-			//	filters[whereSQL.OperationIN] = inFN
-			//	filters[whereSQL.OperationNIN] = ninFN
+		case reflect.TypeOf(uuid.UUID{}):
+			filters[types.OperationEQ] = genEQFn(query)
+			filters[types.OperationNEQ] = genNEQFn(query)
+			filters[types.OperationIN] = genINFn(query)
+			filters[types.OperationNIN] = genNINFn(query)
 		}
 	}
 	return filters
