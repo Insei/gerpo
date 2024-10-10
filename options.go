@@ -10,14 +10,14 @@ import (
 )
 
 type Option[TModel any] interface {
-	apply(c *repository[TModel])
+	apply(c *Repository[TModel])
 }
 
 // optionFn is a type that implements the Option interface.
-type optionFn[TModel any] func(c *repository[TModel])
+type optionFn[TModel any] func(c *Repository[TModel])
 
 // apply implements the Option interface for optionFn.
-func (f optionFn[TModel]) apply(c *repository[TModel]) {
+func (f optionFn[TModel]) apply(c *Repository[TModel]) {
 	f(c)
 }
 
@@ -46,7 +46,7 @@ func newOptions[TModel any](model *TModel, columns *types.ColumnsStorage, fields
 }
 
 func WithBeforeInsert[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
+	return optionFn[TModel](func(o *Repository[TModel]) {
 		if fn != nil {
 			if o.beforeInsert == nil {
 				o.beforeInsert = fn
@@ -62,7 +62,7 @@ func WithBeforeInsert[TModel any](fn func(ctx context.Context, model *TModel)) O
 }
 
 func WithBeforeUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
+	return optionFn[TModel](func(o *Repository[TModel]) {
 		if fn != nil {
 			if o.beforeUpdate == nil {
 				o.beforeUpdate = fn
@@ -78,7 +78,7 @@ func WithBeforeUpdate[TModel any](fn func(ctx context.Context, model *TModel)) O
 }
 
 func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel)) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
+	return optionFn[TModel](func(o *Repository[TModel]) {
 		if fn != nil {
 			if o.afterSelect == nil {
 				o.afterSelect = fn
@@ -94,7 +94,7 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 }
 
 //func WithSoftDelete[TModel any](fieldPtrFn func(d *TModel) any, valueFn func(ctx context.Context) any) Option[TModel] {
-//	return optionFn[TModel](func(o *repository[TModel]) {
+//	return optionFn[TModel](func(o *Repository[TModel]) {
 //		field, err := o.fields.GetFieldByPtr(o.model, fieldPtrFn(o.model))
 //		if err != nil {
 //			panic(err)
@@ -111,7 +111,7 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 //}
 
 func WithLeftJoin[TModel any](fn func(ctx context.Context) string) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
+	return optionFn[TModel](func(o *Repository[TModel]) {
 		if fn != nil {
 			if o.leftJoins == nil {
 				o.leftJoins = fn
@@ -126,7 +126,7 @@ func WithLeftJoin[TModel any](fn func(ctx context.Context) string) Option[TModel
 }
 
 func WithTable[TModel any](table string) Option[TModel] {
-	return optionFn[TModel](func(c *repository[TModel]) {
+	return optionFn[TModel](func(c *Repository[TModel]) {
 		c.table = table
 	})
 }

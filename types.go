@@ -8,14 +8,14 @@ import (
 //
 // const (
 //
-//	// Insert represents the constant value for the insert operation in the repository.
+//	// Insert represents the constant value for the insert operation in the Repository.
 //	Insert = Procedure(iota)
-//	// Update represents the constant value for the update operation in the repository.
+//	// Update represents the constant value for the update operation in the Repository.
 //	Update
 //
 // )
 //
-// // Column represents a database column in a repository configuration.
+// // Column represents a database column in a Repository configuration.
 // //
 // // Table is the name of the table in the database.
 // // Name is the name of the column in the database.
@@ -107,7 +107,7 @@ import (
 //	// conditions and an error if any occurred during the retrieval process.
 //	GetList(ctx context.Context, params GetListParams) ([]*TModel, error)
 //
-//	// Insert inserts an entity into the repository.
+//	// Insert inserts an entity into the Repository.
 //	// Parameters:
 //	// - ctx: The context.Context for the operation.
 //	// - entities: A slice with pointers to the entities to be inserted.
@@ -115,14 +115,14 @@ import (
 //	// - error: An error if the insert operation fails.
 //	Insert(ctx context.Context, entities ...*TModel) error
 //
-//	// Update is a method that updates an entity in the repository based on the provided query and entity.
+//	// Update is a method that updates an entity in the Repository based on the provided query and entity.
 //	// It takes a context.Context object, a queryF function that is used to build the query, and a pointer to the entity to be updated.
 //	// The method returns an error if the update operation fails.
 //	// The queryF function takes an IQueryBuilder object to build the query for the update operation.
-//	// The entity pointer should point to the object to be updated in the repository.
+//	// The entity pointer should point to the object to be updated in the Repository.
 //	//
 //	// Usage:
-//	// err := repository.Update(ctx, func(builder IQueryBuilder) {
+//	// err := Repository.Update(ctx, func(builder IQueryBuilder) {
 //	//   builder.Where("id", "=", 1)
 //	// }, &entity)
 //	//
@@ -135,16 +135,16 @@ import (
 //	// - error: An error if the update operation fails.
 //	Update(ctx context.Context, queryF func(builder IQueryBuilder[TModel]), entity *TModel) error
 //
-//	// Delete removes entities from the repository based on the given query function.
+//	// Delete removes entities from the Repository based on the given query function.
 //	//
 //	// The query function is used to configure the deletion query using the provided IQueryBuilder.
 //	//
 //	// Example usage:
-//	//    repository.Delete(ctx, func(builder IQueryBuilder) {
+//	//    Repository.Delete(ctx, func(builder IQueryBuilder) {
 //	//        builder.Where("id", "=", 1)
 //	//    })
 //	//
-//	// The above code will delete the entity with the id of 1 from the repository.
+//	// The above code will delete the entity with the id of 1 from the Repository.
 //	//
 //	// Parameters:
 //	//   - ctx: The context.Context object for the request.
