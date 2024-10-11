@@ -86,7 +86,7 @@ func (b *Builder[TModel]) AfterSelect(fn func(ctx context.Context, models []*TMo
 	return b
 }
 
-func (b *Builder[TModel]) Build() (*Repository[TModel], error) {
+func (b *Builder[TModel]) Build() (Repository[TModel], error) {
 	if b.db == nil {
 		return nil, errors.New("no database found")
 	}

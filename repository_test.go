@@ -143,6 +143,7 @@ func TestName(t *testing.T) {
 
 	start = time.Now()
 	list, err = repo.GetList(ctx, func(m *test, h query.GetListUserHelper[test]) {
+		h.Page(1).Size(2)
 		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
 	elapsed = time.Since(start)
@@ -150,8 +151,8 @@ func TestName(t *testing.T) {
 
 	start = time.Now()
 	list, err = repo.GetList(ctx, func(m *test, h query.GetListUserHelper[test]) {
-		h.Page(1)
-		h.Size(2)
+		h.Page(1).Size(2)
+		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
 	elapsed = time.Since(start)
 	log.Printf("Repo GetList limit 2, page 1 from cache %s", elapsed)

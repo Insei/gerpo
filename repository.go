@@ -21,7 +21,7 @@ type test struct {
 	DeletedAt *time.Time `json:"deleted_at"`
 }
 
-type Repository[TModel any] struct {
+type repository[TModel any] struct {
 	linqCore *linq.CoreBuilder
 
 	columns   *types.ColumnsStorage
@@ -38,7 +38,7 @@ type Repository[TModel any] struct {
 	executor *sql.Executor[TModel]
 }
 
-func replaceNilCallbacks[TModel any](repo *Repository[TModel]) {
+func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	if repo.afterSelect == nil {
 		repo.afterSelect = func(_ context.Context, models []*TModel) {}
 	}
@@ -53,12 +53,12 @@ func replaceNilCallbacks[TModel any](repo *Repository[TModel]) {
 	}
 }
 
-func New[TModel any](db *dbsql.DB, table string, columns *types.ColumnsStorage, opts ...Option[TModel]) (*Repository[TModel], error) {
+func New[TModel any](db *dbsql.DB, table string, columns *types.ColumnsStorage, opts ...Option[TModel]) (Repository[TModel], error) {
 	model, _, err := getModelAndFields[TModel]()
 	if err != nil {
 		return nil, err
 	}
-	repo := &Repository[TModel]{
+	repo := &repository[TModel]{
 		executor:   sql.NewExecutor[TModel](db, sql.DeterminePlaceHolder(db)),
 		linqCore:   linq.NewCoreBuilder(model, columns),
 		table:      table,
@@ -72,7 +72,7 @@ func New[TModel any](db *dbsql.DB, table string, columns *types.ColumnsStorage, 
 	return repo, nil
 }
 
-func (r *Repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
+func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
 	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
 	h := query.NewGetFirstHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
@@ -85,7 +85,7 @@ func (r *Repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 	return model, nil
 }
 
-func (r *Repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListUserHelper[TModel])) (models []*TModel, err error) {
+func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListUserHelper[TModel])) (models []*TModel, err error) {
 	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
 	h := query.NewGetListHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
@@ -98,7 +98,7 @@ func (r *Repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 	return models, nil
 }
 
-func (r *Repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountUserHelper[TModel])) (count uint64, err error) {
+func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountUserHelper[TModel])) (count uint64, err error) {
 	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
 	h := query.NewCountHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
@@ -106,7 +106,7 @@ func (r *Repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, 
 	return r.executor.Count(ctx, strSQLBuilder)
 }
 
-func (r *Repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertUserHelper[TModel])) (err error) {
+func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertUserHelper[TModel])) (err error) {
 	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
 	r.beforeInsert(ctx, model)
 	h := query.NewInsertHelper[TModel](r.linqCore)
@@ -115,7 +115,7 @@ func (r *Repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 	return r.executor.InsertOne(ctx, model, strSQLBuilder)
 }
 
-func (r *Repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateUserHelper[TModel])) (err error) {
+func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateUserHelper[TModel])) (err error) {
 	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
 	r.beforeUpdate(ctx, model)
 	h := query.NewUpdateHelper[TModel](r.linqCore)
@@ -124,7 +124,7 @@ func (r *Repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	return r.executor.Update(ctx, model, strSQLBuilder)
 }
 
-func (r *Repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count uint64, err error) {
+func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count uint64, err error) {
 	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
 	h := query.NewDeleteHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
