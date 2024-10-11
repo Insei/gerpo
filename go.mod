@@ -6,7 +6,7 @@ toolchain go1.23.2
 
 require (
 	github.com/insei/cast v1.1.1
-	github.com/insei/fmap/v3 v3.1.1
+	github.com/insei/fmap/v3 v3.1.2
 	github.com/jackc/pgx/v5 v5.7.1
 )
 

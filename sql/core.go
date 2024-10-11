@@ -10,7 +10,6 @@ type StringBuilder struct {
 	ctx           context.Context
 	joinsSQL      string
 	table         string
-	orderBuilder  *StringOrderBuilder
 	whereBuilder  *StringWhereBuilder
 	selectBuilder *StringSelectBuilder
 	groupBuilder  *StringGroupBuilder
@@ -20,10 +19,6 @@ type StringBuilder struct {
 
 func (b *StringBuilder) WhereBuilder() *StringWhereBuilder {
 	return b.whereBuilder
-}
-
-func (b *StringBuilder) OrderBuilder() *StringOrderBuilder {
-	return b.orderBuilder
 }
 
 func (b *StringBuilder) GroupBuilder() *StringGroupBuilder {
@@ -70,11 +65,11 @@ func (b *StringBuilder) selectSQL(selectSQL, whereSQL, orderSQL, groupSQL, joinS
 func (b *StringBuilder) CountSQL() (string, []any) {
 	b.selectBuilder.Limit(1)
 	return b.selectSQL("count(*) over() AS count", b.whereBuilder.sql,
-		b.orderBuilder.sql, b.groupBuilder.sql, b.joinsSQL, b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
+		b.selectBuilder.GetOrderSQL(), b.groupBuilder.sql, b.joinsSQL, b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
 }
 
 func (b *StringBuilder) SelectSQL() (string, []any) {
-	return b.selectSQL(b.selectBuilder.GetSQL(), b.whereBuilder.sql, b.orderBuilder.sql, b.groupBuilder.sql, b.joinsSQL,
+	return b.selectSQL(b.selectBuilder.GetSQL(), b.whereBuilder.sql, b.selectBuilder.GetOrderSQL(), b.groupBuilder.sql, b.joinsSQL,
 		b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
 }
 
@@ -104,9 +99,6 @@ func NewStringBuilder(ctx context.Context, table string) *StringBuilder {
 		table: table,
 		ctx:   ctx,
 		whereBuilder: &StringWhereBuilder{
-			ctx: ctx,
-		},
-		orderBuilder: &StringOrderBuilder{
 			ctx: ctx,
 		},
 		selectBuilder: &StringSelectBuilder{

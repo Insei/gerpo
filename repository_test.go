@@ -11,7 +11,6 @@ import (
 
 	"github.com/insei/gerpo/cache"
 	"github.com/insei/gerpo/query"
-	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/virtual"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -43,8 +42,9 @@ func TestName(t *testing.T) {
 	}
 	defer db.Close()
 
-	b, _ := NewBuilder[test](db, sql.PostgresPlaceholder, "tests")
-	b.
+	b := NewBuilder[test]().
+		DB(db).
+		Table("tests").
 		Columns(func(m *test, columns *ColumnBuilder[test]) {
 			columns.Column(&m.ID).WithInsertProtection().WithUpdateProtection()
 			columns.Column(&m.CreatedAt).WithUpdateProtection()
@@ -74,16 +74,12 @@ func TestName(t *testing.T) {
 	ctx := cache.NewCtxCache(context.Background())
 
 	start := time.Now()
-	model, err := repo.GetFirst(ctx, func(m *test, b *query.Helper[test]) {
-		b.Where().
-			Field(&m.ID).EQ(1)
-		b.OrderBy().Field(&m.Name).DESC()
-	})
+	model, err := repo.GetFirst(ctx)
 	elapsed := time.Since(start)
 	log.Printf("FIRST Repo db get one %s", elapsed)
 
 	start = time.Now()
-	model, err = repo.GetFirst(ctx, func(m *test, b *query.Helper[test]) {
+	model, err = repo.GetFirst(ctx, func(m *test, b query.GetFirstUserHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
 		b.OrderBy().Field(&m.Name).DESC()
@@ -92,7 +88,7 @@ func TestName(t *testing.T) {
 	log.Printf("SECOND Repo db get one %s", elapsed)
 
 	start = time.Now()
-	model, err = repo.GetFirst(ctx, func(m *test, b *query.Helper[test]) {
+	model, err = repo.GetFirst(ctx, func(m *test, b query.GetFirstUserHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
 		b.OrderBy().Field(&m.Name).DESC()
@@ -101,19 +97,17 @@ func TestName(t *testing.T) {
 	log.Printf("Repo get same one from cache %s", elapsed)
 
 	start = time.Now()
-	count, err := repo.Count(ctx, func(m *test, h *query.Helper[test]) {
+	count, err := repo.Count(ctx, func(m *test, h query.CountUserHelper[test]) {
 		h.Where().
 			Field(&m.ID).EQ(1)
-		h.OrderBy().Field(&m.Name).DESC()
 	})
 	elapsed = time.Since(start)
 	log.Printf("Repo db count %s", elapsed)
 
 	start = time.Now()
-	count, err = repo.Count(ctx, func(m *test, h *query.Helper[test]) {
+	count, err = repo.Count(ctx, func(m *test, h query.CountUserHelper[test]) {
 		h.Where().
 			Field(&m.ID).EQ(1)
-		h.OrderBy().Field(&m.Name).DESC()
 	})
 	elapsed = time.Since(start)
 	log.Printf("Repo count same from cache %s", elapsed)
@@ -133,7 +127,9 @@ func TestName(t *testing.T) {
 		Name: "Firts",
 		Age:  330,
 		Bool: true,
-	}, nil)
+	}, func(m *test, h query.InsertUserHelper[test]) {
+		h.Exclude()
+	})
 
 	start = time.Now()
 	list, err := repo.GetList(ctx) //ALL
@@ -146,29 +142,27 @@ func TestName(t *testing.T) {
 	log.Printf("Repo GetList ALL from cache %s", elapsed)
 
 	start = time.Now()
-	list, err = repo.GetList(ctx, func(m *test, h *query.Helper[test]) {
-		h.Select().Page(1)
-		h.Select().Size(2)
+	list, err = repo.GetList(ctx, func(m *test, h query.GetListUserHelper[test]) {
+		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
 	elapsed = time.Since(start)
 	log.Printf("Repo GetList limit 2, page 1 from db %s", elapsed)
 
 	start = time.Now()
-	list, err = repo.GetList(ctx, func(m *test, h *query.Helper[test]) {
-		h.Select().Page(1)
-		h.Select().Size(2)
+	list, err = repo.GetList(ctx, func(m *test, h query.GetListUserHelper[test]) {
+		h.Page(1)
+		h.Size(2)
 	})
 	elapsed = time.Since(start)
 	log.Printf("Repo GetList limit 2, page 1 from cache %s", elapsed)
 
 	model.Age = 555
-	err = repo.Update(ctx, model, func(m *test, h *query.Helper[test]) {
+	err = repo.Update(ctx, model, func(m *test, h query.UpdateUserHelper[test]) {
 		h.Where().Field(&m.ID).EQ(5)
 	})
 
-	deletedCount, err := repo.Delete(ctx, func(m *test, h *query.Helper[test]) {
+	deletedCount, err := repo.Delete(ctx, func(m *test, h query.DeleteUserHelper[test]) {
 		h.Where().Field(&m.ID).EQ(1)
 	})
-
 	fmt.Println(list, model, count, deletedCount)
 }

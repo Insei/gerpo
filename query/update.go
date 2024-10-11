@@ -1,48 +1,54 @@
 package query
 
 import (
+	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
 
-type UpdateBuilderFactory[TModel any] struct {
-	model   *TModel
-	columns *types.ColumnsStorage
+type UpdateUserHelper[TModel any] interface {
+	Where() types.WhereTarget
+	Exclude(fieldsPtr ...any)
 }
 
-func NewUpdateBuilderFactory[TModel any](model *TModel, columns *types.ColumnsStorage) *UpdateBuilderFactory[TModel] {
-	return &UpdateBuilderFactory[TModel]{
-		model:   model,
-		columns: columns,
+type UpdateHelper[TModel any] interface {
+	UpdateUserHelper[TModel]
+	SQLApply
+	HandleFn(qFns ...func(m *TModel, h UpdateUserHelper[TModel]))
+}
+
+type updateHelper[TModel any] struct {
+	core           *linq.CoreBuilder
+	excludeBuilder *linq.ExcludeBuilder
+	whereBuilder   *linq.WhereBuilder
+}
+
+func (h *updateHelper[TModel]) Exclude(fieldsPtr ...any) {
+	h.excludeBuilder.Exclude(fieldsPtr...)
+}
+
+func (h *updateHelper[TModel]) Where() types.WhereTarget {
+	return h.whereBuilder
+}
+
+func (h *updateHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
+	h.excludeBuilder.Apply(sqlBuilder.SelectBuilder())
+	h.whereBuilder.Apply(sqlBuilder.WhereBuilder())
+}
+
+func (h *updateHelper[TModel]) HandleFn(qFns ...func(m *TModel, h UpdateUserHelper[TModel])) {
+	for _, fn := range qFns {
+		fn(h.core.Model().(*TModel), h)
 	}
 }
 
-func (f *UpdateBuilderFactory[TModel]) New() *UpdateBuilder[TModel] {
-	return &UpdateBuilder[TModel]{
-		fabric: f,
-		opts:   nil,
+func newUpdateHelper[TModel any](core *linq.CoreBuilder) *updateHelper[TModel] {
+	return &updateHelper[TModel]{
+		core:           core,
+		excludeBuilder: linq.NewExcludeBuilder(core, types.SQLActionUpdate),
+		whereBuilder:   linq.NewWhereBuilder(core),
 	}
 }
-
-type UpdateBuilder[TModel any] struct {
-	fabric *UpdateBuilderFactory[TModel]
-	opts   []func(b *sql.StringUpdateBuilder)
-}
-
-func (q *UpdateBuilder[TModel]) Exclude(fieldPtr any) *UpdateBuilder[TModel] {
-	col, err := q.fabric.columns.GetByFieldPtr(q.fabric.model, fieldPtr)
-	if err != nil {
-		panic(err)
-	}
-	q.opts = append(q.opts, func(b *sql.StringUpdateBuilder) {
-		b.Exclude(col)
-	})
-	return q
-}
-
-func (q *UpdateBuilder[TModel]) Apply(strSQLBuilder *sql.StringUpdateBuilder) {
-	strSQLBuilder.Update(q.fabric.columns.AsSlice()...)
-	for _, opt := range q.opts {
-		opt(strSQLBuilder)
-	}
+func NewUpdateHelper[TModel any](core *linq.CoreBuilder) UpdateHelper[TModel] {
+	return newUpdateHelper[TModel](core)
 }

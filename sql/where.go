@@ -24,14 +24,12 @@ func (b *StringWhereBuilder) EndGroup() {
 	b.sql += ")"
 }
 
-func (b *StringWhereBuilder) AND() *StringWhereBuilder {
+func (b *StringWhereBuilder) AND() {
 	b.sql += " AND "
-	return b
 }
 
-func (b *StringWhereBuilder) OR() *StringWhereBuilder {
+func (b *StringWhereBuilder) OR() {
 	b.sql += " OR "
-	return b
 }
 
 func (b *StringWhereBuilder) AppendSQL(sql string, values ...any) {

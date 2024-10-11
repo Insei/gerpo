@@ -13,19 +13,8 @@ type StringUpdateBuilder struct {
 	//TODO: Add columns cache for Get columns
 }
 
-func (b *StringUpdateBuilder) Update(col ...types.Column) {
+func (b *StringUpdateBuilder) Columns(col ...types.Column) {
 	b.columns = append(b.columns, col...)
-}
-
-func (b *StringUpdateBuilder) Exclude(cols ...types.Column) {
-	for _, col := range cols {
-		b.exclude = append(b.exclude, func(cl types.Column) bool {
-			if cl == col {
-				return true
-			}
-			return false
-		})
-	}
 }
 
 func (b *StringUpdateBuilder) GetColumns() []types.Column {

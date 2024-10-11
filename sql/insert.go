@@ -10,42 +10,21 @@ import (
 
 type StringInsertBuilder struct {
 	ctx     context.Context
-	exclude []func(types.Column) bool
 	columns []types.Column
 }
 
-func (b *StringInsertBuilder) Insert(col ...types.Column) {
-	b.columns = append(b.columns, col...)
-}
-
-func (b *StringInsertBuilder) Exclude(cols ...types.Column) {
-	for _, col := range cols {
-		b.exclude = append(b.exclude, func(cl types.Column) bool {
-			if cl == col {
-				return true
-			}
-			return false
-		})
-	}
-}
-
-func (b *StringInsertBuilder) GetColumns() []types.Column {
-	cols := make([]types.Column, 0, len(b.columns)-len(b.exclude))
-
-COLUMNS:
-	for _, col := range b.columns {
+func (b *StringInsertBuilder) Columns(col ...types.Column) {
+	for _, col := range col {
 		if !col.IsAllowedAction(types.SQLActionInsert) {
 			//TODO: log
 			continue
 		}
-		for _, exclude := range b.exclude {
-			if exclude(col) {
-				continue COLUMNS
-			}
-		}
-		cols = append(cols, col)
+		b.columns = append(b.columns, col)
 	}
-	return cols
+}
+
+func (b *StringInsertBuilder) GetColumns() []types.Column {
+	return b.columns
 }
 
 func (b *StringInsertBuilder) SQL() string {

@@ -88,37 +88,37 @@ type SQLFilterGetter interface {
 	IsAvailableFilterOperation(operation Operation) bool
 }
 
-type WhereOperation[TModel any] interface {
-	EQ(val any) ANDOR[TModel]
-	NEQ(val any) ANDOR[TModel]
-	CT(val any) ANDOR[TModel]
-	NCT(val any) ANDOR[TModel]
-	BW(val any) ANDOR[TModel]
-	NBW(val any) ANDOR[TModel]
-	EW(val any) ANDOR[TModel]
-	NEW(val any) ANDOR[TModel]
-	GT(val any) ANDOR[TModel]
-	GTE(val any) ANDOR[TModel]
-	LT(val any) ANDOR[TModel]
-	LTE(val any) ANDOR[TModel]
+type WhereOperation interface {
+	EQ(val any) ANDOR
+	NEQ(val any) ANDOR
+	CT(val any) ANDOR
+	NCT(val any) ANDOR
+	BW(val any) ANDOR
+	NBW(val any) ANDOR
+	EW(val any) ANDOR
+	NEW(val any) ANDOR
+	GT(val any) ANDOR
+	GTE(val any) ANDOR
+	LT(val any) ANDOR
+	LTE(val any) ANDOR
 }
-type OrderOperation[TModel any] interface {
-	DESC() OrderTarget[TModel]
-	ASC() OrderTarget[TModel]
-}
-
-type OrderTarget[TModel any] interface {
-	Field(fieldPtr any) OrderOperation[TModel]
+type OrderOperation interface {
+	DESC() OrderTarget
+	ASC() OrderTarget
 }
 
-type WhereTarget[TModel any] interface {
-	Field(fieldPtr any) WhereOperation[TModel]
-	Group(func(t WhereTarget[TModel])) ANDOR[TModel]
+type OrderTarget interface {
+	Field(fieldPtr any) OrderOperation
 }
 
-type ANDOR[TModel any] interface {
-	OR() WhereTarget[TModel]
-	AND() WhereTarget[TModel]
+type WhereTarget interface {
+	Field(fieldPtr any) WhereOperation
+	Group(func(t WhereTarget)) ANDOR
+}
+
+type ANDOR interface {
+	OR() WhereTarget
+	AND() WhereTarget
 }
 
 type InsertQuery interface {

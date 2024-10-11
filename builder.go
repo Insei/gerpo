@@ -21,18 +21,37 @@ type Builder[TModel any] struct {
 	columns     *types.ColumnsStorage
 }
 
-func NewBuilder[TModel any](db *dbsql.DB, placeholder sql.Placeholder, table string) (*Builder[TModel], error) {
+type TableChooser[TModel any] interface {
+	Table(table string) ColumnsAppender[TModel]
+}
+
+type DbChooser[TModel any] interface {
+	DB(db *dbsql.DB) TableChooser[TModel]
+}
+
+type ColumnsAppender[TModel any] interface {
+	Columns(fn func(m *TModel, columns *ColumnBuilder[TModel])) *Builder[TModel]
+}
+
+func NewBuilder[TModel any]() DbChooser[TModel] {
 	model, fields, err := getModelAndFields[TModel]()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	return &Builder[TModel]{
-		table:       table,
-		db:          db,
-		placeholder: placeholder,
-		model:       model,
-		fields:      fields,
-	}, nil
+		model:  model,
+		fields: fields,
+	}
+}
+
+func (b *Builder[TModel]) Table(table string) ColumnsAppender[TModel] {
+	b.table = table
+	return b
+}
+
+func (b *Builder[TModel]) DB(db *dbsql.DB) TableChooser[TModel] {
+	b.db = db
+	return b
 }
 
 func (b *Builder[TModel]) Columns(fn func(m *TModel, columns *ColumnBuilder[TModel])) *Builder[TModel] {
@@ -68,8 +87,14 @@ func (b *Builder[TModel]) AfterSelect(fn func(ctx context.Context, models []*TMo
 }
 
 func (b *Builder[TModel]) Build() (*Repository[TModel], error) {
+	if b.db == nil {
+		return nil, errors.New("no database found")
+	}
+	if b.table == "" {
+		return nil, errors.New("no table found")
+	}
 	if b.columns == nil || len(b.columns.AsSlice()) < 1 {
 		return nil, errors.New("no columns found")
 	}
-	return New(b.db, b.placeholder, b.table, b.columns, b.opts...)
+	return New(b.db, b.table, b.columns, b.opts...)
 }

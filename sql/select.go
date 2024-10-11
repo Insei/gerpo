@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"slices"
 	"strconv"
 
 	"github.com/insei/gerpo/types"
@@ -10,21 +9,15 @@ import (
 
 type StringSelectBuilder struct {
 	ctx     context.Context
-	exclude []types.Column
 	columns []types.Column
 	limit   uint64
 	offset  uint64
+	orderBy string
 }
 
-func (b *StringSelectBuilder) Select(cols ...types.Column) {
+func (b *StringSelectBuilder) Columns(cols ...types.Column) {
 	for _, col := range cols {
 		b.columns = append(b.columns, col)
-	}
-}
-
-func (b *StringSelectBuilder) Exclude(cols ...types.Column) {
-	for _, col := range cols {
-		b.exclude = append(b.exclude, col)
 	}
 }
 
@@ -36,24 +29,31 @@ func (b *StringSelectBuilder) Offset(offset uint64) {
 	b.offset = offset
 }
 
-func (b *StringSelectBuilder) GetColumns() []types.Column {
-	cols := make([]types.Column, 0, len(b.columns))
-	for _, col := range b.columns {
-		if slices.Contains(b.exclude, col) {
-			//TODO: log
-			continue
-		}
-		cols = append(cols, col)
+func (b *StringSelectBuilder) OrderBy(columnDirection string) *StringSelectBuilder {
+	if b.orderBy != "" {
+		b.orderBy += ", "
 	}
-	return cols
+	b.orderBy += columnDirection
+	return b
+}
+
+func (b *StringSelectBuilder) OrderByColumn(col types.Column, direction types.OrderDirection) error {
+	if col.IsAllowedAction(types.SQLActionSort) {
+		if b.orderBy != "" {
+			b.orderBy += ", "
+		}
+		b.orderBy += col.ToSQL(b.ctx) + " " + string(direction)
+	}
+	return nil
+}
+
+func (b *StringSelectBuilder) GetColumns() []types.Column {
+	return b.columns
 }
 
 func (b *StringSelectBuilder) GetSQL() string {
 	sql := ""
 	for _, col := range b.columns {
-		if slices.Contains(b.exclude, col) {
-			continue
-		}
 		if sql != "" {
 			sql += ", "
 		}
@@ -61,6 +61,11 @@ func (b *StringSelectBuilder) GetSQL() string {
 	}
 	return sql
 }
+
+func (b *StringSelectBuilder) GetOrderSQL() string {
+	return b.orderBy
+}
+
 func (b *StringSelectBuilder) GetLimit() string {
 	if b.limit == 0 {
 		return ""

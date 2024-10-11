@@ -34,7 +34,7 @@ import (
 //	}
 //
 //	type repositoryConfig[TEntity any] struct {
-//		Columns []types.Column
+//		columns []types.Column
 //		//JoinBuilder      *JoinBuilder
 //		Table            string
 //		GroupBys         string

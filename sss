@@ -1,0 +1,27 @@
+type GetFirstBuilder struct {
+	*selectBuilder
+}
+
+func (q *GetFirstBuilder) Exclude(fieldPtrs ...any) *GetFirstBuilder {
+	q.exclude(fieldPtrs...)
+	return q
+}
+
+type GetListBuilder struct {
+	*selectBuilder
+}
+
+func (q *GetListBuilder) Exclude(fieldPtrs ...any) *GetListBuilder {
+	q.exclude(fieldPtrs...)
+	return q
+}
+
+func (q *GetListBuilder) Page(page uint64) *GetListBuilder {
+	q.page(page)
+	return q
+}
+
+func (q *GetListBuilder) Size(size uint64) *GetListBuilder {
+	q.size(size)
+	return q
+}
