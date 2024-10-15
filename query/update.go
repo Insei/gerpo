@@ -32,7 +32,7 @@ func (h *updateHelper[TModel]) Where() types.WhereTarget {
 }
 
 func (h *updateHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	h.excludeBuilder.Apply(sqlBuilder.SelectBuilder())
+	h.excludeBuilder.Apply(sqlBuilder.UpdateBuilder())
 	h.whereBuilder.Apply(sqlBuilder.WhereBuilder())
 }
 

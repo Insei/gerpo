@@ -18,22 +18,7 @@ func (b *StringUpdateBuilder) Columns(col ...types.Column) {
 }
 
 func (b *StringUpdateBuilder) GetColumns() []types.Column {
-	cols := make([]types.Column, 0, len(b.columns)-len(b.exclude))
-
-COLUMNS:
-	for _, col := range b.columns {
-		if !col.IsAllowedAction(types.SQLActionUpdate) {
-			//TODO: log
-			continue
-		}
-		for _, exclude := range b.exclude {
-			if exclude(col) {
-				continue COLUMNS
-			}
-		}
-		cols = append(cols, col)
-	}
-	return cols
+	return b.columns
 }
 
 func (b *StringUpdateBuilder) SQL() string {
