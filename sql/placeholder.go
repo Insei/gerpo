@@ -28,6 +28,13 @@ func postgres(sql string, i int) string {
 	return postgres(sql, i)
 }
 
+func determineByConnectorTypeName(typeName string) Placeholder {
+	if strings.Contains(typeName, "stdlib") {
+		return PostgresPlaceholder
+	}
+	return NoopPlaceholder
+}
+
 func DeterminePlaceHolder(db *sql.DB) Placeholder {
 	dbFields, err := fmap.GetFrom(db)
 	if err != nil {
@@ -38,7 +45,18 @@ func DeterminePlaceHolder(db *sql.DB) Placeholder {
 		return NoopPlaceholder
 	}
 	connector := connectorField.Get(db)
-	if strings.Contains(fmt.Sprintf("%T", connector), "stdlib") {
+	connectorTypeStr := fmt.Sprintf("%T", connector)
+	connectorFields, err := fmap.GetFrom(connector)
+	if err != nil {
+		return determineByConnectorTypeName(connectorTypeStr)
+	}
+	driverField, ok := connectorFields.Find("driver")
+	if !ok {
+		return NoopPlaceholder
+	}
+	driver := driverField.Get(connector)
+	driverTypeStr := fmt.Sprintf("%T", driver)
+	if strings.Contains(driverTypeStr, "pq.Driver") || strings.Contains(driverTypeStr, "stdlib.Driver") {
 		return PostgresPlaceholder
 	}
 	return NoopPlaceholder
