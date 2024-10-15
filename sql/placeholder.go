@@ -35,6 +35,13 @@ func determineByConnectorTypeName(typeName string) Placeholder {
 	return NoopPlaceholder
 }
 
+func determineByDriverName(driverName string) Placeholder {
+	if strings.Contains(driverName, "pq.Driver") || strings.Contains(driverName, "stdlib.Driver") {
+		return PostgresPlaceholder
+	}
+	return NoopPlaceholder
+}
+
 func DeterminePlaceHolder(db *sql.DB) Placeholder {
 	dbFields, err := fmap.GetFrom(db)
 	if err != nil {
@@ -55,9 +62,12 @@ func DeterminePlaceHolder(db *sql.DB) Placeholder {
 		return NoopPlaceholder
 	}
 	driver := driverField.Get(connector)
-	driverTypeStr := fmt.Sprintf("%T", driver)
-	if strings.Contains(driverTypeStr, "pq.Driver") || strings.Contains(driverTypeStr, "stdlib.Driver") {
-		return PostgresPlaceholder
+	wrappedDriverFields, err := fmap.GetFrom(driver)
+	if err == nil {
+		dwrappedDriverField, ok := wrappedDriverFields.Find("driver")
+		if ok {
+			driver = dwrappedDriverField.Get(db)
+		}
 	}
-	return NoopPlaceholder
+	return determineByDriverName(fmt.Sprintf("%T", driver))
 }
