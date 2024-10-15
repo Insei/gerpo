@@ -42,6 +42,14 @@ func determineByDriverName(driverName string) Placeholder {
 	return NoopPlaceholder
 }
 
+func unwrapConnector(connector any, connectorFields fmap.Storage) any {
+	connectorUnwrapField, ok := connectorFields.Find("Connector")
+	if !ok {
+		return connector
+	}
+	return connectorUnwrapField.Get(connector)
+}
+
 func DeterminePlaceHolder(db *sql.DB) Placeholder {
 	dbFields, err := fmap.GetFrom(db)
 	if err != nil {
@@ -52,10 +60,15 @@ func DeterminePlaceHolder(db *sql.DB) Placeholder {
 		return NoopPlaceholder
 	}
 	connector := connectorField.Get(db)
-	connectorTypeStr := fmt.Sprintf("%T", connector)
 	connectorFields, err := fmap.GetFrom(connector)
 	if err != nil {
+		connectorTypeStr := fmt.Sprintf("%T", connector)
 		return determineByConnectorTypeName(connectorTypeStr)
+	}
+	connector = unwrapConnector(connector, connectorFields)
+	connectorFields, err = fmap.GetFrom(connector)
+	if err != nil {
+		return NoopPlaceholder
 	}
 	driverField, ok := connectorFields.Find("driver")
 	if !ok {
