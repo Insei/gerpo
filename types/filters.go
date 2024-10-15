@@ -1,4 +1,4 @@
-package query
+package types
 
 import (
 	"context"
@@ -7,23 +7,22 @@ import (
 	"slices"
 
 	"github.com/insei/fmap/v3"
-	"github.com/insei/gerpo/types"
 )
 
 type column struct {
 	field      fmap.Field
-	operations map[types.Operation]func(ctx context.Context, value any) (string, bool, error)
-	avail      []types.Operation
+	operations map[Operation]func(ctx context.Context, value any) (string, bool, error)
+	avail      []Operation
 }
 
-func NewForField(field fmap.Field) types.SQLFilterManager {
+func NewFilterManagerForField(field fmap.Field) SQLFilterManager {
 	return &column{
-		operations: map[types.Operation]func(ctx context.Context, value any) (string, bool, error){},
+		operations: map[Operation]func(ctx context.Context, value any) (string, bool, error){},
 		field:      field,
 	}
 }
 
-func (c *column) AddFilterFn(operation types.Operation, sqlGenFn func(ctx context.Context, value any) (string, bool)) {
+func (c *column) AddFilterFn(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, bool)) {
 	c.avail = append(c.avail, operation)
 	c.operations[operation] = func(ctx context.Context, value any) (string, bool, error) {
 		vType := reflect.TypeOf(value)
@@ -38,17 +37,17 @@ func (c *column) AddFilterFn(operation types.Operation, sqlGenFn func(ctx contex
 	}
 }
 
-func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
+func (c *column) GetFilterFn(operation Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
 	if opFn, ok := c.operations[operation]; ok && opFn != nil {
 		return opFn, true
 	}
 	return nil, false
 }
 
-func (c *column) GetAvailableFilterOperations() []types.Operation {
+func (c *column) GetAvailableFilterOperations() []Operation {
 	return c.avail
 }
 
-func (c *column) IsAvailableFilterOperation(operation types.Operation) bool {
+func (c *column) IsAvailableFilterOperation(operation Operation) bool {
 	return slices.Contains(c.avail, operation)
 }

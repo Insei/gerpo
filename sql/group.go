@@ -11,7 +11,7 @@ type StringGroupBuilder struct {
 	sql string
 }
 
-func (b *StringGroupBuilder) GroupBy(cols ...types.Column) error {
+func (b *StringGroupBuilder) GroupBy(cols ...types.Column) {
 	for _, col := range cols {
 		if !col.IsAllowedAction(types.SQLActionGroup) {
 			continue
@@ -19,5 +19,4 @@ func (b *StringGroupBuilder) GroupBy(cols ...types.Column) error {
 		}
 		b.sql += col.ToSQL(b.ctx)
 	}
-	return nil
 }

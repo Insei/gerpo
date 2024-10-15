@@ -2,17 +2,18 @@ package gerpo
 
 import (
 	"context"
-	dbsql "database/sql"
 	"fmt"
 	"log"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/insei/gerpo/cache"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/virtual"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/lib/pq"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 //type test struct {
@@ -25,21 +26,16 @@ import (
 //	DeletedAt *time.Time `json:"deleted_at"`
 //}
 
-func deferTest() (test int, err error) {
-	defer func() {
-		fmt.Println(test, err)
-	}()
-	return 22, fmt.Errorf("Test")
-}
-
 func TestName(t *testing.T) {
-	deferTest()
 
-	db, err := dbsql.Open("pgx", "postgres://postgres:Admin@123@postgres.citmed:5432/test")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
+	db, err := otelsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable", otelsql.WithAttributes(
+		semconv.DBSystemPostgreSQL,
+	))
+	//db, err := dbsql.Open("pgx", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable")
+	//if err != nil {
+	//	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	//	os.Exit(1)
+	//}
 	defer db.Close()
 
 	b := NewBuilder[test]().

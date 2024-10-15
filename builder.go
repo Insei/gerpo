@@ -11,14 +11,15 @@ import (
 )
 
 type Builder[TModel any] struct {
-	db          *dbsql.DB
-	driver      string
-	placeholder sql.Placeholder
-	table       string
-	opts        []Option[TModel]
-	model       *TModel
-	fields      fmap.Storage
-	columns     *types.ColumnsStorage
+	db              *dbsql.DB
+	driver          string
+	placeholder     sql.Placeholder
+	table           string
+	opts            []Option[TModel]
+	model           *TModel
+	fields          fmap.Storage
+	columns         *types.ColumnsStorage
+	columnBuilderFn func(m *TModel, columns *ColumnBuilder[TModel])
 }
 
 type TableChooser[TModel any] interface {
@@ -55,16 +56,14 @@ func (b *Builder[TModel]) DB(db *dbsql.DB) TableChooser[TModel] {
 }
 
 func (b *Builder[TModel]) Columns(fn func(m *TModel, columns *ColumnBuilder[TModel])) *Builder[TModel] {
-	columnsBuilder := NewColumnBuilder[TModel](b.table, b.model, b.fields)
-	fn(b.model, columnsBuilder)
-	b.columns = columnsBuilder.build()
+	b.columnBuilderFn = fn
 	return b
 }
 
-func (b *Builder[TModel]) LeftJoin(leftJoinFn func(ctx context.Context) string) *Builder[TModel] {
-	b.opts = append(b.opts, WithLeftJoin[TModel](leftJoinFn))
-	return b
-}
+//func (b *Builder[TModel]) LeftJoin(leftJoinFn func(ctx context.Context) string) *Builder[TModel] {
+//	b.opts = append(b.opts, WithLeftJoin[TModel](leftJoinFn))
+//	return b
+//}
 
 func (b *Builder[TModel]) BeforeInsert(fn func(ctx context.Context, m *TModel)) *Builder[TModel] {
 	b.opts = append(b.opts, WithBeforeInsert[TModel](fn))
@@ -93,8 +92,5 @@ func (b *Builder[TModel]) Build() (Repository[TModel], error) {
 	if b.table == "" {
 		return nil, errors.New("no table found")
 	}
-	if b.columns == nil || len(b.columns.AsSlice()) < 1 {
-		return nil, errors.New("no columns found")
-	}
-	return New(b.db, b.table, b.columns, b.opts...)
+	return New(b.db, b.table, b.columnBuilderFn, b.opts...)
 }

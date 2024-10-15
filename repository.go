@@ -3,6 +3,7 @@ package gerpo
 import (
 	"context"
 	dbsql "database/sql"
+	"fmt"
 	"time"
 
 	"github.com/insei/gerpo/query"
@@ -22,19 +23,19 @@ type test struct {
 }
 
 type repository[TModel any] struct {
-	linqCore *linq.CoreBuilder
 
-	columns   *types.ColumnsStorage
-	leftJoins func(ctx context.Context) string
-
+	// Callbacks and Hooks
 	beforeInsert func(ctx context.Context, model *TModel)
 	beforeUpdate func(ctx context.Context, model *TModel)
 	afterSelect  func(ctx context.Context, models []*TModel)
 
 	softDelete map[types.Column]func(ctx context.Context) any
 
-	table string
+	// Columns and fields
+	strSQLBuilderFactory sql.StringBuilderFactory
 
+	// SQL Query, execution and dependency
+	linqCore *linq.CoreBuilder
 	executor *sql.Executor[TModel]
 }
 
@@ -48,22 +49,25 @@ func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	if repo.beforeUpdate == nil {
 		repo.beforeUpdate = func(_ context.Context, model *TModel) {}
 	}
-	if repo.leftJoins == nil {
-		repo.leftJoins = func(_ context.Context) string { return "" }
-	}
 }
 
-func New[TModel any](db *dbsql.DB, table string, columns *types.ColumnsStorage, opts ...Option[TModel]) (Repository[TModel], error) {
-	model, _, err := getModelAndFields[TModel]()
+func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
+	model, fields, err := getModelAndFields[TModel]()
 	if err != nil {
 		return nil, err
 	}
+	columnsBuilder := newColumnBuilder(table, model, fields)
+	columnsFn(model, columnsBuilder)
+	columns := columnsBuilder.build()
+	if len(columns.AsSlice()) < 1 {
+		return nil, fmt.Errorf("failed to create repository with empty columns")
+	}
+
 	repo := &repository[TModel]{
-		executor:   sql.NewExecutor[TModel](db, sql.DeterminePlaceHolder(db)),
-		linqCore:   linq.NewCoreBuilder(model, columns),
-		table:      table,
-		columns:    columns,
-		softDelete: make(map[types.Column]func(ctx context.Context) any),
+		executor:             sql.NewExecutor[TModel](db, sql.DeterminePlaceHolder(db)),
+		linqCore:             linq.NewCoreBuilder(model, columns),
+		strSQLBuilderFactory: sql.NewStringBuilderFactory(table),
+		softDelete:           make(map[types.Column]func(ctx context.Context) any),
 	}
 	for _, opt := range opts {
 		opt.apply(repo)
@@ -73,7 +77,7 @@ func New[TModel any](db *dbsql.DB, table string, columns *types.ColumnsStorage, 
 }
 
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
-	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
+	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	h := query.NewGetFirstHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
@@ -86,7 +90,7 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 }
 
 func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListUserHelper[TModel])) (models []*TModel, err error) {
-	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
+	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	h := query.NewGetListHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
@@ -99,7 +103,7 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 }
 
 func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountUserHelper[TModel])) (count uint64, err error) {
-	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
+	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	h := query.NewCountHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
@@ -107,7 +111,7 @@ func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, 
 }
 
 func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertUserHelper[TModel])) (err error) {
-	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
+	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.beforeInsert(ctx, model)
 	h := query.NewInsertHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
@@ -116,16 +120,17 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 }
 
 func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateUserHelper[TModel])) (err error) {
-	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
+	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.beforeUpdate(ctx, model)
 	h := query.NewUpdateHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
-	return r.executor.Update(ctx, model, strSQLBuilder)
+	_, err = r.executor.Update(ctx, model, strSQLBuilder)
+	return err
 }
 
-func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count uint64, err error) {
-	strSQLBuilder := sql.NewStringBuilder(ctx, r.table)
+func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error) {
+	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	h := query.NewDeleteHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)

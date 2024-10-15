@@ -26,6 +26,7 @@ type Column interface {
 	GetPtr(model any) any
 	GetField() fmap.Field
 	Name() (string, bool)
+	Table() (string, bool)
 }
 
 type ColumnsGetter interface {
@@ -57,6 +58,7 @@ func (c *ColumnBase) IsAllowedAction(act SQLAction) bool {
 }
 
 type ColumnsStorage struct {
+	table   string
 	m       map[fmap.Field]Column
 	s       []Column
 	act     map[SQLAction][]Column

@@ -115,3 +115,15 @@ func NewStringBuilder(ctx context.Context, table string) *StringBuilder {
 		},
 	}
 }
+
+type StringBuilderFactory func(ctx context.Context) *StringBuilder
+
+func (b StringBuilderFactory) New(ctx context.Context) *StringBuilder {
+	return b(ctx)
+}
+
+func NewStringBuilderFactory(table string) StringBuilderFactory {
+	return func(ctx context.Context) *StringBuilder {
+		return NewStringBuilder(ctx, table)
+	}
+}

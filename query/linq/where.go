@@ -4,17 +4,9 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-type ConditionBuilder interface {
-	AppendCondition(cl types.Column, operation types.Operation, val any) error
-	StartGroup()
-	EndGroup()
-	AND()
-	OR()
-}
-
 type WhereBuilder struct {
 	core *CoreBuilder
-	opts []func(a ConditionBuilder)
+	opts []func(a types.ConditionBuilder)
 }
 
 func NewWhereBuilder(core *CoreBuilder) *WhereBuilder {
@@ -23,18 +15,18 @@ func NewWhereBuilder(core *CoreBuilder) *WhereBuilder {
 	}
 }
 
-func (q *WhereBuilder) Apply(condBuilder ConditionBuilder) {
+func (q *WhereBuilder) Apply(condBuilder types.ConditionBuilder) {
 	for _, opt := range q.opts {
 		opt(condBuilder)
 	}
 }
 
 func (q *WhereBuilder) Group(f func(t types.WhereTarget)) types.ANDOR {
-	q.opts = append(q.opts, func(a ConditionBuilder) {
+	q.opts = append(q.opts, func(a types.ConditionBuilder) {
 		a.StartGroup()
 	})
 	f(q)
-	q.opts = append(q.opts, func(a ConditionBuilder) {
+	q.opts = append(q.opts, func(a types.ConditionBuilder) {
 		a.EndGroup()
 	})
 	return q
@@ -90,14 +82,14 @@ func (o OperationFn) NEW(val any) types.ANDOR {
 }
 
 func (q *WhereBuilder) AND() types.WhereTarget {
-	q.opts = append(q.opts, func(a ConditionBuilder) {
+	q.opts = append(q.opts, func(a types.ConditionBuilder) {
 		a.AND()
 	})
 	return q
 }
 
 func (q *WhereBuilder) OR() types.WhereTarget {
-	q.opts = append(q.opts, func(a ConditionBuilder) {
+	q.opts = append(q.opts, func(a types.ConditionBuilder) {
 		a.OR()
 	})
 	return q
@@ -106,7 +98,7 @@ func (q *WhereBuilder) OR() types.WhereTarget {
 func (q *WhereBuilder) Field(fieldPtr any) types.WhereOperation {
 	col := q.core.GetColumn(fieldPtr)
 	return OperationFn(func(operation types.Operation, val any) types.ANDOR {
-		q.opts = append(q.opts, func(a ConditionBuilder) {
+		q.opts = append(q.opts, func(a types.ConditionBuilder) {
 			err := a.AppendCondition(col, operation, val)
 			if err != nil {
 				panic(err)

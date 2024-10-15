@@ -6,7 +6,7 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-type ColumnsReader interface {
+type ColumnsAppender interface {
 	Columns(columns ...types.Column)
 }
 
@@ -52,6 +52,6 @@ func (b *ExcludeBuilder) GetColumns() []types.Column {
 	return b.columns
 }
 
-func (b *ExcludeBuilder) Apply(columnsReader ColumnsReader) {
+func (b *ExcludeBuilder) Apply(columnsReader ColumnsAppender) {
 	columnsReader.Columns(b.columns...)
 }

@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/insei/fmap/v3"
-	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
 )
 
@@ -48,8 +47,12 @@ func (c *column) Name() (string, bool) {
 	return "", false
 }
 
+func (c *column) Table() (string, bool) {
+	return "", false
+}
+
 func New(field fmap.Field, opts ...Option) types.Column {
-	base := types.NewColumnBase(field, nil, query.NewForField(field))
+	base := types.NewColumnBase(field, nil, types.NewFilterManagerForField(field))
 	c := &column{
 		base: base,
 	}

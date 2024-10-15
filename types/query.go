@@ -111,6 +111,10 @@ type OrderTarget interface {
 	Field(fieldPtr any) OrderOperation
 }
 
+type GroupTarget interface {
+	Field(fieldsPtr ...any) GroupTarget
+}
+
 type WhereTarget interface {
 	Field(fieldPtr any) WhereOperation
 	Group(func(t WhereTarget)) ANDOR
@@ -121,5 +125,10 @@ type ANDOR interface {
 	AND() WhereTarget
 }
 
-type InsertQuery interface {
+type ConditionBuilder interface {
+	AppendCondition(cl Column, operation Operation, val any) error
+	StartGroup()
+	EndGroup()
+	AND()
+	OR()
 }

@@ -39,7 +39,8 @@ func (e *Executor[TModel]) GetOne(ctx context.Context, sql *StringBuilder) (*TMo
 	for i, cl := range columns {
 		pointers[i] = cl.GetPtr(model)
 	}
-	err := e.db.QueryRowContext(ctx, e.placeholder(sqlQuery), args...).Scan(pointers...)
+	sqlQuery = e.placeholder(sqlQuery)
+	err := e.db.QueryRowContext(ctx, sqlQuery, args...).Scan(pointers...)
 	if err != nil {
 		if errors.Is(err, dbsql.ErrNoRows) {
 			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
@@ -105,7 +106,7 @@ func (e *Executor[TModel]) InsertOne(ctx context.Context, model *TModel, sql *St
 	return nil
 }
 
-func (e *Executor[TModel]) Update(ctx context.Context, model *TModel, sql *StringBuilder) error {
+func (e *Executor[TModel]) Update(ctx context.Context, model *TModel, sql *StringBuilder) (int64, error) {
 	columns := sql.UpdateBuilder().GetColumns()
 	values := make([]interface{}, len(columns))
 	for i, cl := range columns {
@@ -114,17 +115,17 @@ func (e *Executor[TModel]) Update(ctx context.Context, model *TModel, sql *Strin
 	values = append(values, sql.WhereBuilder().values...)
 	result, err := e.db.ExecContext(ctx, e.placeholder(sql.UpdateSQL()), values...)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	updatedRows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if updatedRows == 0 {
-		return ErrNotFound
+		return 0, ErrNotFound
 	}
 	cache.CleanupCtxCache[TModel](ctx)
-	return nil
+	return updatedRows, nil
 }
 
 func (e *Executor[TModel]) Count(ctx context.Context, sql *StringBuilder) (uint64, error) {
@@ -147,7 +148,7 @@ func (e *Executor[TModel]) Count(ctx context.Context, sql *StringBuilder) (uint6
 	return count, nil
 }
 
-func (e *Executor[TModel]) Delete(ctx context.Context, sql *StringBuilder) (uint64, error) {
+func (e *Executor[TModel]) Delete(ctx context.Context, sql *StringBuilder) (int64, error) {
 	sqlQuery := sql.DeleteSQL()
 	result, err := e.db.ExecContext(ctx, e.placeholder(sqlQuery), sql.WhereBuilder().values...)
 	if err != nil {
@@ -164,5 +165,5 @@ func (e *Executor[TModel]) Delete(ctx context.Context, sql *StringBuilder) (uint
 		return 0, ErrNotFound
 	}
 	cache.CleanupCtxCache[TModel](ctx)
-	return uint64(deletedRows), nil
+	return deletedRows, nil
 }

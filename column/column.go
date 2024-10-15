@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/insei/fmap/v3"
-	"github.com/insei/gerpo/query"
+	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
 
 type column struct {
+	table string
 	name  string
 	query string
 	base  *types.ColumnBase
@@ -39,6 +40,10 @@ func (c *column) GetField() fmap.Field {
 
 func (c *column) Name() (string, bool) {
 	return c.name, true
+}
+
+func (c *column) Table() (string, bool) {
+	return c.table, true
 }
 
 func (c *column) GetAllowedActions() []types.SQLAction {
@@ -78,13 +83,14 @@ func New(field fmap.Field, opts ...Option) types.Column {
 	}
 
 	sqlQuery := generateSQLQuery(forOpts)
-	base := types.NewColumnBase(field, generateToSQLFn(sqlQuery, forOpts.alias), query.NewForField(field))
+	base := types.NewColumnBase(field, generateToSQLFn(sqlQuery, forOpts.alias), types.NewFilterManagerForField(field))
 	c := &column{
 		name:  forOpts.name,
+		table: forOpts.table,
 		base:  base,
 		query: sqlQuery,
 	}
-	filters := query.GetAvailableFilters(field, sqlQuery)
+	filters := sql.GetDefaultTypeFilters(field, sqlQuery)
 	for op, filterFn := range filters {
 		c.base.Filters.AddFilterFn(op, filterFn)
 	}

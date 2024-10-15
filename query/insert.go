@@ -26,7 +26,7 @@ func (h *insertHelper[TModel]) Exclude(fieldsPtr ...any) {
 }
 
 func (h *insertHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	h.excludeBuilder.Apply(sqlBuilder.SelectBuilder())
+	h.excludeBuilder.Apply(sqlBuilder.InsertBuilder())
 }
 
 func (h *insertHelper[TModel]) HandleFn(qFns ...func(m *TModel, h InsertUserHelper[TModel])) {

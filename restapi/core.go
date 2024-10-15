@@ -1,4 +1,4 @@
-package query
+package restapi
 
 import (
 	"fmt"
@@ -109,9 +109,9 @@ type FieldConnector interface {
 	Link(dtoFieldPtr, modelFieldPtr any) error
 }
 
-type APIConnector struct {
+type apiConnector struct {
 	factory *APIConnectorFactory
-	opts    []func(b *sql.StringWhereBuilder)
+	opts    []func(b types.ConditionBuilder)
 }
 
 type APIConnectorFactory struct {
@@ -178,8 +178,8 @@ func (c *APIConnectorFactory) initDefaultFields(storage *types.ColumnsStorage, d
 	return nil
 }
 
-func (c *APIConnectorFactory) New() *APIConnector {
-	return &APIConnector{
+func (c *APIConnectorFactory) New() APIConnector {
+	return &apiConnector{
 		factory: c,
 	}
 }
@@ -230,11 +230,11 @@ func NewAPIConnectorFactory[TDto, TModel any](storage *types.ColumnsStorage, opt
 	return c, nil
 }
 
-func (c *APIConnector) AppendFilters(filters string) *APIConnector {
+func (c *apiConnector) AppendFilters(filters string) {
 	if strings.TrimSpace(filters) == "" {
-		return c
+		return
 	}
-	c.opts = append(c.opts, func(b *sql.StringWhereBuilder) {
+	c.opts = append(c.opts, func(b types.ConditionBuilder) {
 		b.AND()
 		b.StartGroup()
 		for lastInd, i := 0, 0; i < len(filters); i++ {
@@ -285,10 +285,10 @@ func (c *APIConnector) AppendFilters(filters string) *APIConnector {
 		}
 		b.EndGroup()
 	})
-	return c
+	return
 }
 
-func (c *APIConnector) ApplyWhere(b *sql.StringWhereBuilder) {
+func (c *apiConnector) ApplyWhere(b *sql.StringWhereBuilder) {
 	for _, op := range c.opts {
 		op(b)
 	}

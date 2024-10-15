@@ -2,8 +2,6 @@ package gerpo
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/types"
@@ -110,23 +108,23 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 //	})
 //}
 
-func WithLeftJoin[TModel any](fn func(ctx context.Context) string) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
-		if fn != nil {
-			if o.leftJoins == nil {
-				o.leftJoins = fn
-				return
-			}
-			wrap := o.leftJoins
-			o.leftJoins = func(ctx context.Context) string {
-				return strings.TrimSpace(fmt.Sprintf("%s %s", wrap(ctx), fn(ctx)))
-			}
-		}
-	})
-}
+//func WithLeftJoin[TModel any](fn func(ctx context.Context) string) Option[TModel] {
+//	return optionFn[TModel](func(o *repository[TModel]) {
+//		if fn != nil {
+//			if o.leftJoins == nil {
+//				o.leftJoins = fn
+//				return
+//			}
+//			wrap := o.leftJoins
+//			o.leftJoins = func(ctx context.Context) string {
+//				return strings.TrimSpace(fmt.Sprintf("%s %s", wrap(ctx), fn(ctx)))
+//			}
+//		}
+//	})
+//}
 
-func WithTable[TModel any](table string) Option[TModel] {
-	return optionFn[TModel](func(c *repository[TModel]) {
-		c.table = table
-	})
-}
+//func WithTable[TModel any](table string) Option[TModel] {
+//	return optionFn[TModel](func(c *repository[TModel]) {
+//		c.table = table
+//	})
+//}
