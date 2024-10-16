@@ -24,9 +24,6 @@ func (q *PaginationBuilder) Page(page uint64) {
 
 func (q *PaginationBuilder) Size(size uint64) {
 	q.opts = append(q.opts, func(b Limiter) {
-		if size == 0 {
-			size = 10
-		}
 		b.Limit(size)
 	})
 }

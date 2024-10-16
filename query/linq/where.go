@@ -16,9 +16,17 @@ func NewWhereBuilder(core *CoreBuilder) *WhereBuilder {
 }
 
 func (q *WhereBuilder) Apply(condBuilder types.ConditionBuilder) {
-	for _, opt := range q.opts {
-		opt(condBuilder)
+	if len(q.opts) > 0 {
+		condBuilder.StartGroup()
+		for _, opt := range q.opts {
+			opt(condBuilder)
+		}
+		condBuilder.EndGroup()
 	}
+}
+
+func (q *WhereBuilder) IsEmpty() bool {
+	return len(q.opts) == 0
 }
 
 func (q *WhereBuilder) Group(f func(t types.WhereTarget)) types.ANDOR {

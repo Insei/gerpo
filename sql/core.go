@@ -4,17 +4,19 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/insei/gerpo/types"
 )
 
 type StringBuilder struct {
 	ctx           context.Context
-	joinsSQL      string
 	table         string
 	whereBuilder  *StringWhereBuilder
 	selectBuilder *StringSelectBuilder
 	groupBuilder  *StringGroupBuilder
 	insertBuilder *StringInsertBuilder
 	updateBuilder *StringUpdateBuilder
+	joinBuilder   *StringJoinBuilder
 }
 
 func (b *StringBuilder) WhereBuilder() *StringWhereBuilder {
@@ -35,6 +37,10 @@ func (b *StringBuilder) InsertBuilder() *StringInsertBuilder {
 
 func (b *StringBuilder) UpdateBuilder() *StringUpdateBuilder {
 	return b.updateBuilder
+}
+
+func (b *StringBuilder) JoinBuilder() *StringJoinBuilder {
+	return b.joinBuilder
 }
 
 func (b *StringBuilder) selectSQL(selectSQL, whereSQL, orderSQL, groupSQL, joinSQL,
@@ -59,17 +65,17 @@ func (b *StringBuilder) selectSQL(selectSQL, whereSQL, orderSQL, groupSQL, joinS
 	if strings.TrimSpace(offsetNumStr) != "" {
 		sql += fmt.Sprintf(" OFFSET %s", offsetNumStr)
 	}
-	return sql, b.whereBuilder.values
+	return sql, b.whereBuilder.Values()
 }
 
 func (b *StringBuilder) CountSQL() (string, []any) {
 	b.selectBuilder.Limit(1)
 	return b.selectSQL("count(*) over() AS count", b.whereBuilder.sql,
-		b.selectBuilder.GetOrderSQL(), b.groupBuilder.sql, b.joinsSQL, b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
+		b.selectBuilder.GetOrderSQL(), b.groupBuilder.SQL(), b.joinBuilder.SQL(), b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
 }
 
 func (b *StringBuilder) SelectSQL() (string, []any) {
-	return b.selectSQL(b.selectBuilder.GetSQL(), b.whereBuilder.sql, b.selectBuilder.GetOrderSQL(), b.groupBuilder.sql, b.joinsSQL,
+	return b.selectSQL(b.selectBuilder.GetSQL(), b.whereBuilder.SQL(), b.selectBuilder.GetOrderSQL(), b.groupBuilder.SQL(), b.joinBuilder.SQL(),
 		b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
 }
 
@@ -87,6 +93,10 @@ func (b *StringBuilder) UpdateSQL() string {
 
 func (b *StringBuilder) DeleteSQL() string {
 	sql := fmt.Sprintf("DELETE FROM %s", b.table)
+	joinSQL := b.joinBuilder.SQL()
+	if strings.TrimSpace(joinSQL) != "" {
+		sql += fmt.Sprintf(" %s", joinSQL)
+	}
 	if b.whereBuilder.sql == "" {
 		panic(fmt.Errorf("delete all table rows in not available"))
 	}
@@ -94,7 +104,7 @@ func (b *StringBuilder) DeleteSQL() string {
 	return sql
 }
 
-func NewStringBuilder(ctx context.Context, table string) *StringBuilder {
+func NewStringBuilder(ctx context.Context, table string, columns *types.ColumnsStorage) *StringBuilder {
 	return &StringBuilder{
 		table: table,
 		ctx:   ctx,
@@ -102,15 +112,21 @@ func NewStringBuilder(ctx context.Context, table string) *StringBuilder {
 			ctx: ctx,
 		},
 		selectBuilder: &StringSelectBuilder{
-			ctx: ctx,
+			ctx:     ctx,
+			columns: columns.AsSliceByAction(types.SQLActionSelect),
 		},
 		groupBuilder: &StringGroupBuilder{
 			ctx: ctx,
 		},
 		insertBuilder: &StringInsertBuilder{
-			ctx: ctx,
+			ctx:     ctx,
+			columns: columns.AsSliceByAction(types.SQLActionInsert),
 		},
 		updateBuilder: &StringUpdateBuilder{
+			ctx:     ctx,
+			columns: columns.AsSliceByAction(types.SQLActionUpdate),
+		},
+		joinBuilder: &StringJoinBuilder{
 			ctx: ctx,
 		},
 	}
@@ -122,8 +138,8 @@ func (b StringBuilderFactory) New(ctx context.Context) *StringBuilder {
 	return b(ctx)
 }
 
-func NewStringBuilderFactory(table string) StringBuilderFactory {
+func NewStringBuilderFactory(table string, columns *types.ColumnsStorage) StringBuilderFactory {
 	return func(ctx context.Context) *StringBuilder {
-		return NewStringBuilder(ctx, table)
+		return NewStringBuilder(ctx, table, columns)
 	}
 }

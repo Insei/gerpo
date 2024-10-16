@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/insei/gerpo/types"
@@ -13,14 +14,13 @@ type StringInsertBuilder struct {
 	columns []types.Column
 }
 
-func (b *StringInsertBuilder) Columns(col ...types.Column) {
-	for _, col := range col {
-		if !col.IsAllowedAction(types.SQLActionInsert) {
-			//TODO: log
-			continue
+func (b *StringInsertBuilder) Exclude(cols ...types.Column) {
+	b.columns = deleteFunc(b.columns, func(column types.Column) bool {
+		if slices.Contains(cols, column) {
+			return true
 		}
-		b.columns = append(b.columns, col)
-	}
+		return false
+	})
 }
 
 func (b *StringInsertBuilder) GetColumns() []types.Column {

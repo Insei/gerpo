@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/insei/fmap/v3"
+	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
 )
 
@@ -91,6 +92,14 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 	})
 }
 
+func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentUserHelper[TModel])) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) {
+		if queryFn != nil {
+			o.persistent.HandleFn(queryFn)
+		}
+	})
+}
+
 //func WithSoftDelete[TModel any](fieldPtrFn func(d *TModel) any, valueFn func(ctx context.Context) any) Option[TModel] {
 //	return optionFn[TModel](func(o *repository[TModel]) {
 //		field, err := o.fields.GetFieldByPtr(o.model, fieldPtrFn(o.model))
@@ -105,26 +114,5 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 //			panic(fmt.Errorf("cannot setup soft deletion with %s field, update is not supported", field.GetStructPath()))
 //		}
 //		o.softDelete[cl] = valueFn
-//	})
-//}
-
-//func WithLeftJoin[TModel any](fn func(ctx context.Context) string) Option[TModel] {
-//	return optionFn[TModel](func(o *repository[TModel]) {
-//		if fn != nil {
-//			if o.leftJoins == nil {
-//				o.leftJoins = fn
-//				return
-//			}
-//			wrap := o.leftJoins
-//			o.leftJoins = func(ctx context.Context) string {
-//				return strings.TrimSpace(fmt.Sprintf("%s %s", wrap(ctx), fn(ctx)))
-//			}
-//		}
-//	})
-//}
-
-//func WithTable[TModel any](table string) Option[TModel] {
-//	return optionFn[TModel](func(c *repository[TModel]) {
-//		c.table = table
 //	})
 //}

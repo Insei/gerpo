@@ -1,16 +1,10 @@
 package linq
 
 import (
-	"slices"
-
 	"github.com/insei/gerpo/types"
 )
 
-type ColumnsAppender interface {
-	Columns(columns ...types.Column)
-}
-
-type Exclude interface {
+type ColumnsExcluder interface {
 	Exclude(columns ...types.Column)
 }
 
@@ -20,14 +14,12 @@ type UserExcludeBuilder interface {
 
 type ExcludeBuilder struct {
 	*CoreBuilder
-	columns []types.Column
-	opts    []func(e Exclude)
+	opts []func(e ColumnsExcluder)
 }
 
-func NewExcludeBuilder(core *CoreBuilder, action types.SQLAction) *ExcludeBuilder {
+func NewExcludeBuilder(core *CoreBuilder) *ExcludeBuilder {
 	return &ExcludeBuilder{
 		CoreBuilder: core,
-		columns:     core.GetColumnsByAction(action),
 	}
 }
 
@@ -36,22 +28,14 @@ func (b *ExcludeBuilder) Exclude(fieldPtrs ...any) {
 	for _, fieldPtr := range fieldPtrs {
 		col := b.GetColumn(fieldPtr)
 		excludedCols = append(excludedCols, col)
-		b.opts = append(b.opts, func(e Exclude) {
+		b.opts = append(b.opts, func(e ColumnsExcluder) {
 			e.Exclude(col)
 		})
 	}
-	b.columns = slices.DeleteFunc(b.columns, func(column types.Column) bool {
-		if slices.Contains(excludedCols, column) {
-			return true
-		}
-		return false
-	})
 }
 
-func (b *ExcludeBuilder) GetColumns() []types.Column {
-	return b.columns
-}
-
-func (b *ExcludeBuilder) Apply(columnsReader ColumnsAppender) {
-	columnsReader.Columns(b.columns...)
+func (b *ExcludeBuilder) Apply(columnsExcluder ColumnsExcluder) {
+	for _, opt := range b.opts {
+		opt(columnsExcluder)
+	}
 }

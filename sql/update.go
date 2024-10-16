@@ -2,19 +2,24 @@ package sql
 
 import (
 	"context"
+	"slices"
 
 	"github.com/insei/gerpo/types"
 )
 
 type StringUpdateBuilder struct {
 	ctx     context.Context
-	exclude []func(types.Column) bool
 	columns []types.Column
 	//TODO: Add columns cache for Get columns
 }
 
-func (b *StringUpdateBuilder) Columns(col ...types.Column) {
-	b.columns = append(b.columns, col...)
+func (b *StringUpdateBuilder) Exclude(cols ...types.Column) {
+	b.columns = deleteFunc(b.columns, func(column types.Column) bool {
+		if slices.Contains(cols, column) {
+			return true
+		}
+		return false
+	})
 }
 
 func (b *StringUpdateBuilder) GetColumns() []types.Column {

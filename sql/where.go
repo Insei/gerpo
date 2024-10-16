@@ -157,8 +157,12 @@ type StringWhereBuilder struct {
 	values []any
 }
 
-func (b *StringWhereBuilder) ToSQL() (string, []any) {
-	return b.sql, b.values
+func (b *StringWhereBuilder) SQL() string {
+	return b.sql
+}
+
+func (b *StringWhereBuilder) Values() []any {
+	return b.values
 }
 
 func (b *StringWhereBuilder) StartGroup() {

@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"reflect"
+	"slices"
 	"sync"
 )
 
@@ -15,13 +16,17 @@ var contextCacheKey = contextCacheKeyType{
 }
 
 type cacheStorage struct {
-	mtx *sync.Mutex
-	c   map[reflect.Type]map[string]any
+	mtx      *sync.Mutex
+	c        map[reflect.Type]map[string]any
+	disabled []string
 }
 
 func (s *cacheStorage) Get(modelType reflect.Type, key string) (any, bool) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
+	if slices.Contains(s.disabled, key) {
+		return nil, false
+	}
 	modelCache, ok := s.c[modelType]
 	if !ok {
 		return nil, false
@@ -82,4 +87,31 @@ func CleanupCtxCache[TModel any](ctx context.Context) {
 	var model *TModel
 	mTypeOf := reflect.TypeOf(model).Elem()
 	storage.Clean(mTypeOf)
+}
+
+// DisableKey disables key for cache reading
+func DisableKey(ctx context.Context, key string) {
+	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
+	if !ok || storage == nil {
+		return
+	}
+	storage.mtx.Lock()
+	defer storage.mtx.Unlock()
+	storage.disabled = append(storage.disabled, key)
+}
+
+// RemoveDisabledKey removes disabled for key caching reading usage
+func RemoveDisabledKey(ctx context.Context, key string) {
+	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
+	if !ok || storage == nil {
+		return
+	}
+	storage.mtx.Lock()
+	defer storage.mtx.Unlock()
+	storage.disabled = slices.DeleteFunc(storage.disabled, func(s string) bool {
+		if s == key {
+			return true
+		}
+		return false
+	})
 }

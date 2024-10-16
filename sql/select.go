@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"slices"
 	"strconv"
 
 	"github.com/insei/gerpo/types"
@@ -15,10 +16,33 @@ type StringSelectBuilder struct {
 	orderBy string
 }
 
-func (b *StringSelectBuilder) Columns(cols ...types.Column) {
-	for _, col := range cols {
-		b.columns = append(b.columns, col)
+// deleteFunc Modified deleteFunc from slices packages without clean element,
+// removes any elements from s for which del returns true,
+// returning the modified slice.
+// deleteFunc zeroes the elements between the new length and the original length.
+func deleteFunc[S ~[]E, E any](s S, del func(E) bool) S {
+	i := slices.IndexFunc(s, del)
+	if i == -1 {
+		return s
 	}
+	// Don't start copying elements until we find one to delete.
+	for j := i + 1; j < len(s); j++ {
+		if v := s[j]; !del(v) {
+			s[i] = v
+			i++
+		}
+	}
+	//clear(s[i:]) // zero/nil out the obsolete elements, for GC
+	return s[:i]
+}
+
+func (b *StringSelectBuilder) Exclude(cols ...types.Column) {
+	b.columns = deleteFunc(b.columns, func(column types.Column) bool {
+		if slices.Contains(cols, column) {
+			return true
+		}
+		return false
+	})
 }
 
 func (b *StringSelectBuilder) Limit(limit uint64) {

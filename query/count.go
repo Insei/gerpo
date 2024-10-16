@@ -45,7 +45,7 @@ func newCountHelper[TModel any](core *linq.CoreBuilder) *countHelper[TModel] {
 	paginationBuilder := linq.NewPaginationBuilder()
 	return &countHelper[TModel]{
 		core:              core,
-		excludeBuilder:    linq.NewExcludeBuilder(core, types.SQLActionSelect),
+		excludeBuilder:    linq.NewExcludeBuilder(core),
 		paginationBuilder: paginationBuilder,
 		whereBuilder:      linq.NewWhereBuilder(core),
 		orderBuilder:      linq.NewOrderBuilder(core),

@@ -2,18 +2,18 @@ package gerpo
 
 import (
 	"context"
+	dbsql "database/sql"
 	"fmt"
 	"log"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/XSAM/otelsql"
 	"github.com/insei/gerpo/cache"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/virtual"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	//_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 //type test struct {
@@ -28,14 +28,14 @@ import (
 
 func TestName(t *testing.T) {
 
-	db, err := otelsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable", otelsql.WithAttributes(
-		semconv.DBSystemPostgreSQL,
-	))
-	//db, err := dbsql.Open("pgx", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable")
-	//if err != nil {
-	//	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-	//	os.Exit(1)
-	//}
+	//db, err := otelsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable", otelsql.WithAttributes(
+	//	semconv.DBSystemPostgreSQL,
+	//))
+	db, err := dbsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
 	defer db.Close()
 
 	b := NewBuilder[test]().
@@ -64,6 +64,13 @@ func TestName(t *testing.T) {
 		BeforeUpdate(func(ctx context.Context, m *test) {
 			updAt := time.Now()
 			m.UpdatedAt = &updAt
+		}).
+		WithQuery(func(m *test, h query.PersistentUserHelper[test]) {
+			h.Where().Field(&m.ID).LT(7)
+			h.Exclude(&m.UpdatedAt, &m.ID)
+			h.LeftJoin(func(ctx context.Context) string {
+				return ``
+			})
 		})
 	repo, err := b.Build()
 
@@ -72,6 +79,9 @@ func TestName(t *testing.T) {
 	start := time.Now()
 	model, err := repo.GetFirst(ctx)
 	elapsed := time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("FIRST Repo db get one %s", elapsed)
 
 	start = time.Now()
@@ -81,6 +91,9 @@ func TestName(t *testing.T) {
 		b.OrderBy().Field(&m.Name).DESC()
 	})
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("SECOND Repo db get one %s", elapsed)
 
 	start = time.Now()
@@ -90,6 +103,9 @@ func TestName(t *testing.T) {
 		b.OrderBy().Field(&m.Name).DESC()
 	})
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo get same one from cache %s", elapsed)
 
 	start = time.Now()
@@ -98,6 +114,9 @@ func TestName(t *testing.T) {
 			Field(&m.ID).EQ(1)
 	})
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo db count %s", elapsed)
 
 	start = time.Now()
@@ -106,16 +125,25 @@ func TestName(t *testing.T) {
 			Field(&m.ID).EQ(1)
 	})
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo count same from cache %s", elapsed)
 
 	start = time.Now()
 	count, err = repo.Count(ctx)
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo count ALL from db %s", elapsed)
 
 	start = time.Now()
 	count, err = repo.Count(ctx)
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo count ALL from cache %s", elapsed)
 
 	_ = err
@@ -126,15 +154,23 @@ func TestName(t *testing.T) {
 	}, func(m *test, h query.InsertUserHelper[test]) {
 		h.Exclude()
 	})
-
+	if err != nil {
+		log.Print(err)
+	}
 	start = time.Now()
 	list, err := repo.GetList(ctx) //ALL
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo GetList ALL from db %s", elapsed)
 
 	start = time.Now()
 	list, err = repo.GetList(ctx) //ALL
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo GetList ALL from cache %s", elapsed)
 
 	start = time.Now()
@@ -143,6 +179,9 @@ func TestName(t *testing.T) {
 		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo GetList limit 2, page 1 from db %s", elapsed)
 
 	start = time.Now()
@@ -151,15 +190,24 @@ func TestName(t *testing.T) {
 		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
 	elapsed = time.Since(start)
+	if err != nil {
+		log.Print(err)
+	}
 	log.Printf("Repo GetList limit 2, page 1 from cache %s", elapsed)
 
-	model.Age = 555
+	model.Age = 777
 	err = repo.Update(ctx, model, func(m *test, h query.UpdateUserHelper[test]) {
 		h.Where().Field(&m.ID).EQ(5)
 	})
+	if err != nil {
+		log.Print(err)
+	}
 
 	deletedCount, err := repo.Delete(ctx, func(m *test, h query.DeleteUserHelper[test]) {
 		h.Where().Field(&m.ID).EQ(1)
 	})
+	if err != nil {
+		log.Print(err)
+	}
 	fmt.Println(list, model, count, deletedCount)
 }

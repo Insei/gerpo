@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/insei/fmap/v3"
+	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
@@ -57,6 +58,11 @@ func (b *Builder[TModel]) DB(db *dbsql.DB) TableChooser[TModel] {
 
 func (b *Builder[TModel]) Columns(fn func(m *TModel, columns *ColumnBuilder[TModel])) *Builder[TModel] {
 	b.columnBuilderFn = fn
+	return b
+}
+
+func (b *Builder[TModel]) WithQuery(queryFn func(m *TModel, h query.PersistentUserHelper[TModel])) *Builder[TModel] {
+	b.opts = append(b.opts, WithQuery[TModel](queryFn))
 	return b
 }
 

@@ -1,16 +1,22 @@
 package sql
 
-//type StringJoinBuilder struct {
-//	ctx context.Context
-//	sql string
-//}
-//
-//func (b *StringGroupBuilder) GroupBy(cols ...types.Column) {
-//	for _, col := range cols {
-//		if !col.IsAllowedAction(types.SQLActionGroup) {
-//			continue
-//			//TODO: log
-//		}
-//		b.sql += col.ToSQL(b.ctx)
-//	}
-//}
+import (
+	"context"
+)
+
+type StringJoinBuilder struct {
+	ctx   context.Context
+	joins []func(ctx context.Context) string
+}
+
+func (b *StringJoinBuilder) JOIN(joinFn func(ctx context.Context) string) {
+	b.joins = append(b.joins, joinFn)
+}
+
+func (b *StringJoinBuilder) SQL() string {
+	sql := ""
+	for _, j := range b.joins {
+		sql += " " + j(b.ctx)
+	}
+	return sql
+}

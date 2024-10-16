@@ -3,7 +3,6 @@ package query
 import (
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/sql"
-	"github.com/insei/gerpo/types"
 )
 
 type InsertUserHelper[TModel any] interface {
@@ -37,7 +36,7 @@ func (h *insertHelper[TModel]) HandleFn(qFns ...func(m *TModel, h InsertUserHelp
 
 func newInsertHelper[TModel any](core *linq.CoreBuilder) *insertHelper[TModel] {
 	return &insertHelper[TModel]{
-		excludeBuilder: linq.NewExcludeBuilder(core, types.SQLActionInsert),
+		excludeBuilder: linq.NewExcludeBuilder(core),
 		core:           core,
 	}
 }

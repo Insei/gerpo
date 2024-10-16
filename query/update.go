@@ -45,10 +45,11 @@ func (h *updateHelper[TModel]) HandleFn(qFns ...func(m *TModel, h UpdateUserHelp
 func newUpdateHelper[TModel any](core *linq.CoreBuilder) *updateHelper[TModel] {
 	return &updateHelper[TModel]{
 		core:           core,
-		excludeBuilder: linq.NewExcludeBuilder(core, types.SQLActionUpdate),
+		excludeBuilder: linq.NewExcludeBuilder(core),
 		whereBuilder:   linq.NewWhereBuilder(core),
 	}
 }
+
 func NewUpdateHelper[TModel any](core *linq.CoreBuilder) UpdateHelper[TModel] {
 	return newUpdateHelper[TModel](core)
 }

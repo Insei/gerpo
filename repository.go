@@ -35,8 +35,9 @@ type repository[TModel any] struct {
 	strSQLBuilderFactory sql.StringBuilderFactory
 
 	// SQL Query, execution and dependency
-	linqCore *linq.CoreBuilder
-	executor *sql.Executor[TModel]
+	linqCore   *linq.CoreBuilder
+	executor   *sql.Executor[TModel]
+	persistent query.PersistentHelper[TModel]
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
@@ -62,11 +63,13 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 	if len(columns.AsSlice()) < 1 {
 		return nil, fmt.Errorf("failed to create repository with empty columns")
 	}
+	coreBuilder := linq.NewCoreBuilder(model, columns)
 
 	repo := &repository[TModel]{
+		persistent:           query.NewPersistentHelper[TModel](coreBuilder),
 		executor:             sql.NewExecutor[TModel](db, sql.DeterminePlaceHolder(db)),
 		linqCore:             linq.NewCoreBuilder(model, columns),
-		strSQLBuilderFactory: sql.NewStringBuilderFactory(table),
+		strSQLBuilderFactory: sql.NewStringBuilderFactory(table, columns),
 		softDelete:           make(map[types.Column]func(ctx context.Context) any),
 	}
 	for _, opt := range opts {
@@ -76,11 +79,16 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 	return repo, nil
 }
 
+func (r *repository[TModel]) applyPersistentQuery(sqlBuilder *sql.StringBuilder) {
+	r.persistent.Apply(sqlBuilder)
+}
+
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	h := query.NewGetFirstHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
+	r.persistent.Apply(strSQLBuilder)
 	model, err = r.executor.GetOne(ctx, strSQLBuilder)
 	if err != nil {
 		return nil, err
@@ -94,6 +102,7 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 	h := query.NewGetListHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
+	r.persistent.Apply(strSQLBuilder)
 	models, err = r.executor.GetMultiple(ctx, strSQLBuilder)
 	if err != nil {
 		return nil, err
@@ -107,6 +116,7 @@ func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, 
 	h := query.NewCountHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
+	r.persistent.Apply(strSQLBuilder)
 	return r.executor.Count(ctx, strSQLBuilder)
 }
 
@@ -116,6 +126,7 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 	h := query.NewInsertHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
+	r.persistent.Apply(strSQLBuilder)
 	return r.executor.InsertOne(ctx, model, strSQLBuilder)
 }
 
@@ -125,6 +136,7 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	h := query.NewUpdateHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
+	r.persistent.Apply(strSQLBuilder)
 	_, err = r.executor.Update(ctx, model, strSQLBuilder)
 	return err
 }
@@ -134,5 +146,6 @@ func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel,
 	h := query.NewDeleteHelper[TModel](r.linqCore)
 	h.HandleFn(qFns...)
 	h.Apply(strSQLBuilder)
+	r.persistent.Apply(strSQLBuilder)
 	return r.executor.Delete(ctx, strSQLBuilder)
 }

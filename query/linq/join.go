@@ -1,27 +1,32 @@
 package linq
 
-//func NewJoinBuilder(core *CoreBuilder) *JoinBuilder {
-//	return &JoinBuilder{
-//		core: core,
-//	}
-//}
-//
-//type JoinBuilder struct {
-//	core *CoreBuilder
-//	opts []func(*sql.StringGroupBuilder)
-//}
-//
-//func (q *JoinBuilder) Apply(b *sql.StringGroupBuilder) {
-//	for _, opt := range q.opts {
-//		opt(b)
-//	}
-//}
-//
-//func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
-//	for _, fieldPtr := range fieldsPtr {
-//		col := q.core.GetColumn(fieldPtr)
-//		q.opts = append(q.opts, func(b *sql.StringGroupBuilder) {
-//			b.GroupBy(col)
-//		})
-//	}
-//}
+import (
+	"context"
+
+	"github.com/insei/gerpo/sql"
+)
+
+func NewJoinBuilder(core *CoreBuilder) *JoinBuilder {
+	return &JoinBuilder{
+		core: core,
+	}
+}
+
+type JoinBuilder struct {
+	core *CoreBuilder
+	opts []func(*sql.StringJoinBuilder)
+}
+
+func (q *JoinBuilder) Apply(b *sql.StringJoinBuilder) {
+	for _, opt := range q.opts {
+		opt(b)
+	}
+}
+
+func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
+	q.opts = append(q.opts, func(builder *sql.StringJoinBuilder) {
+		builder.JOIN(func(ctx context.Context) string {
+			return "LEFT JOIN " + leftJoinFn(ctx)
+		})
+	})
+}
