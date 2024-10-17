@@ -87,6 +87,7 @@ func (c *ColumnsStorage) AsSliceByAction(action SQLAction) []Column {
 	return cols
 }
 
+// GetByFieldPtr returns the Column associated with a specific field pointer from the given model.
 func (c *ColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (Column, error) {
 	field, err := c.storage.GetFieldByPtr(model, fieldPtr)
 	if err != nil {
