@@ -21,6 +21,7 @@ type cacheStorage struct {
 	disabled []string
 }
 
+// Get returns the value for the given key in the cache.
 func (s *cacheStorage) Get(modelType reflect.Type, key string) (any, bool) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -38,6 +39,7 @@ func (s *cacheStorage) Get(modelType reflect.Type, key string) (any, bool) {
 	return cached, true
 }
 
+// Set sets the value for the given key in the cache.
 func (s *cacheStorage) Set(modelType reflect.Type, key string, value any) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -49,16 +51,19 @@ func (s *cacheStorage) Set(modelType reflect.Type, key string, value any) {
 	modelCache[key] = value
 }
 
+// Clean removes all entries for the given model type from the cache.
 func (s *cacheStorage) Clean(modelType reflect.Type) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	s.c[modelType] = make(map[string]any)
 }
 
+// NewCtxCache creates a new context with a cache.
 func NewCtxCache(ctx context.Context) context.Context {
 	return context.WithValue(ctx, contextCacheKey, &cacheStorage{mtx: &sync.Mutex{}, c: make(map[reflect.Type]map[string]any)})
 }
 
+// GetFromCtxCache returns the value for the given key in the cache.
 func GetFromCtxCache[TModel any](ctx context.Context, key string) (any, bool) {
 	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
@@ -69,6 +74,7 @@ func GetFromCtxCache[TModel any](ctx context.Context, key string) (any, bool) {
 	return storage.Get(mTypeOf, key)
 }
 
+// AppendToCtxCache sets the value for the given key in the cache.
 func AppendToCtxCache[TModel any](ctx context.Context, key string, value any) {
 	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
@@ -79,6 +85,7 @@ func AppendToCtxCache[TModel any](ctx context.Context, key string, value any) {
 	storage.Set(mTypeOf, key, value)
 }
 
+// CleanupCtxCache removes all entries for the given model type from the cache.
 func CleanupCtxCache[TModel any](ctx context.Context) {
 	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
