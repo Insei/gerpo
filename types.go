@@ -5,9 +5,11 @@ import (
 
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/query"
+	"github.com/insei/gerpo/types"
 )
 
 type Repository[TModel any] interface {
+	GetColumns() *types.ColumnsStorage
 	GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error)
 	GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListUserHelper[TModel])) (models []*TModel, err error)
 	Count(ctx context.Context, qFns ...func(m *TModel, h query.CountUserHelper[TModel])) (count uint64, err error)
