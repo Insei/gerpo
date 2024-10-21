@@ -101,6 +101,8 @@ type WhereOperation interface {
 	GTE(val any) ANDOR
 	LT(val any) ANDOR
 	LTE(val any) ANDOR
+	IN(vals ...any) ANDOR
+	NIN(vals ...any) ANDOR
 }
 type OrderOperation interface {
 	DESC() OrderTarget
