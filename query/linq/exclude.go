@@ -24,10 +24,8 @@ func NewExcludeBuilder(core *CoreBuilder) *ExcludeBuilder {
 }
 
 func (b *ExcludeBuilder) Exclude(fieldPtrs ...any) {
-	excludedCols := make([]types.Column, 0, len(fieldPtrs))
 	for _, fieldPtr := range fieldPtrs {
 		col := b.GetColumn(fieldPtr)
-		excludedCols = append(excludedCols, col)
 		b.opts = append(b.opts, func(e ColumnsExcluder) {
 			e.Exclude(col)
 		})
