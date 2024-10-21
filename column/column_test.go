@@ -105,7 +105,9 @@ func TestColumnGetField(t *testing.T) {
 
 	field2 := c.GetField()
 
-	assert.NotNil(t, field2)
+	if field2 != field {
+		t.Errorf("Expected field %v, got %v", field, field2)
+	}
 }
 
 func TestColumnName(t *testing.T) {
