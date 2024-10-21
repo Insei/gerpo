@@ -95,7 +95,7 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentUserHelper[TModel])) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if queryFn != nil {
-			o.persistent.HandleFn(queryFn)
+			o.query.Persistent(queryFn)
 		}
 	})
 }
