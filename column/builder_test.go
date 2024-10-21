@@ -19,8 +19,11 @@ func TestBuilderWithAlias(t *testing.T) {
 	builder := &Builder{
 		field: field,
 	}
-	builder2 := builder.WithAlias("testAlias")
-	assert.Equal(t, builder, builder2)
+
+	builder = builder.WithAlias("testAlias")
+	if len(builder.opts) == 0 {
+		t.Errorf("Expected opts to be set")
+	}
 }
 
 func TestBuilderWithTable(t *testing.T) {
@@ -41,8 +44,11 @@ func TestBuilderWithColumnName(t *testing.T) {
 	builder := &Builder{
 		field: field,
 	}
-	builder2 := builder.WithColumnName("testColumnName")
-	assert.Equal(t, builder, builder2)
+
+	builder = builder.WithColumnName("testColumnName")
+	if len(builder.opts) == 0 {
+		t.Errorf("Expected opts to be set")
+	}
 }
 
 func TestBuilderWithInsertProtection(t *testing.T) {
@@ -52,8 +58,11 @@ func TestBuilderWithInsertProtection(t *testing.T) {
 	builder := &Builder{
 		field: field,
 	}
-	builder2 := builder.WithInsertProtection()
-	assert.Equal(t, builder, builder2)
+
+	builder = builder.WithInsertProtection()
+	if len(builder.opts) == 0 {
+		t.Errorf("Expected opts to be set")
+	}
 }
 
 func TestBuilderWithUpdateProtection(t *testing.T) {
@@ -63,8 +72,11 @@ func TestBuilderWithUpdateProtection(t *testing.T) {
 	builder := &Builder{
 		field: field,
 	}
-	builder2 := builder.WithUpdateProtection()
-	assert.Equal(t, builder, builder2)
+
+	builder = builder.WithUpdateProtection()
+	if len(builder.opts) == 0 {
+		t.Errorf("Expected opts to be set")
+	}
 }
 
 func TestBuilderBuild(t *testing.T) {
@@ -74,6 +86,7 @@ func TestBuilderBuild(t *testing.T) {
 	builder := &Builder{
 		field: field,
 	}
+
 	columns := builder.Build()
 	assert.NotEmpty(t, columns)
 }
