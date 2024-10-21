@@ -35,15 +35,19 @@ func (f OrderDirectionFn) DESC() types.OrderTarget {
 	return f(types.OrderDirectionDESC)
 }
 
-func (q *OrderBuilder) Field(fieldPtr any) types.OrderOperation {
-	col := q.core.GetColumn(fieldPtr)
+func (q *OrderBuilder) Column(column types.Column) types.OrderOperation {
 	return OrderDirectionFn(func(direction types.OrderDirection) *OrderBuilder {
 		q.opts = append(q.opts, func(o Order) {
-			err := o.OrderByColumn(col, direction)
+			err := o.OrderByColumn(column, direction)
 			if err != nil {
 				panic(err)
 			}
 		})
 		return q
 	})
+}
+
+func (q *OrderBuilder) Field(fieldPtr any) types.OrderOperation {
+	col := q.core.GetColumn(fieldPtr)
+	return q.Column(col)
 }
