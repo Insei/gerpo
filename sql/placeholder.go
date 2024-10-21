@@ -50,7 +50,7 @@ func unwrapConnector(connector any, connectorFields fmap.Storage) any {
 	return connectorUnwrapField.Get(connector)
 }
 
-func DeterminePlaceHolder(db *sql.DB) Placeholder {
+func determinePlaceHolder(db *sql.DB) Placeholder {
 	return PostgresPlaceholder
 	dbFields, err := fmap.GetFrom(db)
 	if err != nil {

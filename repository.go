@@ -67,7 +67,7 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 
 	repo := &repository[TModel]{
 		persistent:           query.NewPersistentHelper[TModel](coreBuilder),
-		executor:             sql.NewExecutor[TModel](db, sql.DeterminePlaceHolder(db)),
+		executor:             sql.NewExecutor[TModel](db),
 		linqCore:             linq.NewCoreBuilder(model, columns),
 		strSQLBuilderFactory: sql.NewStringBuilderFactory(table, columns),
 		softDelete:           make(map[types.Column]func(ctx context.Context) any),

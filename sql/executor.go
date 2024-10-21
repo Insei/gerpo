@@ -16,10 +16,10 @@ type Executor[TModel any] struct {
 	placeholder Placeholder
 }
 
-func NewExecutor[TModel any](db *dbsql.DB, placeholder Placeholder) *Executor[TModel] {
+func NewExecutor[TModel any](db *dbsql.DB) *Executor[TModel] {
 	return &Executor[TModel]{
 		db:          db,
-		placeholder: placeholder,
+		placeholder: determinePlaceHolder(db),
 	}
 }
 
@@ -112,7 +112,7 @@ func (e *Executor[TModel]) Update(ctx context.Context, model *TModel, sql *Strin
 	for i, cl := range columns {
 		values[i] = cl.GetField().Get(model)
 	}
-	values = append(values, sql.WhereBuilder().values...)
+	values = append(values, sql.WhereBuilder().Values()...)
 	result, err := e.db.ExecContext(ctx, e.placeholder(sql.UpdateSQL()), values...)
 	if err != nil {
 		return 0, err
