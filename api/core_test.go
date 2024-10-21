@@ -120,28 +120,37 @@ func TestName(t *testing.T) {
 	stor.Add(column.New(fields.MustFind("Age"), column.WithTable("test")))
 	stor.Add(column.New(fields.MustFind("PtrName"), column.WithTable("test")))
 
-	c, err := NewAPICore[test, testDto](stor)
+	apiCore, err := NewAPICore[test, testDto](stor)
 	if err != nil {
 		t.Fatal(err)
 	}
-	sorts := c.GetAvailableSorts()
-	filters := c.GetAvailableFilters()
+	//specifications
+	sorts := apiCore.GetAvailableSorts()
+	filters := apiCore.GetAvailableFilters()
 	_, _ = sorts, filters
-	err = c.ValidateFilters("id:in:1,2,3,4,5,6||{id:eq:8||id:eq:9}$$ptr_name:ct:test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = c.ValidateSorts("id-,age+,age1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	apl := c.NewApplier()
 
+	// Validations
+	err = apiCore.ValidateFilters("id:in:1,2,3,4,5,6||{id:eq:8||id:eq:9}$$ptr_name:ct:test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = apiCore.ValidateSorts("id-,age+,age")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Real test
 	whereBuilder := linq.NewWhereBuilder(linq.NewCoreBuilder(model, stor))
-
-	apl.ApplyFilters("id:in:1,2,3,4,5,6||{id:eq:8||id:eq:9}$$ptr_name:ct:test", whereBuilder)
+	apiCore.ApplyFilters("id:in:1,2,3,4,5,6||{id:eq:8||id:eq:9}$$ptr_name:ct:test", whereBuilder)
 	builder := sql.NewStringBuilder(context.Background(), "test", stor)
 	whereBuilder.Apply(builder.WhereBuilder())
-	_ = err
-	fmt.Print(err)
+
+	// Example of Usage
+	// Validate filters and sorts before repository calls begins
+	//var repo gerpo.Repository[test]
+	//models, err := repo.GetList(context.Background(), func(m *test, h query.GetListUserHelper[test]) {
+	//	apiCore.ApplyFilters("id:in:1,2,3,4,5,6||{id:eq:8||id:eq:9}$$ptr_name:ct:test", h.Where())
+	//	apiCore.ApplySorts("id-,age+,age", h.OrderBy())
+	//})
+	//_ = models
 }

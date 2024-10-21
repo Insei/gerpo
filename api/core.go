@@ -250,12 +250,6 @@ func (c *core) initDefaultFields(storage *types.ColumnsStorage, dto, model any) 
 	return nil
 }
 
-func (c *core) NewApplier() Applier {
-	return &applier{
-		factory: c,
-	}
-}
-
 func NewAPICore[TModel, TDto any](columns *types.ColumnsStorage, opts ...APIConnectorOption[TModel]) (Core, error) {
 	dto := new(TDto)
 	model := new(TModel)
@@ -280,7 +274,7 @@ func NewAPICore[TModel, TDto any](columns *types.ColumnsStorage, opts ...APIConn
 	return c, nil
 }
 
-func (c *applier) ApplyFilters(filters string, target types.WhereTarget) {
+func (c *core) ApplyFilters(filters string, target types.WhereTarget) {
 	for lastInd, i := 0, 0; i < len(filters); i++ {
 		switch filters[i : i+1] {
 		case "{":
@@ -301,7 +295,7 @@ func (c *applier) ApplyFilters(filters string, target types.WhereTarget) {
 			lastInd += 2
 			i = lastInd
 		case "|":
-			col, op, val, err := c.factory.parseCondition(filters[lastInd:i])
+			col, op, val, err := c.parseCondition(filters[lastInd:i])
 			if err != nil {
 				panic(err)
 			}
@@ -309,7 +303,7 @@ func (c *applier) ApplyFilters(filters string, target types.WhereTarget) {
 			lastInd = i + 2
 			i++
 		case "$":
-			col, op, val, err := c.factory.parseCondition(filters[lastInd:i])
+			col, op, val, err := c.parseCondition(filters[lastInd:i])
 			if err != nil {
 				panic(err)
 			}
@@ -318,7 +312,7 @@ func (c *applier) ApplyFilters(filters string, target types.WhereTarget) {
 			i++
 		default:
 			if i == len(filters)-1 && lastInd < len(filters)-1 {
-				col, op, val, err := c.factory.parseCondition(filters[lastInd:])
+				col, op, val, err := c.parseCondition(filters[lastInd:])
 				if err != nil {
 					panic(err)
 				}
@@ -329,7 +323,7 @@ func (c *applier) ApplyFilters(filters string, target types.WhereTarget) {
 	}
 }
 
-func (c *applier) ApplySorts(sorts string, target types.OrderTarget) {
+func (c *core) ApplySorts(sorts string, target types.OrderTarget) {
 	sorts = strings.TrimSpace(sorts)
 	sortsArr := strings.Split(sorts, ",")
 	for _, jsonSortTag := range sortsArr {
@@ -338,7 +332,7 @@ func (c *applier) ApplySorts(sorts string, target types.OrderTarget) {
 		if isASC || isDESC {
 			jsonSortTag = jsonSortTag[0 : len(jsonSortTag)-1]
 		}
-		col, ok := c.factory.columns[jsonSortTag]
+		col, ok := c.columns[jsonSortTag]
 		if !ok {
 			continue
 		}
