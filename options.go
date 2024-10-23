@@ -58,7 +58,39 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 				return
 			}
 			wrap := o.afterSelect
-			o.afterSelect = func(ctx context.Context, model []*TModel) {
+			o.afterSelect = func(ctx context.Context, models []*TModel) {
+				wrap(ctx, models)
+				fn(ctx, models)
+			}
+		}
+	})
+}
+
+func WithAfterInsert[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) {
+		if fn != nil {
+			if o.afterInsert == nil {
+				o.afterInsert = fn
+				return
+			}
+			wrap := o.afterInsert
+			o.afterInsert = func(ctx context.Context, model *TModel) {
+				wrap(ctx, model)
+				fn(ctx, model)
+			}
+		}
+	})
+}
+
+func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) {
+		if fn != nil {
+			if o.afterUpdate == nil {
+				o.afterUpdate = fn
+				return
+			}
+			wrap := o.afterUpdate
+			o.afterUpdate = func(ctx context.Context, model *TModel) {
 				wrap(ctx, model)
 				fn(ctx, model)
 			}

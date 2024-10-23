@@ -32,10 +32,11 @@ type testDto struct {
 }
 
 type repository[TModel any] struct {
-
 	// Callbacks and Hooks
 	beforeInsert func(ctx context.Context, model *TModel)
 	beforeUpdate func(ctx context.Context, model *TModel)
+	afterInsert  func(ctx context.Context, model *TModel)
+	afterUpdate  func(ctx context.Context, model *TModel)
 	afterSelect  func(ctx context.Context, models []*TModel)
 
 	// Columns and fields
@@ -48,14 +49,20 @@ type repository[TModel any] struct {
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
-	if repo.afterSelect == nil {
-		repo.afterSelect = func(_ context.Context, models []*TModel) {}
-	}
 	if repo.beforeInsert == nil {
 		repo.beforeInsert = func(_ context.Context, model *TModel) {}
 	}
 	if repo.beforeUpdate == nil {
 		repo.beforeUpdate = func(_ context.Context, model *TModel) {}
+	}
+	if repo.afterInsert == nil {
+		repo.afterInsert = func(_ context.Context, model *TModel) {}
+	}
+	if repo.afterUpdate == nil {
+		repo.afterUpdate = func(_ context.Context, model *TModel) {}
+	}
+	if repo.afterSelect == nil {
+		repo.afterSelect = func(_ context.Context, models []*TModel) {}
 	}
 }
 
@@ -119,7 +126,9 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.beforeInsert(ctx, model)
 	r.query.ApplyInsert(strSQLBuilder, qFns...)
-	return r.executor.InsertOne(ctx, model, strSQLBuilder)
+	err = r.executor.InsertOne(ctx, model, strSQLBuilder)
+	r.afterInsert(ctx, model)
+	return err
 }
 
 func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateUserHelper[TModel])) (err error) {
@@ -127,6 +136,7 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	r.beforeUpdate(ctx, model)
 	r.query.ApplyUpdate(strSQLBuilder, qFns...)
 	_, err = r.executor.Update(ctx, model, strSQLBuilder)
+	r.afterUpdate(ctx, model)
 	return err
 }
 
