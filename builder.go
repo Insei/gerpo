@@ -18,6 +18,7 @@ type Builder[TModel any] interface {
 	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
 	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	WithErrorTransformer(fn func(err error) error) Builder[TModel]
 	Build() (Repository[TModel], error)
 }
 
@@ -98,6 +99,11 @@ func (b *builder[TModel]) AfterUpdate(fn func(ctx context.Context, m *TModel)) B
 
 func (b *builder[TModel]) AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterInsert[TModel](fn))
+	return b
+}
+
+func (b *builder[TModel]) WithErrorTransformer(fn func(err error) error) Builder[TModel] {
+	b.opts = append(b.opts, WithErrorTransformer[TModel](fn))
 	return b
 }
 

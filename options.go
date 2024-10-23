@@ -105,3 +105,11 @@ func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentUserHelper[
 		}
 	})
 }
+
+func WithErrorTransformer[TModel any](fn func(err error) error) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) {
+		if fn != nil {
+			o.errorTransformer = fn
+		}
+	})
+}
