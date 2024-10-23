@@ -56,8 +56,10 @@ func genINFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
 		anyArr := (*[]any)(fPtr)
-		if anyArr != nil && len(*anyArr) < 9000 {
-			return fmt.Sprintf("%s IN (%s)", query, strings.Repeat("?", len(*anyArr))), true
+		if anyArr != nil && len(*anyArr) > 0 && len(*anyArr) < 9000 {
+			placeholders := strings.Repeat("?,", len(*anyArr))
+			placeholders = placeholders[:len(placeholders)-1]
+			return fmt.Sprintf("%s IN (%s)", query, placeholders), true
 		}
 		return "", false
 	}
@@ -66,8 +68,10 @@ func genNINFn(query string) func(ctx context.Context, value any) (string, bool) 
 	return func(ctx context.Context, value any) (string, bool) {
 		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
 		anyArr := (*[]any)(fPtr)
-		if anyArr != nil && len(*anyArr) < 9000 {
-			return fmt.Sprintf("%s NOT IN (%s)", query, strings.Repeat("?", len(*anyArr))), true
+		if anyArr != nil && len(*anyArr) > 0 && len(*anyArr) < 9000 {
+			placeholders := strings.Repeat("?,", len(*anyArr))
+			placeholders = placeholders[:len(placeholders)-1]
+			return fmt.Sprintf("%s NOT IN (%s)", query, placeholders), true
 		}
 		return "", false
 	}
@@ -180,9 +184,11 @@ func (b *StringWhereBuilder) OR() {
 	b.sql += " OR "
 }
 
-func (b *StringWhereBuilder) AppendSQL(sql string, values ...any) {
+func (b *StringWhereBuilder) AppendSQLWithValues(sql string, appendValue bool, value any) {
 	b.sql += sql
-	b.values = append(b.values, values...)
+	if appendValue {
+		b.values = append(b.values, value)
+	}
 }
 
 func (b *StringWhereBuilder) AppendCondition(cl types.Column, operation types.Operation, val any) error {
@@ -190,13 +196,20 @@ func (b *StringWhereBuilder) AppendCondition(cl types.Column, operation types.Op
 	if !ok {
 		return fmt.Errorf("for field %s whereSQL %s option is not available", cl.GetField().GetStructPath(), operation)
 	}
+
 	sql, appendValue, err := filterFn(b.ctx, val)
 	if err != nil {
 		return err
 	}
 	b.sql += sql
 	if appendValue {
-		b.values = append(b.values, val)
+		if values, ok := val.([]any); ok {
+			for _, v := range values {
+				b.values = append(b.values, v)
+			}
+		} else {
+			b.values = append(b.values, val)
+		}
 	}
 	return nil
 }

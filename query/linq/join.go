@@ -2,6 +2,7 @@ package linq
 
 import (
 	"context"
+	"strings"
 
 	"github.com/insei/gerpo/sql"
 )
@@ -26,7 +27,11 @@ func (q *JoinBuilder) Apply(b *sql.StringJoinBuilder) {
 func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
 	q.opts = append(q.opts, func(builder *sql.StringJoinBuilder) {
 		builder.JOIN(func(ctx context.Context) string {
-			return "LEFT JOIN " + leftJoinFn(ctx)
+			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
+			if leftLoinStr != "" {
+				return "LEFT JOIN " + leftLoinStr
+			}
+			return ""
 		})
 	})
 }

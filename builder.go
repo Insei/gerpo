@@ -66,11 +66,6 @@ func (b *Builder[TModel]) WithQuery(queryFn func(m *TModel, h query.PersistentUs
 	return b
 }
 
-//func (b *Builder[TModel]) LeftJoin(leftJoinFn func(ctx context.Context) string) *Builder[TModel] {
-//	b.opts = append(b.opts, WithLeftJoin[TModel](leftJoinFn))
-//	return b
-//}
-
 func (b *Builder[TModel]) BeforeInsert(fn func(ctx context.Context, m *TModel)) *Builder[TModel] {
 	b.opts = append(b.opts, WithBeforeInsert[TModel](fn))
 	return b
@@ -80,11 +75,6 @@ func (b *Builder[TModel]) BeforeUpdate(fn func(ctx context.Context, m *TModel)) 
 	b.opts = append(b.opts, WithBeforeUpdate[TModel](fn))
 	return b
 }
-
-//func (b *Builder[TModel]) SoftDelete(fieldPtrFn func(m *TModel) any, valueFn func(ctx context.Context) any) *Builder[TModel] {
-//	b.opts = append(b.opts, WithSoftDelete[TModel](fieldPtrFn, valueFn))
-//	return b
-//}
 
 func (b *Builder[TModel]) AfterSelect(fn func(ctx context.Context, models []*TModel)) *Builder[TModel] {
 	b.opts = append(b.opts, WithAfterSelect[TModel](fn))

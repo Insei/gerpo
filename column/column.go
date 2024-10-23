@@ -23,7 +23,7 @@ func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Contex
 }
 
 func (c *column) IsAllowedAction(act types.SQLAction) bool {
-	return slices.Contains(c.base.AllowedActions, act)
+	return c.base.IsAllowedAction(act)
 }
 
 func (c *column) ToSQL(ctx context.Context) string {
@@ -94,7 +94,8 @@ func New(field fmap.Field, opts ...Option) types.Column {
 	for op, filterFn := range filters {
 		c.base.Filters.AddFilterFn(op, filterFn)
 	}
-	c.base.AllowedActions = []types.SQLAction{types.SQLActionInsert, types.SQLActionSelect, types.SQLActionUpdate, types.SQLActionSort}
+	c.base.AllowedActions = []types.SQLAction{types.SQLActionInsert, types.SQLActionSelect, types.SQLActionUpdate,
+		types.SQLActionSort, types.SQLActionGroup}
 	c.base.AllowedActions = slices.DeleteFunc(c.base.AllowedActions, func(action types.SQLAction) bool {
 		return slices.Contains(forOpts.notAvailActions, action)
 	})

@@ -104,8 +104,8 @@ func (c *ColumnsStorage) Get(f fmap.Field) (Column, bool) {
 	return column, ok
 }
 
-func (c *ColumnsStorage) Add(f fmap.Field, column Column) {
-	c.m[f] = column
+func (c *ColumnsStorage) Add(column Column) {
+	c.m[column.GetField()] = column
 	c.s = append(c.s, column)
 	if column.IsAllowedAction(SQLActionInsert) {
 		c.act[SQLActionInsert] = append(c.act[SQLActionInsert], column)

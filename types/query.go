@@ -101,6 +101,9 @@ type WhereOperation interface {
 	GTE(val any) ANDOR
 	LT(val any) ANDOR
 	LTE(val any) ANDOR
+	IN(vals ...any) ANDOR
+	NIN(vals ...any) ANDOR
+	OP(operation Operation, val any) ANDOR
 }
 type OrderOperation interface {
 	DESC() OrderTarget
@@ -109,6 +112,7 @@ type OrderOperation interface {
 
 type OrderTarget interface {
 	Field(fieldPtr any) OrderOperation
+	Column(col Column) OrderOperation
 }
 
 type GroupTarget interface {
@@ -116,6 +120,7 @@ type GroupTarget interface {
 }
 
 type WhereTarget interface {
+	Column(col Column) WhereOperation
 	Field(fieldPtr any) WhereOperation
 	Group(func(t WhereTarget)) ANDOR
 }
