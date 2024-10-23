@@ -196,6 +196,9 @@ func (c *core) link(col types.Column, dtoField fmap.Field) error {
 	if key == "" {
 		return nil
 	}
+	if col.IsAllowedAction(types.SQLActionSort) {
+		c.availSorts = append(c.availSorts, key)
+	}
 	operations := col.GetAvailableFilterOperations()
 	if len(operations) < 1 {
 		return nil
