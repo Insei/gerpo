@@ -3,6 +3,7 @@ package gerpo
 import (
 	"context"
 	dbsql "database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,11 +33,13 @@ type testDto struct {
 }
 
 type repository[TModel any] struct {
-
 	// Callbacks and Hooks
-	beforeInsert func(ctx context.Context, model *TModel)
-	beforeUpdate func(ctx context.Context, model *TModel)
-	afterSelect  func(ctx context.Context, models []*TModel)
+	beforeInsert     func(ctx context.Context, model *TModel)
+	beforeUpdate     func(ctx context.Context, model *TModel)
+	afterInsert      func(ctx context.Context, model *TModel)
+	afterUpdate      func(ctx context.Context, model *TModel)
+	afterSelect      func(ctx context.Context, models []*TModel)
+	errorTransformer func(err error) error
 
 	// Columns and fields
 	strSQLBuilderFactory sql.StringBuilderFactory
@@ -48,14 +51,23 @@ type repository[TModel any] struct {
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
-	if repo.afterSelect == nil {
-		repo.afterSelect = func(_ context.Context, models []*TModel) {}
-	}
 	if repo.beforeInsert == nil {
 		repo.beforeInsert = func(_ context.Context, model *TModel) {}
 	}
 	if repo.beforeUpdate == nil {
 		repo.beforeUpdate = func(_ context.Context, model *TModel) {}
+	}
+	if repo.afterInsert == nil {
+		repo.afterInsert = func(_ context.Context, model *TModel) {}
+	}
+	if repo.afterUpdate == nil {
+		repo.afterUpdate = func(_ context.Context, model *TModel) {}
+	}
+	if repo.afterSelect == nil {
+		repo.afterSelect = func(_ context.Context, models []*TModel) {}
+	}
+	if repo.errorTransformer == nil {
+		repo.errorTransformer = func(err error) error { return err }
 	}
 }
 
@@ -92,6 +104,9 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 	r.query.ApplyGetFirst(strSQLBuilder, qFns...)
 	model, err = r.executor.GetOne(ctx, strSQLBuilder)
 	if err != nil {
+		if errors.Is(err, dbsql.ErrNoRows) {
+			return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrNotFound, err))
+		}
 		return nil, err
 	}
 	r.afterSelect(ctx, []*TModel{model})
@@ -103,7 +118,7 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 	r.query.ApplyGetList(strSQLBuilder, qFns...)
 	models, err = r.executor.GetMultiple(ctx, strSQLBuilder)
 	if err != nil {
-		return nil, err
+		return nil, r.errorTransformer(err)
 	}
 	r.afterSelect(ctx, models)
 	return models, nil
@@ -112,26 +127,50 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountUserHelper[TModel])) (count uint64, err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.query.ApplyCount(strSQLBuilder, qFns...)
-	return r.executor.Count(ctx, strSQLBuilder)
+	count, err = r.executor.Count(ctx, strSQLBuilder)
+	if err != nil {
+		return 0, r.errorTransformer(err)
+	}
+	return count, nil
 }
 
 func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertUserHelper[TModel])) (err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.beforeInsert(ctx, model)
 	r.query.ApplyInsert(strSQLBuilder, qFns...)
-	return r.executor.InsertOne(ctx, model, strSQLBuilder)
+	err = r.executor.InsertOne(ctx, model, strSQLBuilder)
+	if err != nil {
+		return r.errorTransformer(err)
+	}
+	r.afterInsert(ctx, model)
+	return nil
 }
 
 func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateUserHelper[TModel])) (err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.beforeUpdate(ctx, model)
 	r.query.ApplyUpdate(strSQLBuilder, qFns...)
-	_, err = r.executor.Update(ctx, model, strSQLBuilder)
-	return err
+	updatedCount, err := r.executor.Update(ctx, model, strSQLBuilder)
+	if err != nil {
+		return r.errorTransformer(err)
+	}
+	if updatedCount < 1 {
+		return r.errorTransformer(fmt.Errorf("nothing to update: %w", ErrNotFound))
+	}
+	r.afterUpdate(ctx, model)
+	return nil
+
 }
 
 func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.query.ApplyDelete(strSQLBuilder, qFns...)
-	return r.executor.Delete(ctx, strSQLBuilder)
+	count, err = r.executor.Delete(ctx, strSQLBuilder)
+	if err != nil {
+		return 0, r.errorTransformer(err)
+	}
+	if count < 1 {
+		return 0, fmt.Errorf("nothing to delete: %w", ErrNotFound)
+	}
+	return count, r.errorTransformer(err)
 }

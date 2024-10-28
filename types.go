@@ -2,11 +2,14 @@ package gerpo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
 )
+
+var ErrNotFound = errors.New("not found")
 
 type Repository[TModel any] interface {
 	GetColumns() *types.ColumnsStorage
