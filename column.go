@@ -61,7 +61,7 @@ func (b *ColumnBuilder[TModel]) build() *types.ColumnsStorage {
 				cl = b.Build()
 			}
 		}
-		b.columns.Add(cl.GetField(), cl)
+		b.columns.Add(cl)
 	}
 	return b.columns
 }

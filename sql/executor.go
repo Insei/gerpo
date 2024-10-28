@@ -9,17 +9,15 @@ import (
 	"github.com/insei/gerpo/cache"
 )
 
-var ErrNotFound = errors.New("entity was not found")
-
 type Executor[TModel any] struct {
 	db          *dbsql.DB
 	placeholder Placeholder
 }
 
-func NewExecutor[TModel any](db *dbsql.DB, placeholder Placeholder) *Executor[TModel] {
+func NewExecutor[TModel any](db *dbsql.DB) *Executor[TModel] {
 	return &Executor[TModel]{
 		db:          db,
-		placeholder: placeholder,
+		placeholder: determinePlaceHolder(db),
 	}
 }
 
@@ -42,9 +40,6 @@ func (e *Executor[TModel]) GetOne(ctx context.Context, sql *StringBuilder) (*TMo
 	sqlQuery = e.placeholder(sqlQuery)
 	err := e.db.QueryRowContext(ctx, sqlQuery, args...).Scan(pointers...)
 	if err != nil {
-		if errors.Is(err, dbsql.ErrNoRows) {
-			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
-		}
 		return nil, err
 	}
 	cache.AppendToCtxCache[TModel](ctx, fmt.Sprintf("%s%v", sqlQuery, args), *model)
@@ -112,7 +107,7 @@ func (e *Executor[TModel]) Update(ctx context.Context, model *TModel, sql *Strin
 	for i, cl := range columns {
 		values[i] = cl.GetField().Get(model)
 	}
-	values = append(values, sql.WhereBuilder().values...)
+	values = append(values, sql.WhereBuilder().Values()...)
 	result, err := e.db.ExecContext(ctx, e.placeholder(sql.UpdateSQL()), values...)
 	if err != nil {
 		return 0, err
@@ -121,10 +116,9 @@ func (e *Executor[TModel]) Update(ctx context.Context, model *TModel, sql *Strin
 	if err != nil {
 		return 0, err
 	}
-	if updatedRows == 0 {
-		return 0, ErrNotFound
+	if updatedRows > 0 {
+		cache.CleanupCtxCache[TModel](ctx)
 	}
-	cache.CleanupCtxCache[TModel](ctx)
 	return updatedRows, nil
 }
 
@@ -161,9 +155,8 @@ func (e *Executor[TModel]) Delete(ctx context.Context, sql *StringBuilder) (int6
 	if err != nil {
 		return 0, err
 	}
-	if deletedRows == 0 {
-		return 0, ErrNotFound
+	if deletedRows > 0 {
+		cache.CleanupCtxCache[TModel](ctx)
 	}
-	cache.CleanupCtxCache[TModel](ctx)
 	return deletedRows, nil
 }

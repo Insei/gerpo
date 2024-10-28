@@ -88,6 +88,15 @@ func (o OperationFn) EW(val any) types.ANDOR {
 func (o OperationFn) NEW(val any) types.ANDOR {
 	return o(types.OperationNEW, val)
 }
+func (o OperationFn) IN(vals ...any) types.ANDOR {
+	return o(types.OperationIN, vals)
+}
+func (o OperationFn) NIN(vals ...any) types.ANDOR {
+	return o(types.OperationNIN, vals)
+}
+func (o OperationFn) OP(operation types.Operation, val any) types.ANDOR {
+	return o(operation, val)
+}
 
 func (q *WhereBuilder) AND() types.WhereTarget {
 	q.opts = append(q.opts, func(a types.ConditionBuilder) {
@@ -103,15 +112,18 @@ func (q *WhereBuilder) OR() types.WhereTarget {
 	return q
 }
 
-func (q *WhereBuilder) Field(fieldPtr any) types.WhereOperation {
-	col := q.core.GetColumn(fieldPtr)
+func (q *WhereBuilder) Column(column types.Column) types.WhereOperation {
 	return OperationFn(func(operation types.Operation, val any) types.ANDOR {
 		q.opts = append(q.opts, func(a types.ConditionBuilder) {
-			err := a.AppendCondition(col, operation, val)
+			err := a.AppendCondition(column, operation, val)
 			if err != nil {
 				panic(err)
 			}
 		})
 		return q
 	})
+}
+
+func (q *WhereBuilder) Field(fieldPtr any) types.WhereOperation {
+	return q.Column(q.core.GetColumn(fieldPtr))
 }

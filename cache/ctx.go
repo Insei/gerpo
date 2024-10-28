@@ -11,7 +11,7 @@ type contextCacheKeyType struct {
 	key string
 }
 
-var contextCacheKey = contextCacheKeyType{
+var contextCacheKey = &contextCacheKeyType{
 	key: "ctx_cache_key",
 }
 
@@ -96,8 +96,8 @@ func CleanupCtxCache[TModel any](ctx context.Context) {
 	storage.Clean(mTypeOf)
 }
 
-// DisableKey disables key for cache reading
-func DisableKey(ctx context.Context, key string) {
+// DisableCtxKey disables key for context cache reading
+func DisableCtxKey(ctx context.Context, key string) {
 	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
 		return
@@ -107,8 +107,8 @@ func DisableKey(ctx context.Context, key string) {
 	storage.disabled = append(storage.disabled, key)
 }
 
-// RemoveDisabledKey removes disabled for key caching reading usage
-func RemoveDisabledKey(ctx context.Context, key string) {
+// RemoveCtxDisabledKey removes disabled for context key caching reading usage
+func RemoveCtxDisabledKey(ctx context.Context, key string) {
 	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
 		return

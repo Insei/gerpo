@@ -6,7 +6,7 @@ import (
 )
 
 type GetFirstUserHelper[TModel any] interface {
-	CountUserHelper[TModel]
+	Where() types.WhereTarget
 	Exclude(fieldsPtr ...any)
 	OrderBy() types.OrderTarget
 }
