@@ -100,8 +100,8 @@ func DisableCtxKey(ctx context.Context, key string) {
 	storage.disabled = append(storage.disabled, key)
 }
 
-// RemoveCtxDisabledKey removes disabled for context key caching reading usage
-func RemoveCtxDisabledKey(ctx context.Context, key string) {
+// EnableCtxKey removes disable for context key caching reading usage
+func EnableCtxKey(ctx context.Context, key string) {
 	storage, ok := ctx.Value(contextCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
 		return

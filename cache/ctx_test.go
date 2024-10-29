@@ -316,7 +316,7 @@ func TestDisableKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			DisableKey(tt.ctx, tt.key)
+			DisableCtxKey(tt.ctx, tt.key)
 			storage, _ := tt.ctx.Value(contextCacheKey).(*cacheStorage)
 			if storage != nil {
 				assert.Equal(t, tt.expected, storage.disabled)
@@ -362,7 +362,7 @@ func TestRemoveDisabledKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			RemoveDisabledKey(tt.ctx, tt.key)
+			EnableCtxKey(tt.ctx, tt.key)
 			storage, _ := tt.ctx.Value(contextCacheKey).(*cacheStorage)
 			if storage != nil {
 				assert.Equal(t, tt.expected, storage.disabled)
