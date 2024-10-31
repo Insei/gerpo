@@ -25,15 +25,16 @@ func deleteFunc[S ~[]E, E any](s S, del func(E) bool) S {
 	if i == -1 {
 		return s
 	}
-	// Don't start copying elements until we find one to delete.
-	for j := i + 1; j < len(s); j++ {
-		if v := s[j]; !del(v) {
-			s[i] = v
-			i++
+
+	var newSlice []E = make([]E, 0, len(s))
+
+	for j := 0; j < len(s); j++ {
+		if v := s[j]; !del(s[j]) {
+			newSlice = append(newSlice, v)
 		}
 	}
 
-	return s[:i]
+	return newSlice
 }
 
 func (b *StringSelectBuilder) Exclude(cols ...types.Column) {
