@@ -18,20 +18,22 @@ type Builder[TModel any] interface {
 	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
 	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	SoftDeletion(fn func(m *TModel, columns *SoftDeleteBuilder[TModel])) Builder[TModel]
 	WithErrorTransformer(fn func(err error) error) Builder[TModel]
 	Build() (Repository[TModel], error)
 }
 
 type builder[TModel any] struct {
-	db              *dbsql.DB
-	driver          string
-	placeholder     sql.Placeholder
-	table           string
-	opts            []Option[TModel]
-	model           *TModel
-	fields          fmap.Storage
-	columns         *types.ColumnsStorage
-	columnBuilderFn func(m *TModel, columns *ColumnBuilder[TModel])
+	db                *dbsql.DB
+	driver            string
+	placeholder       sql.Placeholder
+	table             string
+	opts              []Option[TModel]
+	model             *TModel
+	fields            fmap.Storage
+	columns           *types.ColumnsStorage
+	columnBuilderFn   func(m *TModel, columns *ColumnBuilder[TModel])
+	sdColumnBuilderFn func(m *TModel, columns *SoftDeleteBuilder[TModel])
 }
 
 type TableChooser[TModel any] interface {
@@ -69,6 +71,11 @@ func (b *builder[TModel]) DB(db *dbsql.DB) TableChooser[TModel] {
 
 func (b *builder[TModel]) Columns(fn func(m *TModel, columns *ColumnBuilder[TModel])) Builder[TModel] {
 	b.columnBuilderFn = fn
+	return b
+}
+
+func (b *builder[TModel]) SoftDeletion(fn func(m *TModel, columns *SoftDeleteBuilder[TModel])) Builder[TModel] {
+	b.sdColumnBuilderFn = fn
 	return b
 }
 
@@ -114,5 +121,5 @@ func (b *builder[TModel]) Build() (Repository[TModel], error) {
 	if b.table == "" {
 		return nil, errors.New("no table found")
 	}
-	return New(b.db, b.table, b.columnBuilderFn, b.opts...)
+	return New(b.db, b.table, b.columnBuilderFn, b.sdColumnBuilderFn, b.opts...)
 }
