@@ -192,6 +192,24 @@ func (b *StringWhereBuilder) AppendSQLWithValues(sql string, appendValue bool, v
 	}
 }
 
+func (b *StringWhereBuilder) appendValue(operation types.Operation, val any) {
+	switch values := val.(type) {
+	case []any:
+		if len(values) > 0 && operation == types.OperationIN || operation == types.OperationNIN {
+			firstValTypeOf := reflect.ValueOf(values[0])
+			if firstValTypeOf.Kind() == reflect.Slice {
+				for i := 0; i < firstValTypeOf.Len(); i++ {
+					b.values = append(b.values, firstValTypeOf.Index(i).Interface())
+				}
+			} else {
+				b.values = append(b.values, values...)
+			}
+		}
+	default:
+		b.values = append(b.values, val)
+	}
+}
+
 func (b *StringWhereBuilder) AppendCondition(cl types.Column, operation types.Operation, val any) error {
 	filterFn, ok := cl.GetFilterFn(operation)
 	if !ok {
@@ -203,14 +221,9 @@ func (b *StringWhereBuilder) AppendCondition(cl types.Column, operation types.Op
 		return err
 	}
 	b.sql += sql
-	if appendValue {
-		if values, ok := val.([]any); ok {
-			for _, v := range values {
-				b.values = append(b.values, v)
-			}
-		} else {
-			b.values = append(b.values, val)
-		}
+	if !appendValue {
+		return nil
 	}
+	b.appendValue(operation, val)
 	return nil
 }

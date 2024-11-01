@@ -37,6 +37,10 @@ func (c *column) AddFilterFn(operation Operation, sqlGenFn func(ctx context.Cont
 			}
 			arrVal := valuesOf.Index(0).Interface()
 			vType = reflect.TypeOf(arrVal)
+			if arrValTypeOf := reflect.TypeOf(arrVal); arrValTypeOf.Kind() == reflect.Slice {
+				value = reflect.ValueOf(value).Index(0).Interface()
+				vType = arrValTypeOf.Elem()
+			}
 		}
 		if c.field.GetDereferencedType() != vType {
 			return "", false, fmt.Errorf("whereSQL value type not a valid for field")
