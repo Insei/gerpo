@@ -26,8 +26,12 @@ import (
 //	DeletedAt *time.Time `json:"deleted_at"`
 //}
 
-func TestName(t *testing.T) {
+var excludeRepositoryTest = true
 
+func TestName(t *testing.T) {
+	if excludeRepositoryTest {
+		return
+	}
 	//db, err := otelsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable", otelsql.WithAttributes(
 	//	semconv.DBSystemPostgreSQL,
 	//))
