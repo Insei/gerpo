@@ -16,8 +16,9 @@ type Builder[TModel any] interface {
 	BeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	BeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
-	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	AfterDelete(fn func(ctx context.Context, m []*TModel)) Builder[TModel]
 	SoftDeletion(fn func(m *TModel, columns *SoftDeleteBuilder[TModel])) Builder[TModel]
 	WithErrorTransformer(fn func(err error) error) Builder[TModel]
 	Build() (Repository[TModel], error)
@@ -106,6 +107,11 @@ func (b *builder[TModel]) AfterUpdate(fn func(ctx context.Context, m *TModel)) B
 
 func (b *builder[TModel]) AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterInsert[TModel](fn))
+	return b
+}
+
+func (b *builder[TModel]) AfterDelete(fn func(ctx context.Context, m []*TModel)) Builder[TModel] {
+	b.opts = append(b.opts, WithAfterDelete[TModel](fn))
 	return b
 }
 

@@ -39,10 +39,12 @@ type repository[TModel any] struct {
 	beforeUpdate     func(ctx context.Context, model *TModel)
 	afterInsert      func(ctx context.Context, model *TModel)
 	afterUpdate      func(ctx context.Context, model *TModel)
+	afterDelete      func(ctx context.Context, model []*TModel)
 	afterSelect      func(ctx context.Context, models []*TModel)
 	errorTransformer func(err error) error
 
-	deleteFn func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error)
+	deleteFn        func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error)
+	getDeleteModels func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) ([]*TModel, error)
 
 	// Columns and fields
 	strSQLBuilderFactory sql.StringBuilderFactory
@@ -68,6 +70,12 @@ func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	}
 	if repo.afterSelect == nil {
 		repo.afterSelect = func(_ context.Context, models []*TModel) {}
+	}
+	if repo.afterDelete == nil {
+		repo.getDeleteModels = func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) ([]*TModel, error) {
+			return []*TModel{}, nil
+		}
+		repo.afterDelete = func(ctx context.Context, model []*TModel) {}
 	}
 	if repo.errorTransformer == nil {
 		repo.errorTransformer = func(err error) error { return err }
@@ -98,6 +106,8 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 	for _, opt := range opts {
 		opt.apply(repo)
 	}
+
+	useDeleteHook(repo)
 	replaceNilCallbacks(repo)
 	return repo, nil
 }
@@ -170,6 +180,11 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 }
 
 func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error) {
+	models, err := r.getDeleteModels(ctx, qFns...)
+	if err != nil {
+		return 0, r.errorTransformer(err)
+	}
+
 	count, err = r.deleteFn(ctx, qFns...)
 	if err != nil {
 		return 0, r.errorTransformer(err)
@@ -177,5 +192,6 @@ func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel,
 	if count < 1 {
 		return 0, fmt.Errorf("nothing to delete: %w", ErrNotFound)
 	}
+	r.afterDelete(ctx, models)
 	return count, r.errorTransformer(err)
 }
