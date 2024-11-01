@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
@@ -51,7 +52,7 @@ type repository[TModel any] struct {
 	columns              *types.ColumnsStorage
 
 	// SQL Query, execution and dependency
-	executor *sql.Executor[TModel]
+	executor executor.Executor[TModel]
 	query    *query.Bundle[TModel]
 }
 
@@ -97,7 +98,7 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 	repo := &repository[TModel]{
 		columns:              columns,
 		query:                query.NewBundle(model, columns),
-		executor:             sql.NewExecutor[TModel](db),
+		executor:             executor.New[TModel](db),
 		strSQLBuilderFactory: sql.NewStringBuilderFactory(table, columns),
 	}
 

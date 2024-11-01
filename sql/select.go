@@ -104,3 +104,11 @@ func (b *StringSelectBuilder) GetOffset() string {
 	}
 	return strconv.FormatUint(b.offset, 10)
 }
+
+func (b *StringSelectBuilder) GetColumnFieldPointers(model any) []any {
+	pointers := make([]any, 0, len(b.columns))
+	for _, col := range b.columns {
+		pointers = append(pointers, col.GetPtr(model))
+	}
+	return pointers
+}

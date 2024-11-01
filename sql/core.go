@@ -43,47 +43,49 @@ func (b *StringBuilder) JoinBuilder() *StringJoinBuilder {
 	return b.joinBuilder
 }
 
-func (b *StringBuilder) selectSQL(selectSQL, whereSQL, orderSQL, groupSQL, joinSQL,
-	limitNumStr, offsetNumStr string) (string, []any) {
-	sql := fmt.Sprintf("SELECT %s FROM %s", selectSQL, b.table)
+func (b *StringBuilder) selectSQLBase(selectedColumns string) string {
+	sql := fmt.Sprintf("SELECT %s FROM %s", selectedColumns, b.table)
+	whereSQL := b.whereBuilder.SQL()
 	if strings.TrimSpace(whereSQL) != "" {
 		sql += fmt.Sprintf(" WHERE %s", whereSQL)
 	}
-
+	orderSQL := b.selectBuilder.GetOrderSQL()
 	if strings.TrimSpace(orderSQL) != "" {
 		sql += fmt.Sprintf(" ORDER BY %s", orderSQL)
 	}
+	groupSQL := b.groupBuilder.SQL()
 	if strings.TrimSpace(groupSQL) != "" {
 		sql += fmt.Sprintf(" GROUP BY %s", groupSQL)
 	}
+	joinSQL := b.joinBuilder.SQL()
 	if strings.TrimSpace(joinSQL) != "" {
 		sql += fmt.Sprintf(" %s", joinSQL)
 	}
+	limitNumStr := b.selectBuilder.GetLimit()
 	if strings.TrimSpace(limitNumStr) != "" {
 		sql += fmt.Sprintf(" LIMIT %s", limitNumStr)
 	}
+	offsetNumStr := b.selectBuilder.GetOffset()
 	if strings.TrimSpace(offsetNumStr) != "" {
 		sql += fmt.Sprintf(" OFFSET %s", offsetNumStr)
 	}
-	return sql, b.whereBuilder.Values()
+	return sql
 }
 
-func (b *StringBuilder) CountSQL() (string, []any) {
+func (b *StringBuilder) countSQL() string {
 	b.selectBuilder.Limit(1)
-	return b.selectSQL("count(*) over() AS count", b.whereBuilder.sql,
-		b.selectBuilder.GetOrderSQL(), b.groupBuilder.SQL(), b.joinBuilder.SQL(), b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
+	return b.selectSQLBase("count(*) over() AS count")
 }
 
-func (b *StringBuilder) SelectSQL() (string, []any) {
-	return b.selectSQL(b.selectBuilder.GetSQL(), b.whereBuilder.SQL(), b.selectBuilder.GetOrderSQL(), b.groupBuilder.SQL(), b.joinBuilder.SQL(),
-		b.selectBuilder.GetLimit(), b.selectBuilder.GetOffset())
+func (b *StringBuilder) selectSQL() string {
+	return b.selectSQLBase(b.selectBuilder.GetSQL())
 }
 
-func (b *StringBuilder) InsertSQL() string {
+func (b *StringBuilder) insertSQL() string {
 	return fmt.Sprintf("INSERT INTO %s %s", b.table, b.insertBuilder.SQL())
 }
 
-func (b *StringBuilder) UpdateSQL() string {
+func (b *StringBuilder) updateSQL() string {
 	sql := fmt.Sprintf("UPDATE %s SET %s", b.table, b.updateBuilder.SQL())
 	if b.whereBuilder.sql != "" {
 		sql += fmt.Sprintf(" WHERE %s", b.whereBuilder.sql)
@@ -91,7 +93,7 @@ func (b *StringBuilder) UpdateSQL() string {
 	return sql
 }
 
-func (b *StringBuilder) DeleteSQL() string {
+func (b *StringBuilder) deleteSQL() string {
 	sql := fmt.Sprintf("DELETE FROM %s", b.table)
 	joinSQL := b.joinBuilder.SQL()
 	if strings.TrimSpace(joinSQL) != "" {
@@ -102,6 +104,49 @@ func (b *StringBuilder) DeleteSQL() string {
 	}
 	sql += fmt.Sprintf(" WHERE %s", b.whereBuilder.sql)
 	return sql
+}
+
+func (b *StringBuilder) GetStmtWithArgs(operation Operation) (string, []any) {
+	switch operation {
+	case Select:
+		return b.selectSQL(), b.WhereBuilder().Values()
+	case SelectOne:
+		b.selectBuilder.Limit(1)
+		return b.selectSQL(), b.WhereBuilder().Values()
+	case Count:
+		return b.countSQL(), b.WhereBuilder().Values()
+	case Delete:
+		return b.deleteSQL(), b.WhereBuilder().Values()
+	case Insert:
+		panic(fmt.Errorf("insert operation is not available"))
+	case Update:
+		panic(fmt.Errorf("update operation is not available"))
+	default:
+		panic(fmt.Errorf("unrecognized operation"))
+	}
+}
+
+func (b *StringBuilder) GetStmtWithArgsForModel(operation Operation, model any) (string, []any) {
+	switch operation {
+	case Insert:
+		values := b.InsertBuilder().GetColumnValues(model)
+		return b.insertSQL(), values
+	case Update:
+		values := b.UpdateBuilder().GetColumnValues(model)
+		whereValues := b.WhereBuilder().Values()
+		return b.updateSQL(), append(values, whereValues...)
+	default:
+		panic(fmt.Errorf("unrecognized or unsuported operation"))
+	}
+}
+
+func (b *StringBuilder) GetModelPointers(operation Operation, model any) []any {
+	switch operation {
+	case Select, SelectOne:
+		return b.selectBuilder.GetColumnFieldPointers(model)
+	default:
+		panic(fmt.Errorf("unrecognized or unsuported operation"))
+	}
 }
 
 func NewStringBuilder(ctx context.Context, table string, columns *types.ColumnsStorage) *StringBuilder {

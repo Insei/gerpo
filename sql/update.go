@@ -10,7 +10,7 @@ import (
 type StringUpdateBuilder struct {
 	ctx     context.Context
 	columns []types.Column
-	//TODO: Add columns cache for Get columns
+	//TODO: Add columns cacheBundle for Get columns
 }
 
 func (b *StringUpdateBuilder) Exclude(cols ...types.Column) {
@@ -26,8 +26,16 @@ func (b *StringUpdateBuilder) GetColumns() []types.Column {
 	return b.columns
 }
 
+func (b *StringUpdateBuilder) GetColumnValues(model any) []any {
+	values := make([]any, len(b.columns))
+	for i, col := range b.columns {
+		values[i] = col.GetField().Get(model)
+	}
+	return values
+}
+
 func (b *StringUpdateBuilder) SQL() string {
-	columns := b.GetColumns()
+	columns := b.columns
 	colsStr := ""
 	if len(columns) < 1 {
 		return colsStr

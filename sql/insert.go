@@ -27,6 +27,14 @@ func (b *StringInsertBuilder) GetColumns() []types.Column {
 	return b.columns
 }
 
+func (b *StringInsertBuilder) GetColumnValues(model any) []any {
+	values := make([]any, len(b.columns))
+	for i, col := range b.columns {
+		values[i] = col.GetField().Get(model)
+	}
+	return values
+}
+
 func (b *StringInsertBuilder) SQL() string {
 	columns := b.GetColumns()
 	sql := ""

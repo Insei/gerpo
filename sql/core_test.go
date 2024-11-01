@@ -75,89 +75,6 @@ func TestJoinBuilder(t *testing.T) {
 	assert.IsType(t, &StringJoinBuilder{}, joinBuilder)
 }
 
-func TestSelectSQL(t *testing.T) {
-	whereBuilder := &StringWhereBuilder{
-		values: []any{"value1", "value2"},
-	}
-
-	builder := &StringBuilder{
-		ctx:          context.Background(),
-		table:        "test_table",
-		whereBuilder: whereBuilder,
-	}
-
-	testCases := []struct {
-		name           string
-		selectSQL      string
-		whereSQL       string
-		orderSQL       string
-		groupSQL       string
-		joinSQL        string
-		limitNumStr    string
-		offsetNumStr   string
-		expectedSQL    string
-		expectedValues []any
-	}{
-		{
-			name:           "All clauses",
-			selectSQL:      "col1, col2",
-			whereSQL:       "col1 = ?",
-			orderSQL:       "col1 DESC",
-			groupSQL:       "col1",
-			joinSQL:        "JOIN other_table ON other_table.id = test_table.id",
-			limitNumStr:    "10",
-			offsetNumStr:   "5",
-			expectedSQL:    "SELECT col1, col2 FROM test_table WHERE col1 = ? ORDER BY col1 DESC GROUP BY col1 JOIN other_table ON other_table.id = test_table.id LIMIT 10 OFFSET 5",
-			expectedValues: []any{"value1", "value2"},
-		},
-		{
-			name:           "No where clause",
-			selectSQL:      "col1, col2",
-			whereSQL:       "",
-			orderSQL:       "col1 DESC",
-			groupSQL:       "col1",
-			joinSQL:        "JOIN other_table ON other_table.id = test_table.id",
-			limitNumStr:    "10",
-			offsetNumStr:   "5",
-			expectedSQL:    "SELECT col1, col2 FROM test_table ORDER BY col1 DESC GROUP BY col1 JOIN other_table ON other_table.id = test_table.id LIMIT 10 OFFSET 5",
-			expectedValues: []any{"value1", "value2"},
-		},
-		{
-			name:           "No limit or offset",
-			selectSQL:      "col1, col2",
-			whereSQL:       "col1 = ?",
-			orderSQL:       "col1 DESC",
-			groupSQL:       "col1",
-			joinSQL:        "JOIN other_table ON other_table.id = test_table.id",
-			limitNumStr:    "",
-			offsetNumStr:   "",
-			expectedSQL:    "SELECT col1, col2 FROM test_table WHERE col1 = ? ORDER BY col1 DESC GROUP BY col1 JOIN other_table ON other_table.id = test_table.id",
-			expectedValues: []any{"value1", "value2"},
-		},
-		{
-			name:           "Minimal select",
-			selectSQL:      "col1, col2",
-			whereSQL:       "",
-			orderSQL:       "",
-			groupSQL:       "",
-			joinSQL:        "",
-			limitNumStr:    "",
-			offsetNumStr:   "",
-			expectedSQL:    "SELECT col1, col2 FROM test_table",
-			expectedValues: []any{"value1", "value2"},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actualSQL, actualValues := builder.selectSQL(tc.selectSQL, tc.whereSQL, tc.orderSQL, tc.groupSQL, tc.joinSQL, tc.limitNumStr, tc.offsetNumStr)
-
-			assert.Equal(t, tc.expectedSQL, actualSQL)
-			assert.Equal(t, tc.expectedValues, actualValues)
-		})
-	}
-}
-
 func TestCountSQL(t *testing.T) {
 	testCases := []struct {
 		name           string
@@ -172,15 +89,13 @@ func TestCountSQL(t *testing.T) {
 		{
 			name: "Count with where clause",
 			whereBuilder: &StringWhereBuilder{
-				sql:    "col1 = ?",
-				values: []any{"value1"},
+				sql: "col1 = ?",
 			},
-			selectBuilder:  &StringSelectBuilder{},
-			groupBuilder:   &StringGroupBuilder{},
-			joinBuilder:    &StringJoinBuilder{},
-			table:          "test_table",
-			expectedSQL:    "SELECT count(*) over() AS count FROM test_table WHERE col1 = ? LIMIT 1",
-			expectedValues: []any{"value1"},
+			selectBuilder: &StringSelectBuilder{},
+			groupBuilder:  &StringGroupBuilder{},
+			joinBuilder:   &StringJoinBuilder{},
+			table:         "test_table",
+			expectedSQL:   "SELECT count(*) over() AS count FROM test_table WHERE col1 = ? LIMIT 1",
 		},
 		{
 			name: "Count with no where clause",
@@ -188,12 +103,11 @@ func TestCountSQL(t *testing.T) {
 				sql:    "",
 				values: []any{},
 			},
-			selectBuilder:  &StringSelectBuilder{},
-			groupBuilder:   &StringGroupBuilder{},
-			joinBuilder:    &StringJoinBuilder{},
-			table:          "test_table",
-			expectedSQL:    "SELECT count(*) over() AS count FROM test_table LIMIT 1",
-			expectedValues: []any{},
+			selectBuilder: &StringSelectBuilder{},
+			groupBuilder:  &StringGroupBuilder{},
+			joinBuilder:   &StringJoinBuilder{},
+			table:         "test_table",
+			expectedSQL:   "SELECT count(*) over() AS count FROM test_table LIMIT 1",
 		},
 	}
 
@@ -208,23 +122,21 @@ func TestCountSQL(t *testing.T) {
 				joinBuilder:   tc.joinBuilder,
 			}
 
-			actualSQL, actualValues := builder.CountSQL()
+			actualSQL := builder.countSQL()
 			assert.Equal(t, tc.expectedSQL, actualSQL)
-			assert.Equal(t, tc.expectedValues, actualValues)
 		})
 	}
 }
 
 func TestSelectSQLFunction(t *testing.T) {
 	testCases := []struct {
-		name           string
-		whereBuilder   *StringWhereBuilder
-		selectBuilder  *StringSelectBuilder
-		groupBuilder   *StringGroupBuilder
-		joinBuilder    *StringJoinBuilder
-		table          string
-		expectedSQL    string
-		expectedValues []any
+		name          string
+		whereBuilder  *StringWhereBuilder
+		selectBuilder *StringSelectBuilder
+		groupBuilder  *StringGroupBuilder
+		joinBuilder   *StringJoinBuilder
+		table         string
+		expectedSQL   string
 	}{
 		{
 			name: "Basic select with where and limit",
@@ -235,11 +147,10 @@ func TestSelectSQLFunction(t *testing.T) {
 			selectBuilder: &StringSelectBuilder{
 				limit: 10,
 			},
-			groupBuilder:   &StringGroupBuilder{},
-			joinBuilder:    &StringJoinBuilder{},
-			table:          "test_table",
-			expectedSQL:    "SELECT  FROM test_table WHERE col1 = ? LIMIT 10",
-			expectedValues: []any{"value1"},
+			groupBuilder: &StringGroupBuilder{},
+			joinBuilder:  &StringJoinBuilder{},
+			table:        "test_table",
+			expectedSQL:  "SELECT  FROM test_table WHERE col1 = ? LIMIT 10",
 		},
 		{
 			name: "Minimal select",
@@ -247,12 +158,11 @@ func TestSelectSQLFunction(t *testing.T) {
 				sql:    "",
 				values: []any{},
 			},
-			selectBuilder:  &StringSelectBuilder{},
-			groupBuilder:   &StringGroupBuilder{},
-			joinBuilder:    &StringJoinBuilder{},
-			table:          "test_table",
-			expectedSQL:    "SELECT  FROM test_table",
-			expectedValues: []any{},
+			selectBuilder: &StringSelectBuilder{},
+			groupBuilder:  &StringGroupBuilder{},
+			joinBuilder:   &StringJoinBuilder{},
+			table:         "test_table",
+			expectedSQL:   "SELECT  FROM test_table",
 		},
 	}
 
@@ -267,9 +177,8 @@ func TestSelectSQLFunction(t *testing.T) {
 				joinBuilder:   tc.joinBuilder,
 			}
 
-			actualSQL, actualValues := builder.SelectSQL()
+			actualSQL := builder.selectSQL()
 			assert.Equal(t, tc.expectedSQL, actualSQL)
-			assert.Equal(t, tc.expectedValues, actualValues)
 		})
 	}
 }
@@ -300,7 +209,7 @@ func TestInsertSQL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := tc.builder.InsertSQL()
+			result := tc.builder.insertSQL()
 			assert.Equal(t, tc.expectedResult, result)
 		})
 	}
@@ -346,7 +255,7 @@ func TestUpdateSQL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualSQL := tc.builder.UpdateSQL()
+			actualSQL := tc.builder.updateSQL()
 			assert.Equal(t, tc.expectedSQL, actualSQL)
 		})
 	}
@@ -405,9 +314,9 @@ func TestDeleteSQL(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.expectPanic {
-				assert.Panics(t, func() { tc.builder.DeleteSQL() })
+				assert.Panics(t, func() { tc.builder.deleteSQL() })
 			} else {
-				actualSQL := tc.builder.DeleteSQL()
+				actualSQL := tc.builder.deleteSQL()
 				assert.Equal(t, tc.expectedSQL, actualSQL)
 			}
 		})

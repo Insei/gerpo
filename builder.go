@@ -7,7 +7,6 @@ import (
 
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/query"
-	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
 
@@ -26,8 +25,6 @@ type Builder[TModel any] interface {
 
 type builder[TModel any] struct {
 	db                *dbsql.DB
-	driver            string
-	placeholder       sql.Placeholder
 	table             string
 	opts              []Option[TModel]
 	model             *TModel

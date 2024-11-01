@@ -239,13 +239,13 @@ func TestDeleteFunc(t *testing.T) {
 			name:     "Delete first occurrence",
 			input:    []int{1, 2, 3, 4, 5},
 			toDelete: func(v int) bool { return v == 3 },
-			expected: []int{4, 5},
+			expected: []int{1, 2, 4, 5},
 		},
 		{
 			name:     "Delete multiple occurrences",
 			input:    []int{1, 2, 3, 4, 5, 3, 6},
 			toDelete: func(v int) bool { return v == 3 },
-			expected: []int{4, 5, 6},
+			expected: []int{1, 2, 4, 5, 6},
 		},
 		{
 			name:     "No matches",
@@ -262,14 +262,14 @@ func TestDeleteFunc(t *testing.T) {
 		{
 			name:     "Delete all elements",
 			input:    []int{3, 3, 3},
-			toDelete: func(v int) bool { return v == 3 },
+			toDelete: func(v int) bool { return true },
 			expected: []int{},
 		},
 		{
 			name:     "Delete last element",
 			input:    []int{1, 2, 3, 4, 5},
 			toDelete: func(v int) bool { return v == 5 },
-			expected: []int{},
+			expected: []int{1, 2, 3, 4},
 		},
 		{
 			name:     "Delete first element",
