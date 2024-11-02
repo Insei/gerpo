@@ -117,6 +117,13 @@ func (r *repository[TModel]) GetColumns() *types.ColumnsStorage {
 	return r.columns
 }
 
+func (r *repository[TModel]) Tx(ctx context.Context, opts ...*dbsql.TxOptions) (context.Context, Tx, error) {
+	if len(opts) > 0 && opts[0] != nil {
+		return r.executor.Tx(ctx, opts[0])
+	}
+	return r.executor.Tx(ctx, nil)
+}
+
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.query.ApplyGetFirst(strSQLBuilder, qFns...)

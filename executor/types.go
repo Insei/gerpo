@@ -10,9 +10,15 @@ import (
 
 var ErrNoInsertedRows = fmt.Errorf("failed to insert: inserted 0 rows")
 
+type ExecQuery interface {
+	ExecContext(ctx context.Context, query string, args ...any) (dbsql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*dbsql.Rows, error)
+}
+
 type SQLDB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (dbsql.Result, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*dbsql.Rows, error)
+	BeginTx(ctx context.Context, opts *dbsql.TxOptions) (*dbsql.Tx, error)
 }
 
 type Executor[TModel any] interface {
@@ -22,4 +28,5 @@ type Executor[TModel any] interface {
 	Update(ctx context.Context, model *TModel, stmtModel sql.StmtModel) (int64, error)
 	Count(ctx context.Context, stmt sql.Stmt) (uint64, error)
 	Delete(ctx context.Context, stmt sql.Stmt) (int64, error)
+	Tx(ctx context.Context, opts *dbsql.TxOptions) (context.Context, *dbsql.Tx, error)
 }

@@ -79,6 +79,13 @@ func TestName(t *testing.T) {
 	repo, err := b.Build()
 
 	ctxCache := ctx.NewCtxCache(context.Background())
+	ctxCache, tx, err := repo.Tx(ctxCache)
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+	}()
 	_ = []int{1, 2, 3, 4, 5, 6}
 	list, err := repo.GetList(ctxCache, func(m *test, h query.GetListUserHelper[test]) {
 		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)
