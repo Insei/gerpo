@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/insei/gerpo/cache/ctx"
+	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/virtual"
 	//_ "github.com/jackc/pgx/v5/stdlib"
@@ -84,8 +85,16 @@ func TestName(t *testing.T) {
 		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)
 	})
 
+	tx, err := executor.BeginTx(ctxCache, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoTx, err := repo.Tx(tx)
+	if err != nil {
+		log.Fatal(err)
+	}
 	start := time.Now()
-	model, err := repo.GetFirst(ctxCache)
+	model, err := repoTx.GetFirst(ctxCache)
 	elapsed := time.Since(start)
 	if err != nil {
 		log.Print(err)
@@ -93,11 +102,16 @@ func TestName(t *testing.T) {
 	log.Printf("FIRST Repo db get one %s", elapsed)
 
 	start = time.Now()
-	model, err = repo.GetFirst(ctxCache, func(m *test, b query.GetFirstUserHelper[test]) {
+	model, err = repoTx.GetFirst(ctxCache, func(m *test, b query.GetFirstUserHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
 		b.OrderBy().Field(&m.Name).DESC()
 	})
+	err = repoTx.Insert(ctxCache, model)
+	if err != nil {
+		log.Print(err)
+	}
+	err = tx.Rollback()
 	elapsed = time.Since(start)
 	if err != nil {
 		log.Print(err)

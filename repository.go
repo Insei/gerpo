@@ -24,16 +24,6 @@ type test struct {
 	DeletedTest bool
 }
 
-type testDto struct {
-	ID        int        `json:"id"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
-	Name      string     `json:"name"`
-	Age       int        `json:"age"`
-	Bool      bool       `json:"bool"`
-	DeletedAt *time.Time `json:"deleted_at"`
-}
-
 type repository[TModel any] struct {
 	// Callbacks and Hooks
 	beforeInsert     func(ctx context.Context, model *TModel)
@@ -48,12 +38,12 @@ type repository[TModel any] struct {
 	getDeleteModels func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) ([]*TModel, error)
 
 	// Columns and fields
-	strSQLBuilderFactory sql.StringBuilderFactory
-	columns              *types.ColumnsStorage
+	columns *types.ColumnsStorage
 
 	// SQL Query, execution and dependency
-	executor executor.Executor[TModel]
-	query    *query.Bundle[TModel]
+	strSQLBuilderFactory sql.StringBuilderFactory
+	executor             executor.Executor[TModel]
+	query                *query.Bundle[TModel]
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
@@ -117,6 +107,16 @@ func (r *repository[TModel]) GetColumns() *types.ColumnsStorage {
 	return r.columns
 }
 
+func (r *repository[TModel]) Tx(tx *executor.Tx) (Repository[TModel], error) {
+	txExecutor, err := r.executor.Tx(tx)
+	if err != nil {
+		return nil, err
+	}
+	repocp := *r
+	repocp.executor = txExecutor
+	return &repocp, nil
+}
+
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
 	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
 	r.query.ApplyGetFirst(strSQLBuilder, qFns...)
@@ -177,7 +177,6 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	}
 	r.afterUpdate(ctx, model)
 	return nil
-
 }
 
 func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error) {

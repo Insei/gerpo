@@ -9,26 +9,9 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/insei/gerpo/cache"
 	"github.com/insei/gerpo/sql"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type mockDb struct {
-	mock.Mock
-}
-
-func (m *mockDb) ExecContext(ctx context.Context, query string, args ...any) (dbsql.Result, error) {
-	argsPassed := []interface{}{ctx, query}
-	argsPassed = append(argsPassed, args...)
-	rets := m.Called(argsPassed...)
-	return rets.Get(0).(dbsql.Result), rets.Error(1)
-}
-
-func (m *mockDb) QueryContext(_ context.Context, stmt string, args ...any) (*dbsql.Rows, error) {
-	argsPassed := []interface{}{stmt}
-	argsPassed = append(argsPassed, args...)
-	rets := m.Called(argsPassed...)
-	return rets.Get(0).(*dbsql.Rows), rets.Error(1)
-}
 
 type mockStmt struct {
 	mock.Mock
@@ -769,6 +752,96 @@ func TestDelete(t *testing.T) {
 			if err := mockDB.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
 			}
+		})
+	}
+}
+
+func TestGetExecQuery(t *testing.T) {
+	tests := []struct {
+		name                 string
+		ctx                  context.Context
+		getExecQueryReplaced func(ctx context.Context) ExecQuery
+		expectedExecQueryNil bool
+	}{
+		{
+			name:                 "Return original db instance",
+			ctx:                  context.Background(),
+			getExecQueryReplaced: nil,
+			expectedExecQueryNil: false,
+		},
+		{
+			name: "Return replaced ExecQuery",
+			ctx:  context.Background(),
+			getExecQueryReplaced: func(ctx context.Context) ExecQuery {
+				return nil
+			},
+			expectedExecQueryNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := &dbsql.DB{}
+			e := &executor[testModel]{
+				db:                   db,
+				getExecQueryReplaced: tt.getExecQueryReplaced,
+				placeholder:          func(s string) string { return s },
+			}
+			execQuery := e.getExecQuery(tt.ctx)
+			if (execQuery == nil) != tt.expectedExecQueryNil {
+				t.Errorf("executor.getExecQuery() is %v, but expected %v", e.getExecQuery(tt.ctx), nil)
+			}
+		})
+	}
+}
+
+func TestTx(t *testing.T) {
+	sameDB := &dbsql.DB{}
+	testCases := []struct {
+		description string
+		mockDB      func() *dbsql.DB
+		txDB        func() *dbsql.DB
+		expectedErr error
+	}{
+		{
+			description: "success - Tx db is the same with executor db",
+			mockDB: func() *dbsql.DB {
+				return sameDB
+			},
+			txDB: func() *dbsql.DB {
+				return sameDB
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "error - Tx db is not the same with executor db",
+			mockDB: func() *dbsql.DB {
+				return sameDB
+			},
+			txDB: func() *dbsql.DB {
+				return &dbsql.DB{}
+			},
+			expectedErr: ErrTxDBNotSame,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			// Prepare executor
+			db := test.mockDB()
+			e := New[any](db)
+
+			// Prepare Tx
+			txDb := test.txDB()
+			tx := &Tx{
+				db: txDb,
+			}
+
+			// Executing method
+			_, err := e.Tx(tx)
+
+			// Asserting
+			assert.Equal(t, test.expectedErr, err)
 		})
 	}
 }
