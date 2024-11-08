@@ -190,7 +190,7 @@ func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel,
 		return 0, r.errorTransformer(err)
 	}
 	if count < 1 {
-		return 0, fmt.Errorf("nothing to delete: %w", ErrNotFound)
+		return 0, r.errorTransformer(fmt.Errorf("nothing to delete: %w", ErrNotFound))
 	}
 	r.afterDelete(ctx, models)
 	return count, r.errorTransformer(err)
