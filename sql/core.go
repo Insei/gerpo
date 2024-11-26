@@ -45,6 +45,10 @@ func (b *StringBuilder) JoinBuilder() *StringJoinBuilder {
 
 func (b *StringBuilder) selectSQLBase(selectedColumns string) string {
 	sql := fmt.Sprintf("SELECT %s FROM %s", selectedColumns, b.table)
+	joinSQL := b.joinBuilder.SQL()
+	if strings.TrimSpace(joinSQL) != "" {
+		sql += fmt.Sprintf(" %s", joinSQL)
+	}
 	whereSQL := b.whereBuilder.SQL()
 	if strings.TrimSpace(whereSQL) != "" {
 		sql += fmt.Sprintf(" WHERE %s", whereSQL)
@@ -56,10 +60,6 @@ func (b *StringBuilder) selectSQLBase(selectedColumns string) string {
 	groupSQL := b.groupBuilder.SQL()
 	if strings.TrimSpace(groupSQL) != "" {
 		sql += fmt.Sprintf(" GROUP BY %s", groupSQL)
-	}
-	joinSQL := b.joinBuilder.SQL()
-	if strings.TrimSpace(joinSQL) != "" {
-		sql += fmt.Sprintf(" %s", joinSQL)
 	}
 	limitNumStr := b.selectBuilder.GetLimit()
 	if strings.TrimSpace(limitNumStr) != "" {
