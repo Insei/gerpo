@@ -17,7 +17,7 @@ import (
 func genEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		if value == nil {
-			return fmt.Sprintf("%s IS NULL", query), true
+			return fmt.Sprintf("%s IS NULL", query), false
 		}
 		return fmt.Sprintf("%s = ?", query), true
 	}
@@ -25,7 +25,7 @@ func genEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 func genNEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		if value == nil {
-			return fmt.Sprintf("%s IS NOT NULL", query), true
+			return fmt.Sprintf("%s IS NOT NULL", query), false
 		}
 		return fmt.Sprintf("%s != ?", query), true
 	}
@@ -114,6 +114,11 @@ func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) 
 
 func GetDefaultTypeFilters(field fmap.Field, query string) map[types.Operation]func(ctx context.Context, value any) (string, bool) {
 	filters := make(map[types.Operation]func(ctx context.Context, value any) (string, bool))
+	if field.GetType().Kind() == reflect.Ptr {
+		filters[types.OperationEQ] = genEQFn(query)
+		filters[types.OperationNEQ] = genNEQFn(query)
+	}
+
 	derefType := field.GetDereferencedType()
 	switch derefType.Kind() {
 	case reflect.Bool:

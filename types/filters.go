@@ -25,6 +25,12 @@ func NewFilterManagerForField(field fmap.Field) SQLFilterManager {
 func (c *column) AddFilterFn(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, bool)) {
 	c.avail = append(c.avail, operation)
 	c.operations[operation] = func(ctx context.Context, value any) (string, bool, error) {
+		if c.field.GetType().Kind() == reflect.Ptr && value == nil &&
+			(operation == OperationEQ || operation == OperationNEQ) {
+			sql, needAppendValues := sqlGenFn(ctx, value)
+			return sql, needAppendValues, nil
+		}
+
 		vType := reflect.TypeOf(value)
 		for vType.Kind() == reflect.Ptr {
 			vType = vType.Elem()
