@@ -19,6 +19,7 @@ type TestModel struct {
 	Bool    bool
 	Time    time.Time
 	UUID    uuid.UUID
+	TimePtr *time.Time
 }
 
 func TestGenEQFn(t *testing.T) {
@@ -43,7 +44,7 @@ func TestGenEQFn(t *testing.T) {
 			query:       "fieldType",
 			value:       nil,
 			expectedSQL: "fieldType IS NULL",
-			expectedOK:  true,
+			expectedOK:  false,
 		},
 	}
 
@@ -79,7 +80,7 @@ func TestGenNEQFn(t *testing.T) {
 			query:       "fieldType",
 			value:       nil,
 			expectedSQL: "fieldType IS NOT NULL",
-			expectedOK:  true,
+			expectedOK:  false,
 		},
 	}
 
@@ -531,6 +532,16 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationNEQ,
 				types.OperationIN,
 				types.OperationNIN,
+			},
+		},
+		{
+			name:      "Time ptr fieldType",
+			fieldName: "TimePtr",
+			expectedOps: []types.Operation{
+				types.OperationEQ,
+				types.OperationNEQ,
+				types.OperationLT,
+				types.OperationGT,
 			},
 		},
 	}
