@@ -75,7 +75,15 @@ func getDeleteFn[TModel any](r *repository[TModel], model *TModel, sdColumnsFn f
 				excludePointers := getExcludePointers(m, r.columns.AsSlice(), sdColumnsMap)
 				h.Exclude(excludePointers...)
 			})
+
+			// TODO: refactor multiple appliers
 			// Apply WHERE filters
+			tmpSqlBuilder := r.strSQLBuilderFactory.New(ctx)
+			r.query.ApplyDelete(tmpSqlBuilder, qFns...)
+			isQueryChanged := tmpSqlBuilder.WhereBuilder().SQL() != strSQLBuilder.WhereBuilder().SQL()
+			if isQueryChanged && strSQLBuilder.WhereBuilder().SQL() != "" {
+				strSQLBuilder.WhereBuilder().AND()
+			}
 			r.query.ApplyDelete(strSQLBuilder, qFns...)
 
 			return r.executor.Update(ctx, m, strSQLBuilder)
