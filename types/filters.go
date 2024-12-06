@@ -49,7 +49,7 @@ func (c *column) AddFilterFn(operation Operation, sqlGenFn func(ctx context.Cont
 			}
 		}
 		if c.field.GetDereferencedType() != vType {
-			return "", false, fmt.Errorf("whereSQL value type not a valid for field")
+			return "", false, fmt.Errorf("whereSQL value[%s] type not a valid for field \"%s\" of type [%s]. Value: %v", vType.Name(), c.field.GetName(), c.field.GetType().Name(), value)
 		}
 		sql, needAppendValues := sqlGenFn(ctx, value)
 		return sql, needAppendValues, nil
