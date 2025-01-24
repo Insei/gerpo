@@ -2,48 +2,61 @@ package query
 
 import (
 	"github.com/insei/gerpo/query/linq"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
-type GetFirstUserHelper[TModel any] interface {
+type GetFirstHelper[TModel any] interface {
 	Where() types.WhereTarget
 	Exclude(fieldsPtr ...any)
 	OrderBy() types.OrderTarget
 }
 
-type GetFirstHelper[TModel any] interface {
-	GetFirstUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h GetFirstUserHelper[TModel]))
+type GetFirstApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Columns() types.ExecutionColumns
+	Where() sqlpart.Where
+	Order() sqlpart.Order
 }
 
-type getFirstHelper[TModel any] struct {
-	*countHelper[TModel]
+type GetFirst[TModel any] struct {
+	baseModel *TModel
+
+	whereBuilder   *linq.WhereBuilder
+	orderBuilder   *linq.OrderBuilder
+	excludeBuilder *linq.ExcludeBuilder
 }
 
-func (h *getFirstHelper[TModel]) Exclude(fieldsPtr ...any) {
-	h.excludeBuilder.Exclude(fieldsPtr...)
+func (h *GetFirst[TModel]) Exclude(fieldPointers ...any) {
+	h.excludeBuilder.Exclude(fieldPointers...)
 }
 
-func (h *getFirstHelper[TModel]) OrderBy() types.OrderTarget {
+func (h *GetFirst[TModel]) Where() types.WhereTarget {
+	return h.whereBuilder
+}
+
+func (h *GetFirst[TModel]) OrderBy() types.OrderTarget {
 	return h.orderBuilder
 }
 
-func (h *getFirstHelper[TModel]) HandleFn(qFns ...func(m *TModel, h GetFirstUserHelper[TModel])) {
+func (h *GetFirst[TModel]) HandleFn(qFns ...func(m *TModel, h GetFirstHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel, h)
 	}
 }
 
-func newGetFirstHelper[TModel any](core *linq.CoreBuilder) *getFirstHelper[TModel] {
-	countH := newCountHelper[TModel](core)
-	countH.paginationBuilder.Size(1)
-	countH.paginationBuilder.Page(1)
-	return &getFirstHelper[TModel]{
-		countH,
-	}
+func (h *GetFirst[TModel]) Apply(applier GetFirstApplier) {
+	h.excludeBuilder.Apply(applier)
+	h.whereBuilder.Apply(applier)
+	h.orderBuilder.Apply(applier)
 }
 
-func NewGetFirstHelper[TModel any](core *linq.CoreBuilder) GetFirstHelper[TModel] {
-	return newGetFirstHelper[TModel](core)
+func NewGetFirst[TModel any](baseModel *TModel) *GetFirst[TModel] {
+	return &GetFirst[TModel]{
+		baseModel: baseModel,
+
+		whereBuilder:   linq.NewWhereBuilder(baseModel),
+		excludeBuilder: linq.NewExcludeBuilder(baseModel),
+		orderBuilder:   linq.NewOrderBuilder(baseModel),
+	}
 }

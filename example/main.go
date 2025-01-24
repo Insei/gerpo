@@ -1,52 +1,45 @@
-package gerpo
+package main
 
 import (
 	"context"
-	dbsql "database/sql"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
+
+	"github.com/insei/gerpo"
 	"github.com/insei/gerpo/cache/ctx"
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/virtual"
-	//_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/lib/pq"
 )
 
-//type test struct {
-//	ID        int        `json:"id"`
-//	CreatedAt time.Time  `json:"created_at"`
-//	UpdatedAt *time.Time `json:"updated_at"`
-//	Name      string     `json:"name"`
-//	Age       int        `json:"age"`
-//	Bool      bool       `json:"bool"`
-//	DeletedAt *time.Time `json:"deleted_at"`
-//}
+type test struct {
+	ID          int
+	CreatedAt   time.Time
+	UpdatedAt   *time.Time
+	Name        string
+	Age         int
+	Bool        bool
+	DeletedAt   *time.Time
+	DeletedTest bool
+}
 
-var excludeRepositoryTest = true
-
-func TestName(t *testing.T) {
-	if excludeRepositoryTest {
-		return
-	}
-	//db, err := otelsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable", otelsql.WithAttributes(
-	//	semconv.DBSystemPostgreSQL,
-	//))
-	db, err := dbsql.Open("postgres", "postgres://postgres:Admin@123@postgres.citmed:5432/test?sslmode=disable")
+func main() {
+	db, err := sql.Open("postgres", "postgres://postgres:Admin@123@localhost:5432/test?sslmode=disable")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
-	b := NewBuilder[test]().
+	b := gerpo.NewBuilder[test]().
 		DB(db).
 		Table("tests").
-		Columns(func(m *test, columns *ColumnBuilder[test]) {
+		Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
 			columns.Column(&m.ID).WithInsertProtection().WithUpdateProtection()
 			columns.Column(&m.CreatedAt).WithUpdateProtection()
 			columns.Column(&m.UpdatedAt).WithInsertProtection()
@@ -70,7 +63,7 @@ func TestName(t *testing.T) {
 			updAt := time.Now()
 			m.UpdatedAt = &updAt
 		}).
-		WithQuery(func(m *test, h query.PersistentUserHelper[test]) {
+		WithQuery(func(m *test, h query.PersistentHelper[test]) {
 			h.Where().Field(&m.ID).LT(7)
 			h.Exclude(&m.UpdatedAt, &m.ID)
 			h.LeftJoin(func(ctx context.Context) string {
@@ -81,13 +74,13 @@ func TestName(t *testing.T) {
 
 	ctxCache := ctx.NewCtxCache(context.Background())
 	_ = []int{1, 2, 3, 4, 5, 6}
-	list, err := repo.GetList(ctxCache, func(m *test, h query.GetListUserHelper[test]) {
+	list, err := repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
 		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)
 	})
 
 	tx, err := executor.BeginTx(ctxCache, db)
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	repoTx, err := repo.Tx(tx)
 	if err != nil {
@@ -102,7 +95,7 @@ func TestName(t *testing.T) {
 	log.Printf("FIRST Repo db get one %s", elapsed)
 
 	start = time.Now()
-	model, err = repoTx.GetFirst(ctxCache, func(m *test, b query.GetFirstUserHelper[test]) {
+	model, err = repoTx.GetFirst(ctxCache, func(m *test, b query.GetFirstHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
 		b.OrderBy().Field(&m.Name).DESC()
@@ -119,7 +112,7 @@ func TestName(t *testing.T) {
 	log.Printf("SECOND Repo db get one %s", elapsed)
 
 	start = time.Now()
-	model, err = repo.GetFirst(ctxCache, func(m *test, b query.GetFirstUserHelper[test]) {
+	model, err = repo.GetFirst(ctxCache, func(m *test, b query.GetFirstHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
 		b.OrderBy().Field(&m.Name).DESC()
@@ -131,7 +124,7 @@ func TestName(t *testing.T) {
 	log.Printf("Repo get same one from cache %s", elapsed)
 
 	start = time.Now()
-	count, err := repo.Count(ctxCache, func(m *test, h query.CountUserHelper[test]) {
+	count, err := repo.Count(ctxCache, func(m *test, h query.CountHelper[test]) {
 		h.Where().
 			Field(&m.ID).EQ(1)
 	})
@@ -142,7 +135,7 @@ func TestName(t *testing.T) {
 	log.Printf("Repo db count %s", elapsed)
 
 	start = time.Now()
-	count, err = repo.Count(ctxCache, func(m *test, h query.CountUserHelper[test]) {
+	count, err = repo.Count(ctxCache, func(m *test, h query.CountHelper[test]) {
 		h.Where().
 			Field(&m.ID).EQ(1)
 	})
@@ -173,7 +166,7 @@ func TestName(t *testing.T) {
 		Name: "Firts",
 		Age:  330,
 		Bool: true,
-	}, func(m *test, h query.InsertUserHelper[test]) {
+	}, func(m *test, h query.InsertHelper[test]) {
 		h.Exclude()
 	})
 	if err != nil {
@@ -196,7 +189,7 @@ func TestName(t *testing.T) {
 	log.Printf("Repo GetList ALL from cache %s", elapsed)
 
 	start = time.Now()
-	list, err = repo.GetList(ctxCache, func(m *test, h query.GetListUserHelper[test]) {
+	list, err = repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
 		h.Page(1).Size(2)
 		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
@@ -207,7 +200,7 @@ func TestName(t *testing.T) {
 	log.Printf("Repo GetList limit 2, page 1 from db %s", elapsed)
 
 	start = time.Now()
-	list, err = repo.GetList(ctxCache, func(m *test, h query.GetListUserHelper[test]) {
+	list, err = repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
 		h.Page(1).Size(2)
 		h.OrderBy().Field(&m.CreatedAt).DESC()
 	})
@@ -218,14 +211,14 @@ func TestName(t *testing.T) {
 	log.Printf("Repo GetList limit 2, page 1 from cache %s", elapsed)
 
 	model.Age = 777
-	err = repo.Update(ctxCache, model, func(m *test, h query.UpdateUserHelper[test]) {
+	err = repo.Update(ctxCache, model, func(m *test, h query.UpdateHelper[test]) {
 		h.Where().Field(&m.ID).EQ(5)
 	})
 	if err != nil {
 		log.Print(err)
 	}
 
-	deletedCount, err := repo.Delete(ctxCache, func(m *test, h query.DeleteUserHelper[test]) {
+	deletedCount, err := repo.Delete(ctxCache, func(m *test, h query.DeleteHelper[test]) {
 		h.Where().Field(&m.ID).EQ(1)
 	})
 	if err != nil {

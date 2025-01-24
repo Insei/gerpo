@@ -1,4 +1,4 @@
-package sql
+package sqlpart
 
 import (
 	"context"
@@ -551,7 +551,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fields, _ := fmap.Get[TestModel]()
 			field := fields.MustFind(tc.fieldName)
 
-			filters := GetDefaultTypeFilters(field, "query")
+			filters := GetFieldTypeFilters(field, "query")
 			assert.Len(t, filters, len(tc.expectedOps))
 
 			for _, op := range tc.expectedOps {
@@ -562,7 +562,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 }
 
 func TestSQLAndValues(t *testing.T) {
-	builder := &StringWhereBuilder{
+	builder := &WhereBuilder{
 		sql:    "SELECT * FROM table WHERE",
 		values: []any{"initial"},
 	}
@@ -572,21 +572,21 @@ func TestSQLAndValues(t *testing.T) {
 }
 
 func TestStartGroup(t *testing.T) {
-	builder := &StringWhereBuilder{}
+	builder := &WhereBuilder{}
 
 	builder.StartGroup()
 	assert.Equal(t, "(", builder.SQL())
 }
 
 func TestEndGroup(t *testing.T) {
-	builder := &StringWhereBuilder{}
+	builder := &WhereBuilder{}
 
 	builder.EndGroup()
 	assert.Equal(t, ")", builder.SQL())
 }
 
 func TestStartAndEndGroup(t *testing.T) {
-	builder := &StringWhereBuilder{}
+	builder := &WhereBuilder{}
 
 	builder.StartGroup()
 	builder.EndGroup()
@@ -594,7 +594,7 @@ func TestStartAndEndGroup(t *testing.T) {
 }
 
 func TestANDOperator(t *testing.T) {
-	builder := &StringWhereBuilder{}
+	builder := &WhereBuilder{}
 
 	builder.sql = "condition1"
 	builder.AND()
@@ -602,7 +602,7 @@ func TestANDOperator(t *testing.T) {
 }
 
 func TestOROperator(t *testing.T) {
-	builder := &StringWhereBuilder{}
+	builder := &WhereBuilder{}
 
 	builder.sql = "condition1"
 	builder.OR()
@@ -640,11 +640,21 @@ func TestAppendSQLWithValues(t *testing.T) {
 			expectedSQL:    "SELECT * FROM table WHERE field = ?",
 			expectedValues: []any{"value"},
 		},
+		{
+			name:           "Append SQL with value",
+			initialSQL:     "SELECT * FROM table WHERE ",
+			initialValues:  []any{},
+			sql:            "field = ?",
+			appendValue:    true,
+			value:          "value",
+			expectedSQL:    "SELECT * FROM table WHERE field = ?",
+			expectedValues: []any{"value"},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			builder := &StringWhereBuilder{
+			builder := &WhereBuilder{
 				sql:    tc.initialSQL,
 				values: tc.initialValues,
 			}
@@ -652,6 +662,51 @@ func TestAppendSQLWithValues(t *testing.T) {
 			builder.AppendSQLWithValues(tc.sql, tc.appendValue, tc.value)
 			assert.Equal(t, tc.expectedSQL, builder.sql)
 			assert.Equal(t, tc.expectedValues, builder.values)
+		})
+	}
+}
+
+func TestNeedANDForCondition(t *testing.T) {
+	testCases := []struct {
+		name           string
+		initialSQL     string
+		expectedResult bool
+	}{
+		{
+			name:           "Empty SQL",
+			initialSQL:     "",
+			expectedResult: false,
+		},
+		{
+			name:           "SQL ending with AND",
+			initialSQL:     "condition1 AND ",
+			expectedResult: false,
+		},
+		{
+			name:           "SQL ending with OR",
+			initialSQL:     "condition1 OR ",
+			expectedResult: false,
+		},
+		{
+			name:           "SQL ending with open parenthesis",
+			initialSQL:     "condition1 (",
+			expectedResult: false,
+		},
+		{
+			name:           "SQL not ending with AND, OR, or (",
+			initialSQL:     "condition1 ",
+			expectedResult: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			builder := &WhereBuilder{
+				sql: tc.initialSQL,
+			}
+
+			result := builder.needANDBeforeCondition()
+			assert.Equal(t, tc.expectedResult, result)
 		})
 	}
 }

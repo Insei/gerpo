@@ -4,36 +4,32 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-type ColumnsExcluder interface {
-	Exclude(columns ...types.Column)
-}
-
-type UserExcludeBuilder interface {
-	Exclude(fieldPtrs ...any)
+type ExcludeApplier interface {
+	Columns() types.ExecutionColumns
 }
 
 type ExcludeBuilder struct {
-	*CoreBuilder
-	opts []func(e ColumnsExcluder)
+	baseModel any
+	opts      []func(applier ExcludeApplier)
 }
 
-func NewExcludeBuilder(core *CoreBuilder) *ExcludeBuilder {
+func NewExcludeBuilder(baseModel any) *ExcludeBuilder {
 	return &ExcludeBuilder{
-		CoreBuilder: core,
+		baseModel: baseModel,
 	}
 }
 
 func (b *ExcludeBuilder) Exclude(fieldPtrs ...any) {
 	for _, fieldPtr := range fieldPtrs {
-		col := b.GetColumn(fieldPtr)
-		b.opts = append(b.opts, func(e ColumnsExcluder) {
-			e.Exclude(col)
+		b.opts = append(b.opts, func(applier ExcludeApplier) {
+			col := applier.Columns().GetByFieldPtr(b.baseModel, fieldPtr)
+			applier.Columns().Exclude(col)
 		})
 	}
 }
 
-func (b *ExcludeBuilder) Apply(columnsExcluder ColumnsExcluder) {
+func (b *ExcludeBuilder) Apply(applier ExcludeApplier) {
 	for _, opt := range b.opts {
-		opt(columnsExcluder)
+		opt(applier)
 	}
 }

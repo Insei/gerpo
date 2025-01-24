@@ -130,10 +130,10 @@ type ANDOR interface {
 	AND() WhereTarget
 }
 
-type ConditionBuilder interface {
-	AppendCondition(cl Column, operation Operation, val any) error
-	StartGroup()
-	EndGroup()
-	AND()
-	OR()
-}
+//type ConditionBuilder interface {
+//	AppendCondition(cl Column, operation Operation, val any) error
+//	StartGroup()
+//	EndGroup()
+//	AND()
+//	OR()
+//}

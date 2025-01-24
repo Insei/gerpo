@@ -2,45 +2,41 @@ package query
 
 import (
 	"github.com/insei/gerpo/query/linq"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/types"
 )
 
-type InsertUserHelper[TModel any] interface {
+type InsertHelper[TModel any] interface {
 	Exclude(fieldsPtr ...any)
 }
 
-type InsertHelper[TModel any] interface {
-	InsertUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h InsertUserHelper[TModel]))
+type InsertApplier interface {
+	Columns() types.ExecutionColumns
 }
 
-type insertHelper[TModel any] struct {
-	core           *linq.CoreBuilder
+type Insert[TModel any] struct {
+	baseModel *TModel
+
 	excludeBuilder *linq.ExcludeBuilder
 }
 
-func (h *insertHelper[TModel]) Exclude(fieldsPtr ...any) {
+func (h *Insert[TModel]) Exclude(fieldsPtr ...any) {
 	h.excludeBuilder.Exclude(fieldsPtr...)
 }
 
-func (h *insertHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	h.excludeBuilder.Apply(sqlBuilder.InsertBuilder())
+func (h *Insert[TModel]) Apply(applier InsertApplier) {
+	h.excludeBuilder.Apply(applier)
 }
 
-func (h *insertHelper[TModel]) HandleFn(qFns ...func(m *TModel, h InsertUserHelper[TModel])) {
+func (h *Insert[TModel]) HandleFn(qFns ...func(m *TModel, h InsertHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel, h)
 	}
 }
 
-func newInsertHelper[TModel any](core *linq.CoreBuilder) *insertHelper[TModel] {
-	return &insertHelper[TModel]{
-		excludeBuilder: linq.NewExcludeBuilder(core),
-		core:           core,
-	}
-}
+func NewInsert[TModel any](baseModel *TModel) *Insert[TModel] {
+	return &Insert[TModel]{
+		baseModel: baseModel,
 
-func NewInsertHelper[TModel any](core *linq.CoreBuilder) InsertHelper[TModel] {
-	return newInsertHelper[TModel](core)
+		excludeBuilder: linq.NewExcludeBuilder(baseModel),
+	}
 }

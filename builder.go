@@ -11,27 +11,24 @@ import (
 )
 
 type Builder[TModel any] interface {
-	WithQuery(queryFn func(m *TModel, h query.PersistentUserHelper[TModel])) Builder[TModel]
+	WithQuery(queryFn func(m *TModel, h query.PersistentHelper[TModel])) Builder[TModel]
 	BeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	BeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
 	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	AfterDelete(fn func(ctx context.Context, m []*TModel)) Builder[TModel]
-	SoftDeletion(fn func(m *TModel, columns *SoftDeleteBuilder[TModel])) Builder[TModel]
 	WithErrorTransformer(fn func(err error) error) Builder[TModel]
 	Build() (Repository[TModel], error)
 }
 
 type builder[TModel any] struct {
-	db                *dbsql.DB
-	table             string
-	opts              []Option[TModel]
-	model             *TModel
-	fields            fmap.Storage
-	columns           *types.ColumnsStorage
-	columnBuilderFn   func(m *TModel, columns *ColumnBuilder[TModel])
-	sdColumnBuilderFn func(m *TModel, columns *SoftDeleteBuilder[TModel])
+	db              *dbsql.DB
+	table           string
+	opts            []Option[TModel]
+	model           *TModel
+	fields          fmap.Storage
+	columns         *types.ColumnsStorage
+	columnBuilderFn func(m *TModel, columns *ColumnBuilder[TModel])
 }
 
 type TableChooser[TModel any] interface {
@@ -72,12 +69,7 @@ func (b *builder[TModel]) Columns(fn func(m *TModel, columns *ColumnBuilder[TMod
 	return b
 }
 
-func (b *builder[TModel]) SoftDeletion(fn func(m *TModel, columns *SoftDeleteBuilder[TModel])) Builder[TModel] {
-	b.sdColumnBuilderFn = fn
-	return b
-}
-
-func (b *builder[TModel]) WithQuery(queryFn func(m *TModel, h query.PersistentUserHelper[TModel])) Builder[TModel] {
+func (b *builder[TModel]) WithQuery(queryFn func(m *TModel, h query.PersistentHelper[TModel])) Builder[TModel] {
 	b.opts = append(b.opts, WithQuery[TModel](queryFn))
 	return b
 }
@@ -107,11 +99,6 @@ func (b *builder[TModel]) AfterInsert(fn func(ctx context.Context, m *TModel)) B
 	return b
 }
 
-func (b *builder[TModel]) AfterDelete(fn func(ctx context.Context, m []*TModel)) Builder[TModel] {
-	b.opts = append(b.opts, WithAfterDelete[TModel](fn))
-	return b
-}
-
 func (b *builder[TModel]) WithErrorTransformer(fn func(err error) error) Builder[TModel] {
 	b.opts = append(b.opts, WithErrorTransformer[TModel](fn))
 	return b
@@ -124,5 +111,5 @@ func (b *builder[TModel]) Build() (Repository[TModel], error) {
 	if b.table == "" {
 		return nil, errors.New("no table found")
 	}
-	return New(b.db, b.table, b.columnBuilderFn, b.sdColumnBuilderFn, b.opts...)
+	return New(b.db, b.table, b.columnBuilderFn, b.opts...)
 }

@@ -98,26 +98,10 @@ func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Op
 	})
 }
 
-func WithAfterDelete[TModel any](fn func(ctx context.Context, model []*TModel)) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
-		if fn != nil {
-			if o.afterDelete == nil {
-				o.afterDelete = fn
-				return
-			}
-		}
-		wrap := o.afterDelete
-		o.afterDelete = func(ctx context.Context, model []*TModel) {
-			wrap(ctx, model)
-			fn(ctx, model)
-		}
-	})
-}
-
-func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentUserHelper[TModel])) Option[TModel] {
-	return optionFn[TModel](func(o *repository[TModel]) {
+func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentHelper[TModel])) Option[TModel] {
+	return optionFn[TModel](func(r *repository[TModel]) {
 		if queryFn != nil {
-			o.query.Persistent(queryFn)
+			r.persistent.HandleFn(queryFn)
 		}
 	})
 }

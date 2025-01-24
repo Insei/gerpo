@@ -2,56 +2,46 @@ package query
 
 import (
 	"github.com/insei/gerpo/query/linq"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
-type CountUserHelper[TModel any] interface {
+type CountHelper[TModel any] interface {
 	Where() types.WhereTarget
 }
 
-type CountHelper[TModel any] interface {
-	CountUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h CountUserHelper[TModel]))
+type CountApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Where() sqlpart.Where
 }
 
-type countHelper[TModel any] struct {
-	core              *linq.CoreBuilder
-	excludeBuilder    *linq.ExcludeBuilder
-	paginationBuilder *linq.PaginationBuilder
-	whereBuilder      *linq.WhereBuilder
-	orderBuilder      *linq.OrderBuilder
+type Count[TModel any] struct {
+	baseModel any
+
+	whereBuilder *linq.WhereBuilder
+	groupBuilder *linq.GroupBuilder
+	joinBuilder  *linq.JoinBuilder
 }
 
-func (h *countHelper[TModel]) Where() types.WhereTarget {
+func (h *Count[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *countHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	h.excludeBuilder.Apply(sqlBuilder.SelectBuilder())
-	h.paginationBuilder.Apply(sqlBuilder.SelectBuilder())
-	h.orderBuilder.Apply(sqlBuilder.SelectBuilder())
-	h.whereBuilder.Apply(sqlBuilder.WhereBuilder())
+func (h *Count[TModel]) Apply(applier CountApplier) {
+	h.whereBuilder.Apply(applier)
 }
 
-func (h *countHelper[TModel]) HandleFn(qFns ...func(m *TModel, h CountUserHelper[TModel])) {
+func (h *Count[TModel]) HandleFn(qFns ...func(m *TModel, h CountHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel.(*TModel), h)
 	}
 }
 
-func newCountHelper[TModel any](core *linq.CoreBuilder) *countHelper[TModel] {
-	paginationBuilder := linq.NewPaginationBuilder()
-	return &countHelper[TModel]{
-		core:              core,
-		excludeBuilder:    linq.NewExcludeBuilder(core),
-		paginationBuilder: paginationBuilder,
-		whereBuilder:      linq.NewWhereBuilder(core),
-		orderBuilder:      linq.NewOrderBuilder(core),
+func NewCount[TModel any](baseModel *TModel) *Count[TModel] {
+	return &Count[TModel]{
+		baseModel:    baseModel,
+		whereBuilder: linq.NewWhereBuilder(baseModel),
+		groupBuilder: linq.NewGroupBuilder(baseModel),
+		joinBuilder:  linq.NewJoinBuilder(),
 	}
-}
-
-func NewCountHelper[TModel any](core *linq.CoreBuilder) CountHelper[TModel] {
-	return newCountHelper[TModel](core)
 }

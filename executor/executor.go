@@ -4,7 +4,7 @@ import (
 	"context"
 	dbsql "database/sql"
 
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt"
 )
 
 type executor[TModel any] struct {
@@ -46,13 +46,12 @@ func (e *executor[TModel]) getExecQuery(ctx context.Context) ExecQuery {
 	return e.db
 }
 
-func (e *executor[TModel]) GetOne(ctx context.Context, selectStmt sql.StmtSelect) (*TModel, error) {
-	sqlStmt, args := selectStmt.GetStmtWithArgs(sql.SelectOne)
-	if cached, ok := get[TModel](ctx, e.cacheBundle, sqlStmt, args...); ok {
+func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, error) {
+	sql, args := stmt.SQL()
+	if cached, ok := get[TModel](ctx, e.cacheBundle, sql, args...); ok {
 		return cached, nil
 	}
-
-	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sqlStmt), args...)
+	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -60,11 +59,11 @@ func (e *executor[TModel]) GetOne(ctx context.Context, selectStmt sql.StmtSelect
 	var model *TModel
 	if rows.Next() {
 		model = new(TModel)
-		pointers := selectStmt.GetModelPointers(sql.SelectOne, model)
+		pointers := stmt.Columns().GetModelPointers(model)
 		if err = rows.Scan(pointers...); err != nil {
 			return nil, err
 		}
-		set(ctx, e.cacheBundle, *model, sqlStmt, args...)
+		set(ctx, e.cacheBundle, *model, sql, args...)
 	}
 	if model == nil {
 		return nil, dbsql.ErrNoRows
@@ -72,12 +71,12 @@ func (e *executor[TModel]) GetOne(ctx context.Context, selectStmt sql.StmtSelect
 	return model, nil
 }
 
-func (e *executor[TModel]) GetMultiple(ctx context.Context, selectStmt sql.StmtSelect) ([]*TModel, error) {
-	sqlStmt, args := selectStmt.GetStmtWithArgs(sql.Select)
-	if cached, ok := get[[]*TModel](ctx, e.cacheBundle, sqlStmt, args...); ok {
+func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TModel, error) {
+	sql, args := stmt.SQL()
+	if cached, ok := get[[]*TModel](ctx, e.cacheBundle, sql, args...); ok {
 		return *cached, nil
 	}
-	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sqlStmt), args...)
+	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,18 +84,18 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, selectStmt sql.StmtS
 	var models []*TModel
 	for rows.Next() {
 		model := new(TModel)
-		if err = rows.Scan(selectStmt.GetModelPointers(sql.Select, model)...); err != nil {
+		if err = rows.Scan(stmt.Columns().GetModelPointers(model)...); err != nil {
 			return nil, err
 		}
 		models = append(models, model)
 	}
-	set(ctx, e.cacheBundle, models, sqlStmt, args...)
+	set(ctx, e.cacheBundle, models, sql, args...)
 	return models, nil
 }
 
-func (e *executor[TModel]) InsertOne(ctx context.Context, model *TModel, stmtModel sql.StmtModel) error {
-	sqlStmt, values := stmtModel.GetStmtWithArgsForModel(sql.Insert, model)
-	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sqlStmt), values...)
+func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TModel) error {
+	sql, values := stmt.SQL(stmt.WithModelValues(model))
+	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), values...)
 	if err != nil {
 		return err
 	}
@@ -111,9 +110,9 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, model *TModel, stmtMod
 	return nil
 }
 
-func (e *executor[TModel]) Update(ctx context.Context, model *TModel, stmtModel sql.StmtModel) (int64, error) {
-	sqlStmt, values := stmtModel.GetStmtWithArgsForModel(sql.Update, model)
-	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sqlStmt), values...)
+func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error) {
+	sql, values := stmt.SQL(stmt.WithModelValues(model))
+	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), values...)
 	if err != nil {
 		return 0, err
 	}
@@ -127,13 +126,13 @@ func (e *executor[TModel]) Update(ctx context.Context, model *TModel, stmtModel 
 	return updatedRows, nil
 }
 
-func (e *executor[TModel]) Count(ctx context.Context, stmt sql.Stmt) (uint64, error) {
-	sqlStmt, args := stmt.GetStmtWithArgs(sql.Count)
-	if cached, ok := get[uint64](ctx, e.cacheBundle, sqlStmt, args...); ok {
+func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, error) {
+	sql, args := stmt.SQL()
+	if cached, ok := get[uint64](ctx, e.cacheBundle, sql, args...); ok {
 		return *cached, nil
 	}
 	count := uint64(0)
-	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sqlStmt), args...)
+	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
 	if err != nil {
 		return 0, err
 	}
@@ -142,13 +141,13 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt sql.Stmt) (uint64, er
 			return 0, err
 		}
 	}
-	set(ctx, e.cacheBundle, count, sqlStmt, args...)
+	set(ctx, e.cacheBundle, count, sql, args...)
 	return count, nil
 }
 
-func (e *executor[TModel]) Delete(ctx context.Context, stmt sql.Stmt) (int64, error) {
-	sqlStmt, args := stmt.GetStmtWithArgs(sql.Delete)
-	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sqlStmt), args...)
+func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (int64, error) {
+	sql, args := stmt.SQL()
+	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), args...)
 	if err != nil {
 		return 0, err
 	}
