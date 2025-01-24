@@ -5,24 +5,12 @@ import (
 	dbsql "database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt"
 	"github.com/insei/gerpo/types"
 )
-
-type test struct {
-	ID          int
-	CreatedAt   time.Time
-	UpdatedAt   *time.Time
-	Name        string
-	Age         int
-	Bool        bool
-	DeletedAt   *time.Time
-	DeletedTest bool
-}
 
 type repository[TModel any] struct {
 	// Callbacks and Hooks
@@ -30,20 +18,17 @@ type repository[TModel any] struct {
 	beforeUpdate     func(ctx context.Context, model *TModel)
 	afterInsert      func(ctx context.Context, model *TModel)
 	afterUpdate      func(ctx context.Context, model *TModel)
-	afterDelete      func(ctx context.Context, model []*TModel)
 	afterSelect      func(ctx context.Context, models []*TModel)
 	errorTransformer func(err error) error
 
-	deleteFn        func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error)
-	getDeleteModels func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) ([]*TModel, error)
-
 	// Columns and fields
-	columns *types.ColumnsStorage
+	baseModel *TModel
+	table     string
+	columns   *types.ColumnsStorage
 
 	// SQL Query, execution and dependency
-	strSQLBuilderFactory sql.StringBuilderFactory
-	executor             executor.Executor[TModel]
-	query                *query.Bundle[TModel]
+	executor   executor.Executor[TModel]
+	persistent *query.Persistent[TModel]
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
@@ -62,18 +47,12 @@ func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	if repo.afterSelect == nil {
 		repo.afterSelect = func(_ context.Context, models []*TModel) {}
 	}
-	if repo.afterDelete == nil {
-		repo.getDeleteModels = func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) ([]*TModel, error) {
-			return []*TModel{}, nil
-		}
-		repo.afterDelete = func(ctx context.Context, model []*TModel) {}
-	}
 	if repo.errorTransformer == nil {
 		repo.errorTransformer = func(err error) error { return err }
 	}
 }
 
-func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), sdColumnsFn func(m *TModel, builder *SoftDeleteBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
+func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
 	model, fields, err := getModelAndFields[TModel]()
 	if err != nil {
 		return nil, err
@@ -86,19 +65,17 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 		return nil, fmt.Errorf("failed to create repository with empty columns")
 	}
 	repo := &repository[TModel]{
-		columns:              columns,
-		query:                query.NewBundle(model, columns),
-		executor:             executor.New[TModel](db),
-		strSQLBuilderFactory: sql.NewStringBuilderFactory(table, columns),
+		columns:    columns,
+		executor:   executor.New[TModel](db),
+		table:      table,
+		baseModel:  model,
+		persistent: query.NewPersistent(model),
 	}
-
-	repo.deleteFn = getDeleteFn(repo, model, sdColumnsFn)
 
 	for _, opt := range opts {
 		opt.apply(repo)
 	}
 
-	useDeleteHook(repo)
 	replaceNilCallbacks(repo)
 	return repo, nil
 }
@@ -117,10 +94,13 @@ func (r *repository[TModel]) Tx(tx *executor.Tx) (Repository[TModel], error) {
 	return &repocp, nil
 }
 
-func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstUserHelper[TModel])) (model *TModel, err error) {
-	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
-	r.query.ApplyGetFirst(strSQLBuilder, qFns...)
-	model, err = r.executor.GetOne(ctx, strSQLBuilder)
+func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error) {
+	stmt := sqlstmt.NewGetFirst(ctx, r.table, r.columns)
+	q := query.NewGetFirst(r.baseModel)
+	q.HandleFn(qFns...)
+	r.persistent.Apply(stmt)
+	q.Apply(stmt)
+	model, err = r.executor.GetOne(ctx, stmt)
 	if err != nil {
 		if errors.Is(err, dbsql.ErrNoRows) {
 			return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrNotFound, err))
@@ -131,10 +111,13 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 	return model, nil
 }
 
-func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListUserHelper[TModel])) (models []*TModel, err error) {
-	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
-	r.query.ApplyGetList(strSQLBuilder, qFns...)
-	models, err = r.executor.GetMultiple(ctx, strSQLBuilder)
+func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListHelper[TModel])) (models []*TModel, err error) {
+	stmt := sqlstmt.NewGetList(ctx, r.table, r.columns)
+	r.persistent.Apply(stmt)
+	q := query.NewGetList(r.baseModel)
+	q.HandleFn(qFns...)
+	q.Apply(stmt)
+	models, err = r.executor.GetMultiple(ctx, stmt)
 	if err != nil {
 		return nil, r.errorTransformer(err)
 	}
@@ -142,21 +125,27 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 	return models, nil
 }
 
-func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountUserHelper[TModel])) (count uint64, err error) {
-	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
-	r.query.ApplyCount(strSQLBuilder, qFns...)
-	count, err = r.executor.Count(ctx, strSQLBuilder)
+func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountHelper[TModel])) (count uint64, err error) {
+	stmt := sqlstmt.NewCount(ctx, r.table, r.columns)
+	q := query.NewCount(r.baseModel)
+	q.HandleFn(qFns...)
+	r.persistent.Apply(stmt)
+	q.Apply(stmt)
+	count, err = r.executor.Count(ctx, stmt)
 	if err != nil {
 		return 0, r.errorTransformer(err)
 	}
 	return count, nil
 }
 
-func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertUserHelper[TModel])) (err error) {
-	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
+func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertHelper[TModel])) (err error) {
 	r.beforeInsert(ctx, model)
-	r.query.ApplyInsert(strSQLBuilder, qFns...)
-	err = r.executor.InsertOne(ctx, model, strSQLBuilder)
+	stmt := sqlstmt.NewInsert(ctx, r.table, r.columns)
+	q := query.NewInsert(r.baseModel)
+	q.HandleFn(qFns...)
+	r.persistent.Apply(stmt)
+	q.Apply(stmt)
+	err = r.executor.InsertOne(ctx, stmt, model)
 	if err != nil {
 		return r.errorTransformer(err)
 	}
@@ -164,11 +153,14 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 	return nil
 }
 
-func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateUserHelper[TModel])) (err error) {
-	strSQLBuilder := r.strSQLBuilderFactory.New(ctx)
+func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (err error) {
 	r.beforeUpdate(ctx, model)
-	r.query.ApplyUpdate(strSQLBuilder, qFns...)
-	updatedCount, err := r.executor.Update(ctx, model, strSQLBuilder)
+	stmt := sqlstmt.NewUpdate(ctx, r.columns, r.table)
+	q := query.NewUpdate(r.baseModel)
+	q.HandleFn(qFns...)
+	r.persistent.Apply(stmt)
+	q.Apply(stmt)
+	updatedCount, err := r.executor.Update(ctx, stmt, model)
 	if err != nil {
 		return r.errorTransformer(err)
 	}
@@ -179,19 +171,18 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	return nil
 }
 
-func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteUserHelper[TModel])) (count int64, err error) {
-	models, err := r.getDeleteModels(ctx, qFns...)
+func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
+	stmt := sqlstmt.NewDelete(ctx, r.table, r.columns)
+	q := query.NewDelete(r.baseModel)
+	q.HandleFn(qFns...)
+	r.persistent.Apply(stmt)
+	q.Apply(stmt)
+	count, err = r.executor.Delete(ctx, stmt)
 	if err != nil {
-		return 0, r.errorTransformer(err)
-	}
-
-	count, err = r.deleteFn(ctx, qFns...)
-	if err != nil {
-		return 0, r.errorTransformer(err)
+		return count, r.errorTransformer(err)
 	}
 	if count < 1 {
 		return 0, r.errorTransformer(fmt.Errorf("nothing to delete: %w", ErrNotFound))
 	}
-	r.afterDelete(ctx, models)
 	return count, r.errorTransformer(err)
 }

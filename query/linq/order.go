@@ -1,27 +1,29 @@
 package linq
 
 import (
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
-type Order interface {
-	OrderByColumn(column types.Column, direction types.OrderDirection) error
-}
-
-func NewOrderBuilder(core *CoreBuilder) *OrderBuilder {
+func NewOrderBuilder(baseModel any) *OrderBuilder {
 	return &OrderBuilder{
-		core: core,
+		model: baseModel,
 	}
 }
 
 type OrderBuilder struct {
-	core *CoreBuilder
-	opts []func(o Order)
+	model any
+	opts  []func(applier OrderApplier)
 }
 
-func (q *OrderBuilder) Apply(order Order) {
+type OrderApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Order() sqlpart.Order
+}
+
+func (q *OrderBuilder) Apply(applier OrderApplier) {
 	for _, opt := range q.opts {
-		opt(order)
+		opt(applier)
 	}
 }
 
@@ -37,17 +39,22 @@ func (f OrderDirectionFn) DESC() types.OrderTarget {
 
 func (q *OrderBuilder) Column(column types.Column) types.OrderOperation {
 	return OrderDirectionFn(func(direction types.OrderDirection) *OrderBuilder {
-		q.opts = append(q.opts, func(o Order) {
-			err := o.OrderByColumn(column, direction)
-			if err != nil {
-				panic(err)
-			}
+		q.opts = append(q.opts, func(applier OrderApplier) {
+			applier.Order().OrderByColumn(column, direction)
 		})
 		return q
 	})
 }
 
 func (q *OrderBuilder) Field(fieldPtr any) types.OrderOperation {
-	col := q.core.GetColumn(fieldPtr)
-	return q.Column(col)
+	return OrderDirectionFn(func(direction types.OrderDirection) *OrderBuilder {
+		q.opts = append(q.opts, func(applier OrderApplier) {
+			column, err := applier.ColumnsStorage().GetByFieldPtr(q.model, fieldPtr)
+			if err != nil {
+				panic(err)
+			}
+			applier.Order().OrderByColumn(column, direction)
+		})
+		return q
+	})
 }

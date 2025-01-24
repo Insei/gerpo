@@ -2,46 +2,46 @@ package query
 
 import (
 	"github.com/insei/gerpo/query/linq"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
-type DeleteUserHelper[TModel any] interface {
+type DeleteHelper[TModel any] interface {
 	Where() types.WhereTarget
 }
 
-type DeleteHelper[TModel any] interface {
-	DeleteUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h DeleteUserHelper[TModel]))
+type DeleteApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Where() sqlpart.Where
+	Join() sqlpart.Join
 }
 
-type deleteHelper[TModel any] struct {
-	core         *linq.CoreBuilder
+type Delete[TModel any] struct {
+	baseModel *TModel
+
 	whereBuilder *linq.WhereBuilder
+	joinBuilder  *linq.JoinBuilder
 }
 
-func (h *deleteHelper[TModel]) Where() types.WhereTarget {
+func (h *Delete[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *deleteHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	h.whereBuilder.Apply(sqlBuilder.WhereBuilder())
+func (h *Delete[TModel]) Apply(applier DeleteApplier) {
+	h.whereBuilder.Apply(applier)
+	h.joinBuilder.Apply(applier)
 }
 
-func (h *deleteHelper[TModel]) HandleFn(qFns ...func(m *TModel, h DeleteUserHelper[TModel])) {
+func (h *Delete[TModel]) HandleFn(qFns ...func(m *TModel, h DeleteHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel, h)
 	}
 }
 
-func newDeleteHelper[TModel any](core *linq.CoreBuilder) *deleteHelper[TModel] {
-	return &deleteHelper[TModel]{
-		whereBuilder: linq.NewWhereBuilder(core),
-		core:         core,
+func NewDelete[TModel any](baseModel *TModel) *Delete[TModel] {
+	return &Delete[TModel]{
+		whereBuilder: linq.NewWhereBuilder(baseModel),
+		joinBuilder:  linq.NewJoinBuilder(),
+		baseModel:    baseModel,
 	}
-}
-
-func NewDeleteHelper[TModel any](core *linq.CoreBuilder) DeleteHelper[TModel] {
-	return newDeleteHelper[TModel](core)
 }

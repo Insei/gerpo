@@ -2,54 +2,51 @@ package query
 
 import (
 	"github.com/insei/gerpo/query/linq"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
-type UpdateUserHelper[TModel any] interface {
+type UpdateHelper[TModel any] interface {
 	Where() types.WhereTarget
 	Exclude(fieldsPtr ...any)
 }
 
-type UpdateHelper[TModel any] interface {
-	UpdateUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h UpdateUserHelper[TModel]))
+type UpdateApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Columns() types.ExecutionColumns
+	Where() sqlpart.Where
 }
+type Update[TModel any] struct {
+	baseModel *TModel
 
-type updateHelper[TModel any] struct {
-	core           *linq.CoreBuilder
 	excludeBuilder *linq.ExcludeBuilder
 	whereBuilder   *linq.WhereBuilder
 }
 
-func (h *updateHelper[TModel]) Exclude(fieldsPtr ...any) {
+func (h *Update[TModel]) Exclude(fieldsPtr ...any) {
 	h.excludeBuilder.Exclude(fieldsPtr...)
 }
 
-func (h *updateHelper[TModel]) Where() types.WhereTarget {
+func (h *Update[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *updateHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	h.excludeBuilder.Apply(sqlBuilder.UpdateBuilder())
-	h.whereBuilder.Apply(sqlBuilder.WhereBuilder())
+func (h *Update[TModel]) Apply(applier UpdateApplier) {
+	h.excludeBuilder.Apply(applier)
+	h.whereBuilder.Apply(applier)
 }
 
-func (h *updateHelper[TModel]) HandleFn(qFns ...func(m *TModel, h UpdateUserHelper[TModel])) {
+func (h *Update[TModel]) HandleFn(qFns ...func(m *TModel, h UpdateHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel, h)
 	}
 }
 
-func newUpdateHelper[TModel any](core *linq.CoreBuilder) *updateHelper[TModel] {
-	return &updateHelper[TModel]{
-		core:           core,
-		excludeBuilder: linq.NewExcludeBuilder(core),
-		whereBuilder:   linq.NewWhereBuilder(core),
-	}
-}
+func NewUpdate[TModel any](baseModel *TModel) *Update[TModel] {
+	return &Update[TModel]{
+		baseModel: baseModel,
 
-func NewUpdateHelper[TModel any](core *linq.CoreBuilder) UpdateHelper[TModel] {
-	return newUpdateHelper[TModel](core)
+		excludeBuilder: linq.NewExcludeBuilder(baseModel),
+		whereBuilder:   linq.NewWhereBuilder(baseModel),
+	}
 }

@@ -2,45 +2,77 @@ package query
 
 import (
 	"github.com/insei/gerpo/query/linq"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
+	"github.com/insei/gerpo/types"
 )
 
-type GetListUserHelper[TModel any] interface {
-	GetFirstUserHelper[TModel]
-	Page(page uint64) GetListUserHelper[TModel]
-	Size(size uint64) GetListUserHelper[TModel]
-}
-
 type GetListHelper[TModel any] interface {
-	GetListUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h GetListUserHelper[TModel]))
+	Exclude(fieldsPtr ...any)
+	Where() types.WhereTarget
+	OrderBy() types.OrderTarget
+	Page(page uint64) GetListHelper[TModel]
+	Size(size uint64) GetListHelper[TModel]
 }
 
-type getListHelper[TModel any] struct {
-	*getFirstHelper[TModel]
+type GetListApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Columns() types.ExecutionColumns
+	Where() sqlpart.Where
+	Order() sqlpart.Order
+	LimitOffset() sqlpart.LimitOffset
 }
 
-func (h *getListHelper[TModel]) Page(page uint64) GetListUserHelper[TModel] {
+type GetList[TModel any] struct {
+	baseModel *TModel
+
+	whereBuilder      *linq.WhereBuilder
+	orderBuilder      *linq.OrderBuilder
+	excludeBuilder    *linq.ExcludeBuilder
+	paginationBuilder *linq.PaginationBuilder
+}
+
+func (h *GetList[TModel]) Exclude(fieldPointers ...any) {
+	h.excludeBuilder.Exclude(fieldPointers...)
+}
+
+func (h *GetList[TModel]) Where() types.WhereTarget {
+	return h.whereBuilder
+}
+
+func (h *GetList[TModel]) OrderBy() types.OrderTarget {
+	return h.orderBuilder
+}
+
+func (h *GetList[TModel]) Page(page uint64) GetListHelper[TModel] {
 	h.paginationBuilder.Page(page)
 	return h
 }
 
-func (h *getListHelper[TModel]) Size(size uint64) GetListUserHelper[TModel] {
+func (h *GetList[TModel]) Size(size uint64) GetListHelper[TModel] {
 	h.paginationBuilder.Size(size)
 	return h
 }
 
-func (h *getListHelper[TModel]) HandleFn(qFns ...func(m *TModel, h GetListUserHelper[TModel])) {
+func (h *GetList[TModel]) Apply(applier GetListApplier) {
+	h.excludeBuilder.Apply(applier)
+	h.whereBuilder.Apply(applier)
+	h.orderBuilder.Apply(applier)
+	h.paginationBuilder.Apply(applier)
+}
+
+func (h *GetList[TModel]) HandleFn(qFns ...func(m *TModel, h GetListHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel, h)
 	}
 }
 
-func NewGetListHelper[TModel any](core *linq.CoreBuilder) GetListHelper[TModel] {
-	getFirstH := newGetFirstHelper[TModel](core)
-	getFirstH.paginationBuilder.Size(0)
-	getFirstH.paginationBuilder.Page(0)
-	return &getListHelper[TModel]{
-		getFirstH,
+func NewGetList[TModel any](baseModel *TModel) *GetList[TModel] {
+	return &GetList[TModel]{
+		baseModel: baseModel,
+
+		whereBuilder:      linq.NewWhereBuilder(baseModel),
+		excludeBuilder:    linq.NewExcludeBuilder(baseModel),
+		orderBuilder:      linq.NewOrderBuilder(baseModel),
+		paginationBuilder: linq.NewPaginationBuilder(),
 	}
 }

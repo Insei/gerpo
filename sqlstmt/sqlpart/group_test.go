@@ -1,11 +1,10 @@
-package sql
+package sqlpart
 
 import (
 	"context"
 	"testing"
 
 	"github.com/insei/fmap/v3"
-
 	"github.com/insei/gerpo/types"
 )
 
@@ -100,7 +99,7 @@ func TestStringGroupBuilder(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			builder := &StringGroupBuilder{
+			builder := &GroupBuilder{
 				ctx: ctx,
 				sql: tc.initialSQL,
 			}

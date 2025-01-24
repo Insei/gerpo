@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/insei/fmap/v3"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
@@ -58,7 +58,7 @@ func (c *column) IsAvailableFilterOperation(operation types.Operation) bool {
 	return c.base.Filters.IsAvailableFilterOperation(operation)
 }
 
-func generateSQLQuery(opt *options) string {
+func generateSQLColumnString(opt *options) string {
 	sql := opt.name
 	if opt.table != "" {
 		sql = fmt.Sprintf("%s.%s", strings.TrimSpace(opt.table), sql)
@@ -82,15 +82,15 @@ func New(field fmap.Field, opts ...Option) types.Column {
 		opt.apply(forOpts)
 	}
 
-	sqlQuery := generateSQLQuery(forOpts)
-	base := types.NewColumnBase(field, generateToSQLFn(sqlQuery, forOpts.alias), types.NewFilterManagerForField(field))
+	sqlColumnString := generateSQLColumnString(forOpts)
+	base := types.NewColumnBase(field, generateToSQLFn(sqlColumnString, forOpts.alias), types.NewFilterManagerForField(field))
 	c := &column{
 		name:  forOpts.name,
 		table: forOpts.table,
 		base:  base,
-		query: sqlQuery,
+		query: sqlColumnString,
 	}
-	filters := sql.GetDefaultTypeFilters(field, sqlQuery)
+	filters := sqlpart.GetFieldTypeFilters(field, sqlColumnString)
 	for op, filterFn := range filters {
 		c.base.Filters.AddFilterFn(op, filterFn)
 	}

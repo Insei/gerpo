@@ -1,19 +1,19 @@
 package linq
 
-type Limiter interface {
-	Limit(uint64)
-	Offset(uint64)
+import "github.com/insei/gerpo/sqlstmt/sqlpart"
+
+type PaginationApplier interface {
+	LimitOffset() sqlpart.LimitOffset
 }
 
 type PaginationBuilder struct {
-	opts  []func(b Limiter)
 	limit uint64
 	page  uint64
 }
 
 func NewPaginationBuilder() *PaginationBuilder {
 	return &PaginationBuilder{
-		limit: 1,
+		limit: 10,
 		page:  0,
 	}
 }
@@ -29,12 +29,7 @@ func (q *PaginationBuilder) Size(size uint64) {
 	q.limit = size
 }
 
-func (q *PaginationBuilder) Apply(paginator Limiter) {
-	q.opts = append(q.opts, func(b Limiter) {
-		b.Limit(q.limit)
-		b.Offset(q.page * q.limit)
-	})
-	for _, opt := range q.opts {
-		opt(paginator)
-	}
+func (q *PaginationBuilder) Apply(applier PaginationApplier) {
+	applier.LimitOffset().SetLimit(q.limit)
+	applier.LimitOffset().SetOffset(q.page * q.limit)
 }

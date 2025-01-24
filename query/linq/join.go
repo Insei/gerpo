@@ -4,29 +4,30 @@ import (
 	"context"
 	"strings"
 
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
 )
 
-func NewJoinBuilder(core *CoreBuilder) *JoinBuilder {
-	return &JoinBuilder{
-		core: core,
-	}
+type JoinApplier interface {
+	Join() sqlpart.Join
+}
+
+func NewJoinBuilder() *JoinBuilder {
+	return &JoinBuilder{}
 }
 
 type JoinBuilder struct {
-	core *CoreBuilder
-	opts []func(*sql.StringJoinBuilder)
+	opts []func(JoinApplier)
 }
 
-func (q *JoinBuilder) Apply(b *sql.StringJoinBuilder) {
+func (q *JoinBuilder) Apply(applier JoinApplier) {
 	for _, opt := range q.opts {
-		opt(b)
+		opt(applier)
 	}
 }
 
 func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
-	q.opts = append(q.opts, func(builder *sql.StringJoinBuilder) {
-		builder.JOIN(func(ctx context.Context) string {
+	q.opts = append(q.opts, func(applier JoinApplier) {
+		applier.Join().JOIN(func(ctx context.Context) string {
 			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
 			if leftLoinStr != "" {
 				return "LEFT JOIN " + leftLoinStr

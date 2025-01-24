@@ -1,4 +1,4 @@
-package sql
+package sqlpart
 
 import (
 	"context"
@@ -112,95 +112,106 @@ func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) 
 	}
 }
 
-func GetDefaultTypeFilters(field fmap.Field, query string) map[types.Operation]func(ctx context.Context, value any) (string, bool) {
+func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Operation]func(ctx context.Context, value any) (string, bool) {
 	filters := make(map[types.Operation]func(ctx context.Context, value any) (string, bool))
 	if field.GetType().Kind() == reflect.Ptr {
-		filters[types.OperationEQ] = genEQFn(query)
-		filters[types.OperationNEQ] = genNEQFn(query)
+		filters[types.OperationEQ] = genEQFn(sqlColumnString)
+		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
 	}
 
 	derefType := field.GetDereferencedType()
 	switch derefType.Kind() {
 	case reflect.Bool:
-		filters[types.OperationEQ] = genEQFn(query)
-		filters[types.OperationNEQ] = genNEQFn(query)
+		filters[types.OperationEQ] = genEQFn(sqlColumnString)
+		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
 	case reflect.String:
-		filters[types.OperationEQ] = genEQFn(query)
-		filters[types.OperationNEQ] = genNEQFn(query)
-		filters[types.OperationIN] = genINFn(query)
-		filters[types.OperationNIN] = genNINFn(query)
-		filters[types.OperationCT] = genCTFn(query)
-		filters[types.OperationNCT] = genNCTFn(query)
-		filters[types.OperationBW] = genBWFn(query)
-		filters[types.OperationNBW] = genNBWFn(query)
-		filters[types.OperationEW] = genEWFn(query)
-		filters[types.OperationNEW] = genNEWFn(query)
+		filters[types.OperationEQ] = genEQFn(sqlColumnString)
+		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+		filters[types.OperationIN] = genINFn(sqlColumnString)
+		filters[types.OperationNIN] = genNINFn(sqlColumnString)
+		filters[types.OperationCT] = genCTFn(sqlColumnString)
+		filters[types.OperationNCT] = genNCTFn(sqlColumnString)
+		filters[types.OperationBW] = genBWFn(sqlColumnString)
+		filters[types.OperationNBW] = genNBWFn(sqlColumnString)
+		filters[types.OperationEW] = genEWFn(sqlColumnString)
+		filters[types.OperationNEW] = genNEWFn(sqlColumnString)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
-		filters[types.OperationEQ] = genEQFn(query)
-		filters[types.OperationNEQ] = genNEQFn(query)
-		filters[types.OperationLT] = genLTFn(query)
-		filters[types.OperationLTE] = genLTEFn(query)
-		filters[types.OperationGT] = genGTFn(query)
-		filters[types.OperationGTE] = genGTEFn(query)
-		filters[types.OperationIN] = genINFn(query)
-		filters[types.OperationNIN] = genNINFn(query)
+		filters[types.OperationEQ] = genEQFn(sqlColumnString)
+		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+		filters[types.OperationLT] = genLTFn(sqlColumnString)
+		filters[types.OperationLTE] = genLTEFn(sqlColumnString)
+		filters[types.OperationGT] = genGTFn(sqlColumnString)
+		filters[types.OperationGTE] = genGTEFn(sqlColumnString)
+		filters[types.OperationIN] = genINFn(sqlColumnString)
+		filters[types.OperationNIN] = genNINFn(sqlColumnString)
 	default:
 		switch derefType {
 		case reflect.TypeOf(time.Time{}):
-			filters[types.OperationLT] = genLTFn(query)
-			filters[types.OperationGT] = genGTFn(query)
+			filters[types.OperationLT] = genLTFn(sqlColumnString)
+			filters[types.OperationGT] = genGTFn(sqlColumnString)
 		case reflect.TypeOf(uuid.UUID{}):
-			filters[types.OperationEQ] = genEQFn(query)
-			filters[types.OperationNEQ] = genNEQFn(query)
-			filters[types.OperationIN] = genINFn(query)
-			filters[types.OperationNIN] = genNINFn(query)
+			filters[types.OperationEQ] = genEQFn(sqlColumnString)
+			filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+			filters[types.OperationIN] = genINFn(sqlColumnString)
+			filters[types.OperationNIN] = genNINFn(sqlColumnString)
 		}
 	}
 	return filters
 }
 
-type StringWhereBuilder struct {
+type Where interface {
+	StartGroup()
+	EndGroup()
+	AND()
+	OR()
+	AppendSQLWithValues(sql string, appendValue bool, value any)
+	AppendCondition(cl types.Column, operation types.Operation, val any) error
+}
+
+type WhereBuilder struct {
 	ctx    context.Context
 	sql    string
 	values []any
 }
 
-func (b *StringWhereBuilder) SQL() string {
-	return b.sql
-}
-
-func (b *StringWhereBuilder) Values() []any {
-	return b.values
-}
-
-func (b *StringWhereBuilder) StartGroup() {
-	b.sql += "("
-}
-func (b *StringWhereBuilder) EndGroup() {
-	b.sql += ")"
-}
-
-func (b *StringWhereBuilder) AND() {
-	b.sql += " AND "
-}
-
-func (b *StringWhereBuilder) OR() {
-	b.sql += " OR "
-}
-
-func (b *StringWhereBuilder) AppendSQLWithValues(sql string, appendValue bool, value any) {
-	b.sql += sql
-	if appendValue {
-		b.values = append(b.values, value)
+func NewWhereBuilder(ctx context.Context) *WhereBuilder {
+	return &WhereBuilder{
+		ctx: ctx,
 	}
 }
 
-func (b *StringWhereBuilder) appendValue(operation types.Operation, val any) {
+func (b *WhereBuilder) SQL() string {
+	if strings.TrimSpace(b.sql) == "" {
+		return ""
+	}
+	return " WHERE " + b.sql
+}
+
+func (b *WhereBuilder) Values() []any {
+	return b.values
+}
+
+func (b *WhereBuilder) StartGroup() {
+	b.sql += "("
+}
+func (b *WhereBuilder) EndGroup() {
+	b.sql += ")"
+}
+
+func (b *WhereBuilder) AND() {
+	b.sql += " AND "
+}
+
+func (b *WhereBuilder) OR() {
+	b.sql += " OR "
+}
+
+func (b *WhereBuilder) appendValue(val any) {
 	switch values := val.(type) {
 	case []any:
-		if len(values) > 0 && operation == types.OperationIN || operation == types.OperationNIN {
+		if len(values) > 0 {
 			firstValTypeOf := reflect.ValueOf(values[0])
 			if firstValTypeOf.Kind() == reflect.Slice {
 				for i := 0; i < firstValTypeOf.Len(); i++ {
@@ -215,20 +226,46 @@ func (b *StringWhereBuilder) appendValue(operation types.Operation, val any) {
 	}
 }
 
-func (b *StringWhereBuilder) AppendCondition(cl types.Column, operation types.Operation, val any) error {
+func (b *WhereBuilder) AppendSQLWithValues(sql string, appendValue bool, value any) {
+	b.sql += sql
+	if appendValue {
+		b.appendValue(value)
+	}
+}
+
+func (b *WhereBuilder) needANDBeforeCondition() bool {
+	if len(b.sql) < 4 {
+		return false
+	}
+	endsWith := b.sql[len(b.sql)-4:]
+	switch endsWith {
+	case "AND ", " OR ":
+		return false
+	default:
+		// group starts 'AND' no needed
+		if endsWith[len(endsWith)-1:] == "(" {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *WhereBuilder) AppendCondition(cl types.Column, operation types.Operation, val any) error {
 	filterFn, ok := cl.GetFilterFn(operation)
 	if !ok {
 		return fmt.Errorf("for field %s whereSQL %s option is not available", cl.GetField().GetStructPath(), operation)
 	}
-
 	sql, appendValue, err := filterFn(b.ctx, val)
 	if err != nil {
 		return err
+	}
+	if b.needANDBeforeCondition() {
+		b.AND()
 	}
 	b.sql += sql
 	if !appendValue {
 		return nil
 	}
-	b.appendValue(operation, val)
+	b.appendValue(val)
 	return nil
 }

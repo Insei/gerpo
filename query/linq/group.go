@@ -1,29 +1,40 @@
 package linq
 
-import "github.com/insei/gerpo/sql"
+import (
+	"github.com/insei/gerpo/sqlstmt/sqlpart"
+	"github.com/insei/gerpo/types"
+)
 
-func NewGroupBuilder(core *CoreBuilder) *GroupBuilder {
+func NewGroupBuilder(baseModel any) *GroupBuilder {
 	return &GroupBuilder{
-		core: core,
+		model: baseModel,
 	}
 }
 
 type GroupBuilder struct {
-	core *CoreBuilder
-	opts []func(*sql.StringGroupBuilder)
+	model any
+	opts  []func(GroupApplier)
 }
 
-func (q *GroupBuilder) Apply(b *sql.StringGroupBuilder) {
+type GroupApplier interface {
+	ColumnsStorage() *types.ColumnsStorage
+	Group() sqlpart.Group
+}
+
+func (q *GroupBuilder) Apply(applier GroupApplier) {
 	for _, opt := range q.opts {
-		opt(b)
+		opt(applier)
 	}
 }
 
 func (q *GroupBuilder) GroupBy(fieldsPtr ...any) {
 	for _, fieldPtr := range fieldsPtr {
-		col := q.core.GetColumn(fieldPtr)
-		q.opts = append(q.opts, func(b *sql.StringGroupBuilder) {
-			b.GroupBy(col)
+		q.opts = append(q.opts, func(applier GroupApplier) {
+			col, err := applier.ColumnsStorage().GetByFieldPtr(q.model, fieldPtr)
+			if err != nil {
+				panic(err)
+			}
+			applier.Group().GroupBy(col)
 		})
 	}
 }

@@ -4,78 +4,81 @@ import (
 	"context"
 
 	"github.com/insei/gerpo/query/linq"
-	"github.com/insei/gerpo/sql"
 	"github.com/insei/gerpo/types"
 )
 
-type PersistentUserHelper[TModel any] interface {
-	Where() types.WhereTarget
-	Exclude(fieldsPtr ...any) PersistentUserHelper[TModel]
-	GroupBy(fieldsPtr ...any) PersistentUserHelper[TModel]
-	LeftJoin(func(ctx context.Context) string) PersistentUserHelper[TModel]
-}
-
 type PersistentHelper[TModel any] interface {
-	PersistentUserHelper[TModel]
-	SQLApply
-	HandleFn(qFns ...func(m *TModel, h PersistentUserHelper[TModel]))
+	Where() types.WhereTarget
+	Exclude(fieldsPtr ...any) PersistentHelper[TModel]
+	GroupBy(fieldsPtr ...any) PersistentHelper[TModel]
+	LeftJoin(func(ctx context.Context) string) PersistentHelper[TModel]
 }
 
-type persistentHelper[TModel any] struct {
-	core           *linq.CoreBuilder
+type Persistent[TModel any] struct {
+	baseModel *TModel
+
 	excludeBuilder *linq.ExcludeBuilder
 	whereBuilder   *linq.WhereBuilder
 	groupBuilder   *linq.GroupBuilder
 	joinBuilder    *linq.JoinBuilder
 }
 
-func (h *persistentHelper[TModel]) Where() types.WhereTarget {
+func (h *Persistent[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *persistentHelper[TModel]) LeftJoin(fn func(ctx context.Context) string) PersistentUserHelper[TModel] {
+func (h *Persistent[TModel]) LeftJoin(fn func(ctx context.Context) string) PersistentHelper[TModel] {
 	h.joinBuilder.LeftJoin(fn)
 	return h
 }
 
-func (h *persistentHelper[TModel]) Exclude(fieldsPtr ...any) PersistentUserHelper[TModel] {
+func (h *Persistent[TModel]) Exclude(fieldsPtr ...any) PersistentHelper[TModel] {
 	h.excludeBuilder.Exclude(fieldsPtr...)
 	return h
 }
 
-func (h *persistentHelper[TModel]) GroupBy(fieldsPtr ...any) PersistentUserHelper[TModel] {
+func (h *Persistent[TModel]) GroupBy(fieldsPtr ...any) PersistentHelper[TModel] {
 	h.groupBuilder.GroupBy(fieldsPtr...)
 	return h
 }
 
-func (h *persistentHelper[TModel]) HandleFn(qFns ...func(m *TModel, h PersistentUserHelper[TModel])) {
+func (h *Persistent[TModel]) HandleFn(qFns ...func(m *TModel, h PersistentHelper[TModel])) {
 	for _, fn := range qFns {
-		fn(h.core.Model().(*TModel), h)
+		fn(h.baseModel, h)
 	}
 }
 
-func (h *persistentHelper[TModel]) Apply(sqlBuilder *sql.StringBuilder) {
-	if sqlStr := sqlBuilder.WhereBuilder().SQL(); sqlStr != "" && !h.whereBuilder.IsEmpty() {
-		sqlBuilder.WhereBuilder().AND()
+func (h *Persistent[TModel]) Apply(applier any) {
+	if applier == nil {
+		return
 	}
-	h.joinBuilder.Apply(sqlBuilder.JoinBuilder())
-	h.whereBuilder.Apply(sqlBuilder.WhereBuilder())
-	h.excludeBuilder.Apply(sqlBuilder.SelectBuilder())
-	h.excludeBuilder.Apply(sqlBuilder.UpdateBuilder())
-	h.excludeBuilder.Apply(sqlBuilder.InsertBuilder())
-	h.groupBuilder.Apply(sqlBuilder.GroupBuilder())
+	if whereApplier, ok := applier.(linq.WhereApplier); ok {
+		h.whereBuilder.Apply(whereApplier)
+	}
+
+	if joinApplier, ok := applier.(linq.JoinApplier); ok {
+		h.joinBuilder.Apply(joinApplier)
+	}
+
+	if excludeApplier, ok := applier.(linq.ExcludeApplier); ok {
+		h.excludeBuilder.Apply(excludeApplier)
+	}
+
+	if groupApplier, ok := applier.(linq.GroupApplier); ok {
+		h.groupBuilder.Apply(groupApplier)
+	}
+	//if sqlStr := sqlBuilder.WhereBuilder().SQL(); sqlStr != "" && !h.whereBuilder.IsEmpty() {
+	//	sqlBuilder.WhereBuilder().AND()
+	//}
 }
 
-func newPersistentHelper[TModel any](core *linq.CoreBuilder) *persistentHelper[TModel] {
-	return &persistentHelper[TModel]{
-		core:           core,
-		excludeBuilder: linq.NewExcludeBuilder(core),
-		whereBuilder:   linq.NewWhereBuilder(core),
-		groupBuilder:   linq.NewGroupBuilder(core),
-		joinBuilder:    linq.NewJoinBuilder(core),
-	}
-}
+func NewPersistent[TModel any](baseModel *TModel) *Persistent[TModel] {
+	return &Persistent[TModel]{
+		baseModel: baseModel,
 
-func NewPersistentHelper[TModel any](core *linq.CoreBuilder) PersistentHelper[TModel] {
-	return newPersistentHelper[TModel](core)
+		excludeBuilder: linq.NewExcludeBuilder(baseModel),
+		whereBuilder:   linq.NewWhereBuilder(baseModel),
+		groupBuilder:   linq.NewGroupBuilder(baseModel),
+		joinBuilder:    linq.NewJoinBuilder(),
+	}
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/insei/gerpo/cache"
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -17,8 +17,12 @@ type mockStmt struct {
 	mock.Mock
 }
 
-func (m *mockStmt) GetStmtWithArgs(operation sql.Operation) (string, []interface{}) {
-	rets := m.Called(operation)
+func (m *mockStmt) SQL(opts ...sqlstmt.Option) (string, []interface{}) {
+	optsAny := make([]any, len(opts))
+	for i, opt := range opts {
+		optsAny[i] = opt
+	}
+	rets := m.Called(optsAny...)
 	return rets.String(0), rets.Get(1).([]interface{})
 }
 

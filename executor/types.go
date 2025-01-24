@@ -5,7 +5,8 @@ import (
 	dbsql "database/sql"
 	"fmt"
 
-	"github.com/insei/gerpo/sql"
+	"github.com/insei/gerpo/sqlstmt"
+	"github.com/insei/gerpo/types"
 )
 
 var ErrNoInsertedRows = fmt.Errorf("failed to insert: inserted 0 rows")
@@ -17,11 +18,25 @@ type ExecQuery interface {
 }
 
 type Executor[TModel any] interface {
-	GetOne(ctx context.Context, selectStmt sql.StmtSelect) (*TModel, error)
-	GetMultiple(ctx context.Context, selectStmt sql.StmtSelect) ([]*TModel, error)
-	InsertOne(ctx context.Context, model *TModel, stmtModel sql.StmtModel) error
-	Update(ctx context.Context, model *TModel, stmtModel sql.StmtModel) (int64, error)
-	Count(ctx context.Context, stmt sql.Stmt) (uint64, error)
-	Delete(ctx context.Context, stmt sql.Stmt) (int64, error)
+	GetOne(ctx context.Context, stmt Stmt) (*TModel, error)
+	GetMultiple(ctx context.Context, stmt Stmt) ([]*TModel, error)
+	InsertOne(ctx context.Context, stmt Stmt, model *TModel) error
+	Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error)
+	Count(ctx context.Context, stmt CountStmt) (uint64, error)
+	Delete(ctx context.Context, stmt CountStmt) (int64, error)
 	Tx(tx *Tx) (Executor[TModel], error)
+}
+
+type CountStmt interface {
+	SQL(...sqlstmt.Option) (string, []any)
+}
+
+type Columns interface {
+	GetModelPointers(model any) []any
+	GetModelValues(model any) []any
+}
+
+type Stmt interface {
+	CountStmt
+	Columns() types.ExecutionColumns
 }

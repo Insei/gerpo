@@ -1,4 +1,4 @@
-package sql
+package sqlpart
 
 import (
 	"context"
@@ -35,7 +35,7 @@ func TestStringJoinBuilder(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			builder := &StringJoinBuilder{
+			builder := &JoinBuilder{
 				joins: tc.initialJoins,
 			}
 
@@ -80,7 +80,7 @@ func TestStringJoinBuilderSQL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			builder := &StringJoinBuilder{
+			builder := &JoinBuilder{
 				joins: tc.initialJoins,
 			}
 
