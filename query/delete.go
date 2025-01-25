@@ -11,7 +11,7 @@ type DeleteHelper[TModel any] interface {
 }
 
 type DeleteApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Where() sqlpart.Where
 	Join() sqlpart.Join
 }

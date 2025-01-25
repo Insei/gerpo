@@ -18,7 +18,7 @@ type GetList struct {
 	limitOffset *sqlpart.LimitOffsetBuilder
 }
 
-func NewGetList(ctx context.Context, table string, colStorage *types.ColumnsStorage) *GetList {
+func NewGetList(ctx context.Context, table string, colStorage types.ColumnsStorage) *GetList {
 	executionColumns := colStorage.NewExecutionColumns(ctx, types.SQLActionSelect)
 	f := &GetList{
 		sqlselect:   newSelect(ctx, colStorage),
@@ -46,7 +46,7 @@ func (f *GetList) sql() string {
 		sql += col.ToSQL(f.ctx)
 	}
 	if strings.TrimSpace(sql) == "" {
-		panic("empty sql")
+		return ""
 	}
 	return fmt.Sprintf("SELECT %s FROM %s", sql, f.table)
 }

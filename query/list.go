@@ -15,7 +15,7 @@ type GetListHelper[TModel any] interface {
 }
 
 type GetListApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Columns() types.ExecutionColumns
 	Where() sqlpart.Where
 	Order() sqlpart.Order

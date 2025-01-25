@@ -17,7 +17,7 @@ type Insert struct {
 	vals *values
 }
 
-func NewInsert(ctx context.Context, table string, colStorage *types.ColumnsStorage) *Insert {
+func NewInsert(ctx context.Context, table string, colStorage types.ColumnsStorage) *Insert {
 	columns := colStorage.NewExecutionColumns(ctx, types.SQLActionInsert)
 	return &Insert{
 		ctx:     ctx,

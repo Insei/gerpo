@@ -3,6 +3,8 @@ package gerpo
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/insei/fmap/v3"
 )
 
 // Zero allocates an input structure such that all pointer fields
@@ -15,7 +17,7 @@ func zero(obj interface{}) error {
 	indirectVal := reflect.Indirect(reflect.ValueOf(obj))
 
 	if !indirectVal.CanSet() {
-		return fmt.Errorf("Input interface is not addressable (can't Set the memory address): %#v",
+		return fmt.Errorf("input interface is not addressable (can't Set the memory address): %#v",
 			obj)
 	}
 	if indirectVal.Kind() != reflect.Struct {
@@ -66,4 +68,14 @@ func mustZero(obj interface{}) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func getModelAndFields[TModel any]() (*TModel, fmap.Storage, error) {
+	model := new(TModel)
+	mustZero(model)
+	fields, err := fmap.GetFrom(model)
+	if err != nil {
+		return nil, nil, err
+	}
+	return model, fields, nil
 }

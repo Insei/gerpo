@@ -12,13 +12,13 @@ type Delete struct {
 	ctx context.Context
 
 	table          string
-	columnsStorage *types.ColumnsStorage
+	columnsStorage types.ColumnsStorage
 
 	join  *sqlpart.JoinBuilder
 	where *sqlpart.WhereBuilder
 }
 
-func NewDelete(ctx context.Context, table string, columnsStorage *types.ColumnsStorage) *Delete {
+func NewDelete(ctx context.Context, table string, columnsStorage types.ColumnsStorage) *Delete {
 	return &Delete{
 		ctx:            ctx,
 		table:          table,
@@ -36,7 +36,7 @@ func (d *Delete) Join() sqlpart.Join {
 	return d.join
 }
 
-func (d *Delete) ColumnsStorage() *types.ColumnsStorage {
+func (d *Delete) ColumnsStorage() types.ColumnsStorage {
 	return d.columnsStorage
 }
 

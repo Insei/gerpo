@@ -17,7 +17,7 @@ type GroupBuilder struct {
 }
 
 type GroupApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Group() sqlpart.Group
 }
 

@@ -11,7 +11,7 @@ type CountHelper[TModel any] interface {
 }
 
 type CountApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Where() sqlpart.Where
 }
 

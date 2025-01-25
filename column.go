@@ -14,7 +14,7 @@ type columnBuild interface {
 type ColumnBuilder[TModel any] struct {
 	table         string
 	model         *TModel
-	columns       *types.ColumnsStorage
+	columns       types.ColumnsStorage
 	fieldsStorage fmap.Storage
 	builders      []columnBuild
 }
@@ -38,27 +38,27 @@ func (b *ColumnBuilder[TModel]) getFmapField(fieldPtr any) fmap.Field {
 
 func (b *ColumnBuilder[TModel]) Column(fieldPtr any) *column.Builder {
 	field := b.getFmapField(fieldPtr)
-	builder := column.NewBuilder(field)
-	builder.WithTable(b.table)
-	b.builders = append(b.builders, builder)
-	return builder
+	cb := column.NewBuilder(field)
+	cb.WithTable(b.table)
+	b.builders = append(b.builders, cb)
+	return cb
 }
 
 func (b *ColumnBuilder[TModel]) Virtual(fieldPtr any) *virtual.Builder {
 	field := b.getFmapField(fieldPtr)
-	builder := virtual.NewBuilder(field)
-	b.builders = append(b.builders, builder)
-	return builder
+	vb := virtual.NewBuilder(field)
+	b.builders = append(b.builders, vb)
+	return vb
 }
 
-func (b *ColumnBuilder[TModel]) build() *types.ColumnsStorage {
-	for _, builder := range b.builders {
-		cl := builder.Build()
+func (b *ColumnBuilder[TModel]) build() types.ColumnsStorage {
+	for _, cb := range b.builders {
+		cl := cb.Build()
 		// Makes column
 		if table, ok := cl.Table(); !ok || table == "" || table != b.table {
-			if b, ok := builder.(*column.Builder); ok {
-				b.WithInsertProtection().WithUpdateProtection()
-				cl = b.Build()
+			if cbCasted, ok := cb.(*column.Builder); ok {
+				cbCasted.WithInsertProtection().WithUpdateProtection()
+				cl = cbCasted.Build()
 			}
 		}
 		b.columns.Add(cl)

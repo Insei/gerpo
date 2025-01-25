@@ -18,8 +18,9 @@ type GetFirst struct {
 	*sqlselect
 }
 
-func NewGetFirst(ctx context.Context, table string, columnsStorage *types.ColumnsStorage) *GetFirst {
+func NewGetFirst(ctx context.Context, table string, columnsStorage types.ColumnsStorage) *GetFirst {
 	f := &GetFirst{
+		ctx:       ctx,
 		table:     table,
 		sqlselect: newSelect(ctx, columnsStorage),
 	}
@@ -52,7 +53,6 @@ func (f *GetFirst) SQL(_ ...Option) (string, []any) {
 	sql += f.group.SQL()
 	limitOffset := sqlpart.NewLimitOffsetBuilder()
 	limitOffset.SetLimit(1)
-	limitOffset.SetOffset(0)
 	sql += limitOffset.SQL()
 	return sql, f.where.Values()
 }

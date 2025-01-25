@@ -10,17 +10,6 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-type Builder[TModel any] interface {
-	WithQuery(queryFn func(m *TModel, h query.PersistentHelper[TModel])) Builder[TModel]
-	BeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	BeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
-	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	WithErrorTransformer(fn func(err error) error) Builder[TModel]
-	Build() (Repository[TModel], error)
-}
-
 type builder[TModel any] struct {
 	db              *dbsql.DB
 	table           string

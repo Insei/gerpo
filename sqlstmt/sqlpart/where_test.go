@@ -7,19 +7,338 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/insei/fmap/v3"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
-type TestModel struct {
-	Int     int
-	Float64 float64
-	String  string
-	Bool    bool
-	Time    time.Time
-	UUID    uuid.UUID
-	TimePtr *time.Time
+func (m *MockColumn) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
+	if !m.allowedAction {
+		return nil, false
+	}
+	filters := map[types.Operation]func(ctx context.Context, value any) (string, bool, error){
+		types.OperationEQ: func(ctx context.Context, value any) (string, bool, error) {
+			if value == nil {
+				return m.name + " IS NULL", false, nil
+			}
+			return m.name + " = ?", true, nil
+		},
+		types.OperationNEQ: func(ctx context.Context, value any) (string, bool, error) {
+			if value == nil {
+				return m.name + " IS NOT NULL", false, nil
+			}
+			return m.name + " != ?", true, nil
+		},
+		types.OperationGT: func(ctx context.Context, value any) (string, bool, error) {
+			return m.name + " > ?", true, nil
+		},
+	}
+	fn, ok := filters[operation]
+	return fn, ok
+}
+
+func (m *MockColumn) GetField() fmap.Field {
+	type MockStruct struct {
+		Field string
+	}
+	stor, _ := fmap.Get[MockStruct]()
+	return stor.MustFind("Field")
+}
+
+func TestWhereBuilder_StartAndEndGroup(t *testing.T) {
+	testCases := []struct {
+		name           string
+		setup          func(builder *WhereBuilder)
+		expectedSQL    string
+		expectedValues []any
+	}{
+		{
+			name: "Single condition within group",
+			setup: func(builder *WhereBuilder) {
+				builder.StartGroup()
+				builder.AppendSQLWithValues("name = ?", true, "John")
+				builder.EndGroup()
+			},
+			expectedSQL:    "(name = ?)",
+			expectedValues: []any{"John"},
+		},
+		{
+			name: "Multiple conditions within group",
+			setup: func(builder *WhereBuilder) {
+				builder.StartGroup()
+				builder.AppendSQLWithValues("name = ?", true, "Alice")
+				builder.AND()
+				builder.AppendSQLWithValues("age > ?", true, 25)
+				builder.EndGroup()
+			},
+			expectedSQL:    "(name = ? AND age > ?)",
+			expectedValues: []any{"Alice", 25},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			builder := NewWhereBuilder(ctx)
+
+			tc.setup(builder)
+
+			if builder.sql != tc.expectedSQL {
+				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, builder.sql)
+			}
+
+			if !compareSlices(builder.Values(), tc.expectedValues) {
+				t.Errorf("Expected values %v, got %v", tc.expectedValues, builder.Values())
+			}
+		})
+	}
+}
+
+func TestWhereBuilder_AND_OR(t *testing.T) {
+	testCases := []struct {
+		name           string
+		setup          func(builder *WhereBuilder)
+		expectedSQL    string
+		expectedValues []any
+	}{
+		{
+			name: "Adding AND and OR conditions",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("name = ?", true, "John")
+				builder.AND()
+				builder.AppendSQLWithValues("age > ?", true, 30)
+				builder.OR()
+				builder.AppendSQLWithValues("city = ?", true, "New York")
+			},
+			expectedSQL:    "name = ? AND age > ? OR city = ?",
+			expectedValues: []any{"John", 30, "New York"},
+		},
+		{
+			name: "Only AND conditions",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("status = ?", true, "active")
+				builder.AND()
+				builder.AppendSQLWithValues("role = ?", true, "admin")
+			},
+			expectedSQL:    "status = ? AND role = ?",
+			expectedValues: []any{"active", "admin"},
+		},
+		{
+			name: "Only OR conditions",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("country = ?", true, "USA")
+				builder.OR()
+				builder.AppendSQLWithValues("country = ?", true, "Canada")
+			},
+			expectedSQL:    "country = ? OR country = ?",
+			expectedValues: []any{"USA", "Canada"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			builder := NewWhereBuilder(ctx)
+
+			tc.setup(builder)
+
+			if builder.sql != tc.expectedSQL {
+				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, builder.sql)
+			}
+
+			if !compareSlices(builder.Values(), tc.expectedValues) {
+				t.Errorf("Expected values %v, got %v", tc.expectedValues, builder.Values())
+			}
+		})
+	}
+}
+
+func TestWhereBuilder_AppendCondition(t *testing.T) {
+	testCases := []struct {
+		name           string
+		column         types.Column
+		operation      types.Operation
+		value          any
+		initialSQL     string
+		expectedSQL    string
+		expectedValues []any
+		expectError    bool
+	}{
+		{
+			name:           "Add EQ condition",
+			column:         &MockColumn{name: "name", allowedAction: true},
+			operation:      types.OperationEQ,
+			value:          "Alice",
+			initialSQL:     "",
+			expectedSQL:    "name = ?",
+			expectedValues: []any{"Alice"},
+			expectError:    false,
+		},
+		{
+			name:           "Add NEQ condition with nil",
+			column:         &MockColumn{name: "deleted_at", allowedAction: true},
+			operation:      types.OperationNEQ,
+			value:          nil,
+			initialSQL:     "",
+			expectedSQL:    "deleted_at IS NOT NULL",
+			expectedValues: []any{},
+			expectError:    false,
+		},
+		{
+			name:           "Attempt to add condition without allowed action",
+			column:         &MockColumn{name: "password", allowedAction: false},
+			operation:      types.OperationEQ,
+			value:          "secret",
+			initialSQL:     "",
+			expectedSQL:    "",
+			expectedValues: []any{},
+			expectError:    true,
+		},
+		{
+			name:           "Add multiple conditions",
+			column:         &MockColumn{name: "age", allowedAction: true},
+			operation:      types.OperationGT,
+			value:          25,
+			initialSQL:     "name = ?",
+			expectedSQL:    "name = ? AND age > ?",
+			expectedValues: []any{25},
+			expectError:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			builder := NewWhereBuilder(ctx)
+			builder.sql = tc.initialSQL
+
+			err := builder.AppendCondition(tc.column, tc.operation, tc.value)
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+
+			if builder.sql != tc.expectedSQL {
+				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, builder.sql)
+			}
+
+			if !compareSlices(builder.Values(), tc.expectedValues) {
+				t.Errorf("Expected values %v, got %v", tc.expectedValues, builder.Values())
+			}
+		})
+	}
+}
+
+func TestWhereBuilder_SQL(t *testing.T) {
+	testCases := []struct {
+		name        string
+		setup       func(builder *WhereBuilder)
+		expectedSQL string
+	}{
+		{
+			name: "Empty SQL query",
+			setup: func(builder *WhereBuilder) {
+				// No operations
+			},
+			expectedSQL: "",
+		},
+		{
+			name: "Single condition",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("name = ?", true, "Bob")
+			},
+			expectedSQL: " WHERE name = ?",
+		},
+		{
+			name: "Multiple conditions with AND and OR",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("name = ?", true, "Bob")
+				builder.AND()
+				builder.AppendSQLWithValues("age >= ?", true, 20)
+				builder.OR()
+				builder.AppendSQLWithValues("city = ?", true, "Paris")
+			},
+			expectedSQL: " WHERE name = ? AND age >= ? OR city = ?",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			builder := NewWhereBuilder(ctx)
+			tc.setup(builder)
+
+			sql := builder.SQL()
+			if sql != tc.expectedSQL {
+				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sql)
+			}
+		})
+	}
+}
+
+func TestWhereBuilder_Values(t *testing.T) {
+	testCases := []struct {
+		name           string
+		setup          func(builder *WhereBuilder)
+		expectedValues []any
+	}{
+		{
+			name: "Single parameter",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("name = ?", true, "Charlie")
+			},
+			expectedValues: []any{"Charlie"},
+		},
+		{
+			name: "Multiple parameters with AND",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("name = ?", true, "Charlie")
+				builder.AND()
+				builder.AppendSQLWithValues("age < ?", true, 40)
+			},
+			expectedValues: []any{"Charlie", 40},
+		},
+		{
+			name: "Parameters with OR",
+			setup: func(builder *WhereBuilder) {
+				builder.AppendSQLWithValues("country = ?", true, "USA")
+				builder.OR()
+				builder.AppendSQLWithValues("country = ?", true, "Canada")
+			},
+			expectedValues: []any{"USA", "Canada"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			builder := NewWhereBuilder(ctx)
+			tc.setup(builder)
+
+			expected := tc.expectedValues
+			actual := builder.Values()
+			if !compareSlices(actual, expected) {
+				t.Errorf("Expected values %v, got %v", expected, actual)
+			}
+		})
+	}
+}
+
+// Helper function to compare two slices
+func compareSlices(a, b []any) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestGenEQFn(t *testing.T) {
@@ -548,6 +867,15 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			type TestModel struct {
+				Int     int
+				Float64 float64
+				String  string
+				Bool    bool
+				Time    time.Time
+				UUID    uuid.UUID
+				TimePtr *time.Time
+			}
 			fields, _ := fmap.Get[TestModel]()
 			field := fields.MustFind(tc.fieldName)
 
@@ -557,156 +885,6 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			for _, op := range tc.expectedOps {
 				assert.Contains(t, filters, op, "Filter for operation %v is missing", op)
 			}
-		})
-	}
-}
-
-func TestSQLAndValues(t *testing.T) {
-	builder := &WhereBuilder{
-		sql:    "SELECT * FROM table WHERE",
-		values: []any{"initial"},
-	}
-
-	assert.Equal(t, "SELECT * FROM table WHERE", builder.SQL())
-	assert.Equal(t, []any{"initial"}, builder.Values())
-}
-
-func TestStartGroup(t *testing.T) {
-	builder := &WhereBuilder{}
-
-	builder.StartGroup()
-	assert.Equal(t, "(", builder.SQL())
-}
-
-func TestEndGroup(t *testing.T) {
-	builder := &WhereBuilder{}
-
-	builder.EndGroup()
-	assert.Equal(t, ")", builder.SQL())
-}
-
-func TestStartAndEndGroup(t *testing.T) {
-	builder := &WhereBuilder{}
-
-	builder.StartGroup()
-	builder.EndGroup()
-	assert.Equal(t, "()", builder.SQL())
-}
-
-func TestANDOperator(t *testing.T) {
-	builder := &WhereBuilder{}
-
-	builder.sql = "condition1"
-	builder.AND()
-	assert.Equal(t, "condition1 AND ", builder.SQL())
-}
-
-func TestOROperator(t *testing.T) {
-	builder := &WhereBuilder{}
-
-	builder.sql = "condition1"
-	builder.OR()
-	assert.Equal(t, "condition1 OR ", builder.SQL())
-}
-
-func TestAppendSQLWithValues(t *testing.T) {
-	testCases := []struct {
-		name           string
-		initialSQL     string
-		initialValues  []any
-		sql            string
-		appendValue    bool
-		value          any
-		expectedSQL    string
-		expectedValues []any
-	}{
-		{
-			name:           "Append SQL without value",
-			initialSQL:     "SELECT * FROM table WHERE ",
-			initialValues:  []any{},
-			sql:            "field = ?",
-			appendValue:    false,
-			value:          nil,
-			expectedSQL:    "SELECT * FROM table WHERE field = ?",
-			expectedValues: []any{},
-		},
-		{
-			name:           "Append SQL with value",
-			initialSQL:     "SELECT * FROM table WHERE ",
-			initialValues:  []any{},
-			sql:            "field = ?",
-			appendValue:    true,
-			value:          "value",
-			expectedSQL:    "SELECT * FROM table WHERE field = ?",
-			expectedValues: []any{"value"},
-		},
-		{
-			name:           "Append SQL with value",
-			initialSQL:     "SELECT * FROM table WHERE ",
-			initialValues:  []any{},
-			sql:            "field = ?",
-			appendValue:    true,
-			value:          "value",
-			expectedSQL:    "SELECT * FROM table WHERE field = ?",
-			expectedValues: []any{"value"},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			builder := &WhereBuilder{
-				sql:    tc.initialSQL,
-				values: tc.initialValues,
-			}
-
-			builder.AppendSQLWithValues(tc.sql, tc.appendValue, tc.value)
-			assert.Equal(t, tc.expectedSQL, builder.sql)
-			assert.Equal(t, tc.expectedValues, builder.values)
-		})
-	}
-}
-
-func TestNeedANDForCondition(t *testing.T) {
-	testCases := []struct {
-		name           string
-		initialSQL     string
-		expectedResult bool
-	}{
-		{
-			name:           "Empty SQL",
-			initialSQL:     "",
-			expectedResult: false,
-		},
-		{
-			name:           "SQL ending with AND",
-			initialSQL:     "condition1 AND ",
-			expectedResult: false,
-		},
-		{
-			name:           "SQL ending with OR",
-			initialSQL:     "condition1 OR ",
-			expectedResult: false,
-		},
-		{
-			name:           "SQL ending with open parenthesis",
-			initialSQL:     "condition1 (",
-			expectedResult: false,
-		},
-		{
-			name:           "SQL not ending with AND, OR, or (",
-			initialSQL:     "condition1 ",
-			expectedResult: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			builder := &WhereBuilder{
-				sql: tc.initialSQL,
-			}
-
-			result := builder.needANDBeforeCondition()
-			assert.Equal(t, tc.expectedResult, result)
 		})
 	}
 }

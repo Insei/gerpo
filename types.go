@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
@@ -13,7 +12,7 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Repository[TModel any] interface {
-	GetColumns() *types.ColumnsStorage
+	GetColumns() types.ColumnsStorage
 	Tx(tx *executor.Tx) (Repository[TModel], error)
 	GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error)
 	GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListHelper[TModel])) (models []*TModel, err error)
@@ -23,12 +22,13 @@ type Repository[TModel any] interface {
 	Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error)
 }
 
-func getModelAndFields[TModel any]() (*TModel, fmap.Storage, error) {
-	model := new(TModel)
-	mustZero(model)
-	fields, err := fmap.GetFrom(model)
-	if err != nil {
-		return nil, nil, err
-	}
-	return model, fields, nil
+type Builder[TModel any] interface {
+	WithQuery(queryFn func(m *TModel, h query.PersistentHelper[TModel])) Builder[TModel]
+	BeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	BeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
+	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	WithErrorTransformer(fn func(err error) error) Builder[TModel]
+	Build() (Repository[TModel], error)
 }
