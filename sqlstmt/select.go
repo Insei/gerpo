@@ -8,7 +8,7 @@ import (
 )
 
 type sqlselect struct {
-	columnsStorage *types.ColumnsStorage
+	columnsStorage types.ColumnsStorage
 
 	where *sqlpart.WhereBuilder
 	join  *sqlpart.JoinBuilder
@@ -16,7 +16,7 @@ type sqlselect struct {
 	group *sqlpart.GroupBuilder
 }
 
-func newSelect(ctx context.Context, storage *types.ColumnsStorage) *sqlselect {
+func newSelect(ctx context.Context, storage types.ColumnsStorage) *sqlselect {
 	f := &sqlselect{
 		columnsStorage: storage,
 		where:          sqlpart.NewWhereBuilder(ctx),
@@ -27,7 +27,7 @@ func newSelect(ctx context.Context, storage *types.ColumnsStorage) *sqlselect {
 	return f
 }
 
-func (f *sqlselect) ColumnsStorage() *types.ColumnsStorage {
+func (f *sqlselect) ColumnsStorage() types.ColumnsStorage {
 	return f.columnsStorage
 }
 

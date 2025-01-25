@@ -15,12 +15,12 @@ type Update struct {
 	table string
 	vals  *values
 
-	colsStorage *types.ColumnsStorage
+	colsStorage types.ColumnsStorage
 	columns     types.ExecutionColumns
 	where       *sqlpart.WhereBuilder
 }
 
-func NewUpdate(ctx context.Context, colStorage *types.ColumnsStorage, table string) *Update {
+func NewUpdate(ctx context.Context, colStorage types.ColumnsStorage, table string) *Update {
 	columns := colStorage.NewExecutionColumns(ctx, types.SQLActionUpdate)
 	return &Update{
 		ctx: ctx,
@@ -51,7 +51,7 @@ func (u *Update) sql() string {
 	return fmt.Sprintf("UPDATE %s SET %s", u.table, colsStr[:len(colsStr)-2])
 }
 
-func (u *Update) ColumnsStorage() *types.ColumnsStorage {
+func (u *Update) ColumnsStorage() types.ColumnsStorage {
 	return u.colsStorage
 }
 

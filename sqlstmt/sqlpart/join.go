@@ -14,11 +14,7 @@ type JoinBuilder struct {
 	joins []func(ctx context.Context) string
 }
 
-func NewJoinBuilder(ctx context.Context) *JoinBuilder {
-	return &JoinBuilder{
-		ctx: ctx,
-	}
-}
+func NewJoinBuilder(ctx context.Context) *JoinBuilder { return &JoinBuilder{ctx: ctx} }
 
 func (b *JoinBuilder) JOIN(joinFn func(ctx context.Context) string) {
 	b.joins = append(b.joins, joinFn)
@@ -32,5 +28,5 @@ func (b *JoinBuilder) SQL() string {
 	if strings.TrimSpace(sql) == "" {
 		return ""
 	}
-	return " " + sql
+	return sql
 }

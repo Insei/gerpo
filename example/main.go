@@ -56,7 +56,6 @@ func main() {
 				})
 		}).
 		BeforeInsert(func(ctx context.Context, m *test) {
-			m.ID = 1
 			m.CreatedAt = time.Now()
 		}).
 		BeforeUpdate(func(ctx context.Context, m *test) {

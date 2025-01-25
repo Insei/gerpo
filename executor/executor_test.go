@@ -9,12 +9,28 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/insei/gerpo/cache"
 	"github.com/insei/gerpo/sqlstmt"
+	"github.com/insei/gerpo/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 type mockStmt struct {
 	mock.Mock
+}
+
+type mockColumns struct {
+	mock.Mock
+	types.ExecutionColumns
+}
+
+func (m *mockColumns) GetModelPointers(model any) []any {
+	rets := m.Called(model)
+	return rets.Get(0).([]any)
+}
+
+func (m *mockColumns) GetModelValues(model any) []interface{} {
+	rets := m.Called(model)
+	return rets.Get(0).([]interface{})
 }
 
 func (m *mockStmt) SQL(opts ...sqlstmt.Option) (string, []interface{}) {
@@ -26,18 +42,9 @@ func (m *mockStmt) SQL(opts ...sqlstmt.Option) (string, []interface{}) {
 	return rets.String(0), rets.Get(1).([]interface{})
 }
 
-func (m *mockStmt) GetModelPointers(operation sql.Operation, model interface{}) []interface{} {
-	rets := m.Called(operation, model)
-	return rets.Get(0).([]interface{})
-}
-
-type mockStmtModel struct {
-	mock.Mock
-}
-
-func (m *mockStmtModel) GetStmtWithArgsForModel(operation sql.Operation, model any) (string, []interface{}) {
-	rets := m.Called(operation, model)
-	return rets.String(0), rets.Get(1).([]interface{})
+func (m *mockStmt) Columns() types.ExecutionColumns {
+	rets := m.Called()
+	return rets.Get(0).(types.ExecutionColumns)
 }
 
 type testModel struct {
@@ -60,8 +67,7 @@ func TestGetOne(t *testing.T) {
 			ctx:  context.Background(),
 			withStmt: func() *mockStmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.SelectOne).Return("query", []interface{}{})
-				stmt.On("GetModelPointers", sql.SelectOne, mock.Anything).Return([]interface{}{})
+				stmt.On("SQL").Return("query", []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -74,8 +80,7 @@ func TestGetOne(t *testing.T) {
 			ctx:  context.Background(),
 			withStmt: func() *mockStmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.SelectOne).Return("query", []interface{}{})
-				stmt.On("GetModelPointers", sql.SelectOne, mock.Anything).Return([]interface{}{})
+				stmt.On("SQL").Return("query", []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -90,9 +95,13 @@ func TestGetOne(t *testing.T) {
 				model := new(testModel)
 				stmt := new(mockStmt)
 				stmt.
-					On("GetStmtWithArgs", sql.SelectOne).
+					On("SQL").
 					Return("SELECT id, age, name FROM users LIMIT 1", []interface{}{})
-				stmt.On("GetModelPointers", sql.SelectOne, mock.Anything).Return([]any{&model.ID, &model.Age, &model.Name})
+
+				columns := new(mockColumns)
+				columns.On("GetModelPointers", mock.Anything).Return([]any{&model.ID, &model.Age, &model.Name})
+
+				stmt.On("Columns").Return(columns)
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -110,9 +119,12 @@ func TestGetOne(t *testing.T) {
 				model := new(testModel)
 				stmt := new(mockStmt)
 				stmt.
-					On("GetStmtWithArgs", sql.SelectOne).
+					On("SQL").
 					Return("SELECT id, age, name FROM users LIMIT 1", []interface{}{})
-				stmt.On("GetModelPointers", sql.SelectOne, mock.Anything).Return([]any{&model.ID, &model.Age})
+				columns := new(mockColumns)
+				columns.On("GetModelPointers", mock.Anything).Return([]any{&model.ID, &model.Age})
+
+				stmt.On("Columns").Return(columns)
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -130,7 +142,7 @@ func TestGetOne(t *testing.T) {
 			withStmt: func() *mockStmt {
 				stmt := new(mockStmt)
 				stmt.
-					On("GetStmtWithArgs", sql.SelectOne).
+					On("SQL").
 					Return("query", []interface{}{})
 				return stmt
 			}(),
@@ -181,7 +193,7 @@ func TestGetMultiple(t *testing.T) {
 	tests := []struct {
 		name        string
 		ctx         context.Context
-		withStmt    sql.StmtSelect
+		withStmt    Stmt
 		setupDb     func(sqlmock.Sqlmock)
 		cacheBundle func() cache.ModelBundle
 		expectedErr error
@@ -189,10 +201,9 @@ func TestGetMultiple(t *testing.T) {
 		{
 			name: "Failure in QueryContext",
 			ctx:  context.Background(),
-			withStmt: func() sql.StmtSelect {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Select).Return("query", []interface{}{})
-				stmt.On("GetModelPointers", sql.Select, mock.Anything).Return([]interface{}{})
+				stmt.On("SQL").Return("query", []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -203,10 +214,9 @@ func TestGetMultiple(t *testing.T) {
 		{
 			name: "Zero rows returned it's ok",
 			ctx:  context.Background(),
-			withStmt: func() sql.StmtSelect {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Select).Return("query", []interface{}{})
-				stmt.On("GetModelPointers", sql.Select, mock.Anything).Return([]interface{}{})
+				stmt.On("SQL").Return("query", []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -217,12 +227,19 @@ func TestGetMultiple(t *testing.T) {
 		{
 			name: "Successful query with multiple rows",
 			ctx:  context.Background(),
-			withStmt: func() sql.StmtSelect {
+			withStmt: func() Stmt {
 				model := []testModel{{}, {}}
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Select).Return("SELECT id, age, name FROM users", []interface{}{})
-				stmt.On("GetModelPointers", sql.Select, mock.Anything).Return([]any{&model[0].ID, &model[0].Age, &model[0].Name}).Once()
-				stmt.On("GetModelPointers", sql.Select, mock.Anything).Return([]any{&model[1].ID, &model[1].Age, &model[1].Name}).Once()
+				stmt.On("SQL").Return("SELECT id, age, name FROM users", []interface{}{})
+
+				columns := new(mockColumns)
+				columns.On("GetModelPointers", mock.Anything).Return([]any{&model[0].ID, &model[0].Age, &model[0].Name})
+				stmt.On("Columns").Return(columns)
+
+				columns = new(mockColumns)
+				columns.On("GetModelPointers", mock.Anything).Return([]any{&model[1].ID, &model[1].Age, &model[1].Name})
+				stmt.On("Columns").Return(columns)
+
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -236,9 +253,9 @@ func TestGetMultiple(t *testing.T) {
 		{
 			name: "No query executed fetching from cache",
 			ctx:  context.Background(),
-			withStmt: func() sql.StmtSelect {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Select).Return("query", []interface{}{})
+				stmt.On("SQL").Return("query", []interface{}{})
 				return stmt
 			}(),
 			cacheBundle: func() cache.ModelBundle {
@@ -252,11 +269,14 @@ func TestGetMultiple(t *testing.T) {
 		{
 			name: "Rows returned but not enough model pointers",
 			ctx:  context.Background(),
-			withStmt: func() sql.StmtSelect {
+			withStmt: func() Stmt {
 				model := new(testModel)
 				stmt := new(mockStmt)
-				stmt.On("GetModelPointers", sql.Select, mock.Anything).Return([]any{&model.ID, &model.Age}).Once()
-				stmt.On("GetStmtWithArgs", sql.Select).Return("SELECT id, age, name FROM users LIMIT 1", []interface{}{})
+				stmt.On("SQL").Return("SELECT id, age, name FROM users LIMIT 1", []interface{}{})
+
+				columns := new(mockColumns)
+				columns.On("GetModelPointers", mock.Anything).Return([]any{&model.ID, &model.Age})
+				stmt.On("Columns").Return(columns)
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -306,7 +326,7 @@ func TestInsertOne(t *testing.T) {
 	tests := []struct {
 		name        string
 		withModel   func() *testModel
-		withStmt    func() sql.StmtModel
+		withStmt    func() Stmt
 		setupDb     func(sqlmock.Sqlmock)
 		cacheBundle func() cache.ModelBundle
 		expectedErr error
@@ -320,9 +340,9 @@ func TestInsertOne(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Insert, mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
 				return stmt
 			},
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -339,9 +359,9 @@ func TestInsertOne(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Insert, mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
 				return stmt
 			},
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -358,18 +378,13 @@ func TestInsertOne(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Insert, mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
 				return stmt
 			},
 			setupDb: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec(`INSERT INTO users \(id, age, name\) VALUES \(\$1, \$2, \$3\)`).WithArgs(1, 28, "John Doe").WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("result error")))
-			},
-			cacheBundle: func() cache.ModelBundle {
-				b := &MockModelBundle{}
-				b.On("Clean", mock.Anything)
-				return b
 			},
 			expectedErr: fmt.Errorf("result error"),
 		},
@@ -382,18 +397,13 @@ func TestInsertOne(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Insert, mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
 				return stmt
 			},
 			setupDb: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec(`INSERT INTO users \(id, age, name\) VALUES \(\$1, \$2, \$3\)`).WithArgs(1, 28, "John Doe").WillReturnResult(sqlmock.NewResult(0, 0))
-			},
-			cacheBundle: func() cache.ModelBundle {
-				b := &MockModelBundle{}
-				b.On("Clean", mock.Anything)
-				return b
 			},
 			expectedErr: ErrNoInsertedRows,
 		},
@@ -406,9 +416,9 @@ func TestInsertOne(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Insert, mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).Return("INSERT INTO users (id, age, name) VALUES ($1, $2, $3)", []any{1, 28, "John Doe"})
 				return stmt
 			},
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -443,7 +453,7 @@ func TestInsertOne(t *testing.T) {
 				e.cacheBundle = tt.cacheBundle()
 			}
 
-			err = e.InsertOne(context.Background(), tt.withModel(), tt.withStmt())
+			err = e.InsertOne(context.Background(), tt.withStmt(), tt.withModel())
 			if (err != nil) != (tt.expectedErr != nil) || (err != nil && err.Error() != tt.expectedErr.Error()) {
 				t.Errorf("executor.InsertOne() error = %v, wantErr %v", err, tt.expectedErr)
 			}
@@ -454,11 +464,12 @@ func TestInsertOne(t *testing.T) {
 		})
 	}
 }
+
 func TestUpdate(t *testing.T) {
 	tests := []struct {
 		name                string
 		withModel           func() *testModel
-		withStmt            func() sql.StmtModel
+		withStmt            func() Stmt
 		setupDb             func(sqlmock.Sqlmock)
 		cacheBundle         func() cache.ModelBundle
 		expectedErr         error
@@ -473,9 +484,9 @@ func TestUpdate(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Update, mock.Anything).
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).
 					Return("UPDATE users SET age = $1, name = $2 WHERE id = $3", []any{28, "John Doe", 1})
 				return stmt
 			},
@@ -494,9 +505,9 @@ func TestUpdate(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Update, mock.Anything).
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).
 					Return("UPDATE users SET age = $1, name = $2 WHERE id = $3", []any{28, "John Doe", 1})
 				return stmt
 			},
@@ -515,9 +526,9 @@ func TestUpdate(t *testing.T) {
 					Name: "John Doe",
 				}
 			},
-			withStmt: func() sql.StmtModel {
-				stmt := new(mockStmtModel)
-				stmt.On("GetStmtWithArgsForModel", sql.Update, mock.Anything).
+			withStmt: func() Stmt {
+				stmt := new(mockStmt)
+				stmt.On("SQL", mock.Anything).
 					Return("UPDATE users SET age = $1, name = $2 WHERE id = $3", []any{28, "John Doe", 1})
 				return stmt
 			},
@@ -555,7 +566,7 @@ func TestUpdate(t *testing.T) {
 				e.cacheBundle = tt.cacheBundle()
 			}
 
-			updatedRows, err := e.Update(context.Background(), tt.withModel(), tt.withStmt())
+			updatedRows, err := e.Update(context.Background(), tt.withStmt(), tt.withModel())
 			if (err != nil) != (tt.expectedErr != nil) ||
 				(err != nil && err.Error() != tt.expectedErr.Error()) {
 				t.Errorf("executor.Update() error = %v, wantErr %v", err, tt.expectedErr)
@@ -571,7 +582,7 @@ func TestCount(t *testing.T) {
 	tests := []struct {
 		name        string
 		ctx         context.Context
-		withStmt    sql.Stmt
+		withStmt    Stmt
 		setupDb     func(sqlmock.Sqlmock)
 		cacheBundle func() cache.ModelBundle
 		expectedErr error
@@ -580,9 +591,9 @@ func TestCount(t *testing.T) {
 		{
 			name: "Error in QueryContext",
 			ctx:  context.Background(),
-			withStmt: func() sql.Stmt {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Count).Return(`SELECT COUNT(*) FROM users`, []interface{}{})
+				stmt.On("SQL").Return(`SELECT COUNT(*) FROM users`, []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -594,9 +605,9 @@ func TestCount(t *testing.T) {
 		{
 			name: "Successful count",
 			ctx:  context.Background(),
-			withStmt: func() sql.Stmt {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Count).Return(`SELECT COUNT(*) FROM users`, []interface{}{})
+				stmt.On("SQL").Return(`SELECT COUNT(*) FROM users`, []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -609,9 +620,9 @@ func TestCount(t *testing.T) {
 		{
 			name: "Count from cache",
 			ctx:  context.Background(),
-			withStmt: func() sql.Stmt {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Count).Return(`SELECT COUNT(*) FROM users`, []interface{}{})
+				stmt.On("SQL").Return(`SELECT COUNT(*) FROM users`, []interface{}{})
 				return stmt
 			}(),
 			cacheBundle: func() cache.ModelBundle {
@@ -626,9 +637,9 @@ func TestCount(t *testing.T) {
 		{
 			name: "Count scan error not enough model pointers",
 			ctx:  context.Background(),
-			withStmt: func() sql.Stmt {
+			withStmt: func() Stmt {
 				stmt := new(mockStmt)
-				stmt.On("GetStmtWithArgs", sql.Count).Return(`SELECT COUNT(*) FROM users`, []interface{}{})
+				stmt.On("SQL").Return(`SELECT COUNT(*) FROM users`, []interface{}{})
 				return stmt
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -674,11 +685,12 @@ func TestCount(t *testing.T) {
 		})
 	}
 }
+
 func TestDelete(t *testing.T) {
 	tests := []struct {
 		name        string
 		ctx         context.Context
-		stmt        sql.Stmt
+		stmt        Stmt
 		setupDb     func(sqlmock.Sqlmock)
 		expectedErr error
 		expectedRes int64
@@ -686,9 +698,9 @@ func TestDelete(t *testing.T) {
 		{
 			name: "Error in ExecContext",
 			ctx:  context.Background(),
-			stmt: func() sql.Stmt {
+			stmt: func() Stmt {
 				s := &mockStmt{}
-				s.On("GetStmtWithArgs", sql.Delete).Return("DELETE FROM users WHERE id=1", []interface{}{})
+				s.On("SQL").Return("DELETE FROM users WHERE id=1", []interface{}{})
 				return s
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -700,9 +712,9 @@ func TestDelete(t *testing.T) {
 		{
 			name: "Successful delete",
 			ctx:  context.Background(),
-			stmt: func() sql.Stmt {
+			stmt: func() Stmt {
 				s := &mockStmt{}
-				s.On("GetStmtWithArgs", sql.Delete).Return("DELETE FROM users WHERE id=1", []interface{}{})
+				s.On("SQL").Return("DELETE FROM users WHERE id=1", []interface{}{})
 				return s
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {
@@ -715,9 +727,9 @@ func TestDelete(t *testing.T) {
 		{
 			name: "Error in result",
 			ctx:  context.Background(),
-			stmt: func() sql.Stmt {
+			stmt: func() Stmt {
 				s := &mockStmt{}
-				s.On("GetStmtWithArgs", sql.Delete).Return("DELETE FROM users WHERE id=1", []interface{}{})
+				s.On("SQL").Return("DELETE FROM users WHERE id=1", []interface{}{})
 				return s
 			}(),
 			setupDb: func(mock sqlmock.Sqlmock) {

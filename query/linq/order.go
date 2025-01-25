@@ -17,7 +17,7 @@ type OrderBuilder struct {
 }
 
 type OrderApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Order() sqlpart.Order
 }
 

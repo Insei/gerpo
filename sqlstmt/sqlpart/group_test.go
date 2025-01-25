@@ -108,3 +108,41 @@ func TestStringGroupBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestGroupBuilderSQL(t *testing.T) {
+	tests := []struct {
+		name     string
+		inputSQL string
+		expected string
+	}{
+		{
+			name:     "Empty SQL",
+			inputSQL: "",
+			expected: "",
+		},
+		{
+			name:     "SQL with whitespace",
+			inputSQL: "    ",
+			expected: "",
+		},
+		{
+			name:     "Valid SQL",
+			inputSQL: "col1, col2",
+			expected: " GROUP BY col1, col2",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			builder := &GroupBuilder{
+				ctx: ctx,
+				sql: tc.inputSQL,
+			}
+			result := builder.SQL()
+			if result != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, result)
+			}
+		})
+	}
+}

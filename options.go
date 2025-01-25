@@ -101,7 +101,7 @@ func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Op
 func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentHelper[TModel])) Option[TModel] {
 	return optionFn[TModel](func(r *repository[TModel]) {
 		if queryFn != nil {
-			r.persistent.HandleFn(queryFn)
+			r.persistentQuery.HandleFn(queryFn)
 		}
 	})
 }

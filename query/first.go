@@ -13,7 +13,7 @@ type GetFirstHelper[TModel any] interface {
 }
 
 type GetFirstApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Columns() types.ExecutionColumns
 	Where() sqlpart.Where
 	Order() sqlpart.Order

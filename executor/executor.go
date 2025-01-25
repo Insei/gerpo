@@ -94,7 +94,7 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 }
 
 func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TModel) error {
-	sql, values := stmt.SQL(stmt.WithModelValues(model))
+	sql, values := stmt.SQL(sqlstmt.WithModelValues(model))
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), values...)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 }
 
 func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error) {
-	sql, values := stmt.SQL(stmt.WithModelValues(model))
+	sql, values := stmt.SQL(sqlstmt.WithModelValues(model))
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), values...)
 	if err != nil {
 		return 0, err

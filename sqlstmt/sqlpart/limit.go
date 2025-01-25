@@ -62,8 +62,5 @@ func (p *LimitOffsetBuilder) SQL() string {
 	if strings.TrimSpace(offsetNumStr) != "" {
 		sql += fmt.Sprintf(" OFFSET %s", offsetNumStr)
 	}
-	if p.offset == 0 {
-		return ""
-	}
 	return sql
 }

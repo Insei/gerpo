@@ -8,7 +8,15 @@ import (
 	"github.com/insei/fmap/v3"
 )
 
-type ColumnsStorage struct {
+type ColumnsStorage interface {
+	AsSlice() []Column
+	NewExecutionColumns(ctx context.Context, action SQLAction) ExecutionColumns
+	GetByFieldPtr(model any, fieldPtr any) (Column, error)
+	Get(f fmap.Field) (Column, bool)
+	Add(column Column)
+}
+
+type columnsStorage struct {
 	m       map[fmap.Field]Column
 	s       []Column
 	act     map[SQLAction][]Column
@@ -16,8 +24,8 @@ type ColumnsStorage struct {
 	model   any
 }
 
-func NewEmptyColumnsStorage(fields fmap.Storage) *ColumnsStorage {
-	return &ColumnsStorage{
+func NewEmptyColumnsStorage(fields fmap.Storage) ColumnsStorage {
+	return &columnsStorage{
 		s:       make([]Column, 0),
 		m:       make(map[fmap.Field]Column),
 		act:     make(map[SQLAction][]Column),
@@ -25,11 +33,11 @@ func NewEmptyColumnsStorage(fields fmap.Storage) *ColumnsStorage {
 	}
 }
 
-func (c *ColumnsStorage) AsSlice() []Column {
+func (c *columnsStorage) AsSlice() []Column {
 	return c.s
 }
 
-func (c *ColumnsStorage) NewExecutionColumns(ctx context.Context, action SQLAction) ExecutionColumns {
+func (c *columnsStorage) NewExecutionColumns(ctx context.Context, action SQLAction) ExecutionColumns {
 	cols, ok := c.act[action]
 	if !ok {
 		return nil
@@ -41,7 +49,7 @@ func (c *ColumnsStorage) NewExecutionColumns(ctx context.Context, action SQLActi
 	}
 }
 
-func (c *ColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (Column, error) {
+func (c *columnsStorage) GetByFieldPtr(model any, fieldPtr any) (Column, error) {
 	field, err := c.storage.GetFieldByPtr(model, fieldPtr)
 	if err != nil {
 		return nil, err
@@ -53,12 +61,12 @@ func (c *ColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (Column, error) 
 	return column, nil
 }
 
-func (c *ColumnsStorage) Get(f fmap.Field) (Column, bool) {
+func (c *columnsStorage) Get(f fmap.Field) (Column, bool) {
 	column, ok := c.m[f]
 	return column, ok
 }
 
-func (c *ColumnsStorage) Add(column Column) {
+func (c *columnsStorage) Add(column Column) {
 	c.m[column.GetField()] = column
 	c.s = append(c.s, column)
 	if column.IsAllowedAction(SQLActionInsert) {
@@ -87,7 +95,7 @@ type ExecutionColumns interface {
 }
 
 type executionColumns struct {
-	storage *ColumnsStorage
+	storage *columnsStorage
 	ctx     context.Context
 	columns []Column
 }

@@ -12,7 +12,7 @@ type WhereBuilder struct {
 
 type WhereApplier interface {
 	Where() sqlpart.Where
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 }
 
 func NewWhereBuilder(baseModel any) *WhereBuilder {

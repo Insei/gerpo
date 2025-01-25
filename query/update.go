@@ -12,7 +12,7 @@ type UpdateHelper[TModel any] interface {
 }
 
 type UpdateApplier interface {
-	ColumnsStorage() *types.ColumnsStorage
+	ColumnsStorage() types.ColumnsStorage
 	Columns() types.ExecutionColumns
 	Where() sqlpart.Where
 }
