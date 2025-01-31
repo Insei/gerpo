@@ -21,7 +21,7 @@ type Option interface {
 type columnOptionFn func(c *options)
 
 // apply implements the Option interface for columnOptionFn.
-// It calls the underlying function with the given Column.
+// It calls the underlying function with the given *options.
 func (f columnOptionFn) apply(c *options) {
 	f(c)
 }

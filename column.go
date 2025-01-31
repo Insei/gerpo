@@ -19,6 +19,25 @@ type ColumnBuilder[TModel any] struct {
 	builders      []columnBuild
 }
 
+type ColumnTypeSelector[TModel any] struct {
+	cb       *ColumnBuilder[TModel]
+	fieldPtr any
+}
+
+func (s ColumnTypeSelector[TModel]) Virtual() *virtual.Builder {
+	field := s.cb.getFmapField(s.fieldPtr)
+	vb := virtual.NewBuilder(field)
+	s.cb.builders = append(s.cb.builders, vb)
+	return vb
+}
+
+func (s ColumnTypeSelector[TModel]) Column() *column.Builder {
+	field := s.cb.getFmapField(s.fieldPtr)
+	b := column.NewBuilder(field)
+	s.cb.builders = append(s.cb.builders, b)
+	return b
+}
+
 func newColumnBuilder[TModel any](table string, model *TModel, fields fmap.Storage) *ColumnBuilder[TModel] {
 	return &ColumnBuilder[TModel]{
 		table:         table,
@@ -36,19 +55,11 @@ func (b *ColumnBuilder[TModel]) getFmapField(fieldPtr any) fmap.Field {
 	return field
 }
 
-func (b *ColumnBuilder[TModel]) Column(fieldPtr any) *column.Builder {
-	field := b.getFmapField(fieldPtr)
-	cb := column.NewBuilder(field)
-	cb.WithTable(b.table)
-	b.builders = append(b.builders, cb)
-	return cb
-}
-
-func (b *ColumnBuilder[TModel]) Virtual(fieldPtr any) *virtual.Builder {
-	field := b.getFmapField(fieldPtr)
-	vb := virtual.NewBuilder(field)
-	b.builders = append(b.builders, vb)
-	return vb
+func (b *ColumnBuilder[TModel]) Field(fieldPtr any) *ColumnTypeSelector[TModel] {
+	return &ColumnTypeSelector[TModel]{
+		cb:       b,
+		fieldPtr: fieldPtr,
+	}
 }
 
 func (b *ColumnBuilder[TModel]) build() types.ColumnsStorage {

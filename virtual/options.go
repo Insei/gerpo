@@ -10,7 +10,7 @@ import (
 type columnOptionFn func(c *column)
 
 // apply implements the Option interface for columnOptionFn.
-// It calls the underlying function with the given Column.
+// It calls the underlying function with the given *column.
 func (f columnOptionFn) apply(c *column) {
 	f(c)
 }

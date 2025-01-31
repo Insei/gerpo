@@ -7,7 +7,7 @@ import (
 type ctxSourceOption func(c *CtxCache)
 
 // apply implements the Option interface for ctxSourceOption.
-// It calls the underlying function with the given Column.
+// It calls the underlying function with the given *CtxCache.
 func (f ctxSourceOption) apply(c *CtxCache) {
 	f(c)
 }

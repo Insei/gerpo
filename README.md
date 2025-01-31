@@ -67,11 +67,11 @@ func main() {
         DB(db).
         Table("tests").
         Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
-            columns.Column(&m.ID).WithUpdateProtection()
-            columns.Column(&m.CreatedAt).WithUpdateProtection()
-            columns.Column(&m.UpdatedAt).WithInsertProtection()
-            columns.Column(&m.Name)
-            columns.Column(&m.Age)
+            columns.Field(&m.ID).Column().WithUpdateProtection()
+            columns.Field(&m.CreatedAt).Column().WithUpdateProtection()
+            columns.Field(&m.UpdatedAt).Column().WithInsertProtection()
+            columns.Field(&m.Name).Column()
+            columns.Field(&m.Age).Column()
         }).
         Build()
 
@@ -104,12 +104,12 @@ func main() {
         DB(db).
         Table("tests").
         Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
-            columns.Column(&m.ID).WithUpdateProtection()
-            columns.Column(&m.CreatedAt).WithUpdateProtection()
-            columns.Column(&m.UpdatedAt).WithInsertProtection()
-            columns.Column(&m.Name)
-            columns.Column(&m.Age)
-            columns.Column(&m.Joined).WithTable("joined_table")
+            columns.Field(&m.ID).Column().WithUpdateProtection()
+            columns.Field(&m.CreatedAt).Column().WithUpdateProtection()
+            columns.Field(&m.UpdatedAt).Column().WithInsertProtection()
+            columns.Field(&m.Name).Column()
+            columns.Field(&m.Age).Column()
+            columns.Field(&m.Joined).Column().WithTable("joined_table")
         }).
         WithQuery(func(m *test, h query.PersistentHelper[test]) {
             h.LeftJoin(func(ctx context.Context) string {

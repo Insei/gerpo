@@ -67,7 +67,7 @@ func TestBuilder_Build(t *testing.T) {
 			"valid_build",
 			func(b *builder[mockModel]) {
 				b.DB(mockDB).Table("users").Columns(func(m *mockModel, columns *ColumnBuilder[mockModel]) {
-					columns.Column(&m.ID)
+					columns.Field(&m.ID).Column()
 				})
 			},
 			nil,
