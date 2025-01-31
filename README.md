@@ -16,7 +16,7 @@ Welcome to the **GERPO** repository! This document provides a brief overview of 
 3. Straightforward configuration using SQL commands and user-friendly builders.
 4. All SQL code in one place — inside the configuration.
 5. Virtual (calculated, joined) columns with mapping to struct fields.
-6. Caching support (currently context-oriented cache, but it’s easy to implement other caching mechanisms).
+6. [Caching support](https://github.com/insei/gerpo/cache/README.md) (currently only context-oriented cache is supported, but it’s easy to implement other caching mechanisms).
 
 ## Features
 Essentially, **GERPO** is a helper for building SQL queries and mapping results to Go structs.
