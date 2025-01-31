@@ -129,11 +129,3 @@ type ANDOR interface {
 	OR() WhereTarget
 	AND() WhereTarget
 }
-
-//type ConditionBuilder interface {
-//	AppendCondition(cl Column, operation Operation, val any) error
-//	StartGroup()
-//	EndGroup()
-//	AND()
-//	OR()
-//}
