@@ -9,7 +9,7 @@ import (
 func TestWithCacheBundle(t *testing.T) {
 	tests := []struct {
 		name        string
-		cacheBundle cache.ModelBundle
+		cacheBundle cache.Source
 	}{
 		{
 			name:        "With Non-nil CacheBundle",

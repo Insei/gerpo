@@ -9,13 +9,13 @@ import (
 	"github.com/insei/gerpo/logger"
 )
 
-type ctxSource struct {
+type CtxCache struct {
 	key string
 	log logger.Logger
 }
 
-func New(opts ...Option) types.Source {
-	s := &ctxSource{
+func New(opts ...Option) *CtxCache {
+	s := &CtxCache{
 		log: logger.NoopLogger,
 		key: uuid.New().String(),
 	}
@@ -25,7 +25,7 @@ func New(opts ...Option) types.Source {
 	return s
 }
 
-func (s *ctxSource) getStorage(ctx context.Context) (*cacheStorage, error) {
+func (s *CtxCache) getStorage(ctx context.Context) (*cacheStorage, error) {
 	if ctx == nil {
 		return nil, types.ErrNotFound
 	}
@@ -39,7 +39,7 @@ func (s *ctxSource) getStorage(ctx context.Context) (*cacheStorage, error) {
 	return storage, nil
 }
 
-func (s *ctxSource) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
+func (s *CtxCache) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -47,15 +47,15 @@ func (s *ctxSource) Get(ctx context.Context, statement string, statementArgs ...
 	return storage.Get(s.key, fmt.Sprintf("%s%v", statement, statementArgs))
 }
 
-func (s *ctxSource) Set(ctx context.Context, cache any, statement string, statementArgs ...any) error {
+func (s *CtxCache) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
-		return err
+		return
 	}
-	return storage.Set(s.key, fmt.Sprintf("%s%v", statement, statementArgs), cache)
+	storage.Set(s.key, fmt.Sprintf("%s%v", statement, statementArgs), cache)
 }
 
-func (s *ctxSource) Clean(ctx context.Context) {
+func (s *CtxCache) Clean(ctx context.Context) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return

@@ -58,7 +58,7 @@ func TestGetStorage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &ctxSource{log: logger.NoopLogger}
+			s := &CtxCache{log: logger.NoopLogger}
 			_, err := s.getStorage(tt.ctx)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -94,7 +94,7 @@ func TestGet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &ctxSource{log: logger.NoopLogger}
+			s := &CtxCache{log: logger.NoopLogger}
 			_, err := s.Get(tt.ctx, "someKey", "someStatement")
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr)
@@ -113,7 +113,6 @@ func TestSet(t *testing.T) {
 		cache         any
 		statement     string
 		statementArgs []any
-		expectedErr   error
 	}{
 		{
 			name:          "Nil context",
@@ -122,7 +121,6 @@ func TestSet(t *testing.T) {
 			cache:         "fakeCache",
 			statement:     "setCache",
 			statementArgs: []any{"arg1", "arg2"},
-			expectedErr:   types.ErrNotFound,
 		},
 		{
 			name:          "OK",
@@ -131,20 +129,14 @@ func TestSet(t *testing.T) {
 			cache:         "fakeCache",
 			statement:     "setCache",
 			statementArgs: []any{"arg1", "arg2"},
-			expectedErr:   nil,
 		},
 		// add more test cases here
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &ctxSource{log: logger.NoopLogger, key: tt.modelKey}
-			err := s.Set(tt.ctx, tt.cache, tt.statement, tt.statementArgs...)
-			if tt.expectedErr != nil {
-				assert.ErrorIs(t, err, tt.expectedErr)
-			} else {
-				assert.NoError(t, err)
-			}
+			s := &CtxCache{log: logger.NoopLogger, key: tt.modelKey}
+			s.Set(tt.ctx, tt.cache, tt.statement, tt.statementArgs...)
 		})
 	}
 }
@@ -169,7 +161,7 @@ func TestClean(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &ctxSource{log: logger.NoopLogger, key: "testKey"}
+			s := &CtxCache{log: logger.NoopLogger, key: "testKey"}
 			s.Clean(tt.ctx)
 			// Since method doesn't return anything, no assertions made.
 		})

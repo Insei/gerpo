@@ -31,7 +31,7 @@ func TestWithSource(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			b := &modelBundle{}
+			b := &sourceBundle{}
 			for _, source := range tc.sources {
 				WithSource(source).apply(b)
 			}
