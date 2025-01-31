@@ -25,7 +25,7 @@ func TestWithLogger(t *testing.T) {
 
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
-			source := &ctxSource{
+			source := &CtxCache{
 				log: logger.NoopLogger,
 			}
 			opt := WithLogger(tt.log)
@@ -49,7 +49,7 @@ func TestWithKey(t *testing.T) {
 
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
-			source := &ctxSource{
+			source := &CtxCache{
 				key: "defaultKey",
 			}
 			opt := WithKey(tt.key)

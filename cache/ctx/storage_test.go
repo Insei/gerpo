@@ -122,8 +122,7 @@ func TestStorageSet(t *testing.T) {
 				mtx: mtx,
 				c:   tt.initial,
 			}
-			err := cs.Set(tt.modelKey, tt.key, tt.value)
-			assert.NoError(t, err)
+			cs.Set(tt.modelKey, tt.key, tt.value)
 			assert.Equal(t, tt.expected, cs.c)
 		})
 	}

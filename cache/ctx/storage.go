@@ -39,7 +39,7 @@ func (s *cacheStorage) Get(sourceKey string, key string) (any, error) {
 	return cached, nil
 }
 
-func (s *cacheStorage) Set(sourceKey string, key string, value any) error {
+func (s *cacheStorage) Set(sourceKey string, key string, value any) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	modelCache, ok := s.c[sourceKey]
@@ -48,7 +48,6 @@ func (s *cacheStorage) Set(sourceKey string, key string, value any) error {
 		s.c[sourceKey] = modelCache
 	}
 	modelCache[key] = value
-	return nil
 }
 
 func (s *cacheStorage) Clean(sourceKey string) {
