@@ -8,24 +8,24 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockModelBundle struct {
+type MockCacheSource struct {
 	mock.Mock
 }
 
-func (m *MockModelBundle) Clean(ctx context.Context) {
+func (m *MockCacheSource) Clean(ctx context.Context) {
 	m.Called(ctx)
 }
-func (m *MockModelBundle) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
+func (m *MockCacheSource) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
 	args := m.Called(ctx, statement, statementArgs)
 	return args.Get(0), args.Error(1)
 }
-func (m *MockModelBundle) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
+func (m *MockCacheSource) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
 	m.Called(ctx, cache, statement, statementArgs)
 }
 
 func TestGet(t *testing.T) {
 	ctx := context.Background()
-	b := new(MockModelBundle)
+	b := new(MockCacheSource)
 	tests := []struct {
 		name        string
 		stmt        string
@@ -76,7 +76,7 @@ func TestGet(t *testing.T) {
 
 func TestSet(t *testing.T) {
 	ctx := context.Background()
-	b := new(MockModelBundle)
+	b := new(MockCacheSource)
 	tests := []struct {
 		name     string
 		stmt     string
@@ -110,7 +110,7 @@ func TestSet(t *testing.T) {
 
 func TestClean(t *testing.T) {
 	ctx := context.Background()
-	b := new(MockModelBundle)
+	b := new(MockCacheSource)
 	tests := []struct {
 		name string
 	}{

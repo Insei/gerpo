@@ -3,7 +3,7 @@ package executor
 import "github.com/insei/gerpo/cache"
 
 type options struct {
-	cacheBundle cache.Source
+	cacheSource cache.Source
 }
 
 type Option interface {
@@ -19,10 +19,10 @@ func (f optionFn) apply(c *options) {
 	f(c)
 }
 
-func WithCacheBundle(bundle cache.Source) Option {
+func WithCacheSource(source cache.Source) Option {
 	return optionFn(func(o *options) {
-		if bundle != nil {
-			o.cacheBundle = bundle
+		if source != nil {
+			o.cacheSource = source
 		}
 	})
 }

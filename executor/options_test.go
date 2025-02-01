@@ -8,22 +8,22 @@ import (
 
 func TestWithCacheBundle(t *testing.T) {
 	tests := []struct {
-		name        string
-		cacheBundle cache.Source
+		name   string
+		source cache.Source
 	}{
 		{
-			name:        "With Non-nil CacheBundle",
-			cacheBundle: &MockModelBundle{},
+			name:   "With Non-nil Cache Source",
+			source: &MockCacheSource{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			option := WithCacheBundle(test.cacheBundle)
+			option := WithCacheSource(test.source)
 			opt := &options{}
 			option.apply(opt)
-			if opt.cacheBundle != test.cacheBundle {
-				t.Errorf("expected %v, but got %v", test.cacheBundle, opt.cacheBundle)
+			if opt.cacheSource != test.source {
+				t.Errorf("expected %v, but got %v", test.source, opt.cacheSource)
 			}
 		})
 	}

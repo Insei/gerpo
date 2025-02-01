@@ -147,7 +147,7 @@ func TestGetOne(t *testing.T) {
 				return stmt
 			}(),
 			cacheBundle: func() cache.Source {
-				b := &MockModelBundle{}
+				b := &MockCacheSource{}
 				b.On("Get", mock.Anything, mock.Anything, mock.Anything).
 					Return(testModel{ID: 1, Age: 2, Name: "test"}, nil)
 				return b
@@ -174,7 +174,7 @@ func TestGetOne(t *testing.T) {
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
-				e.cacheBundle = tt.cacheBundle()
+				e.cacheSource = tt.cacheBundle()
 			}
 
 			_, err = e.GetOne(tt.ctx, tt.withStmt)
@@ -259,7 +259,7 @@ func TestGetMultiple(t *testing.T) {
 				return stmt
 			}(),
 			cacheBundle: func() cache.Source {
-				b := &MockModelBundle{}
+				b := &MockCacheSource{}
 				b.On("Get", mock.Anything, mock.Anything, mock.Anything).
 					Return([]*testModel{{ID: 1, Age: 2, Name: "test"}, {ID: 3, Age: 4, Name: "test2"}}, nil)
 				return b
@@ -307,7 +307,7 @@ func TestGetMultiple(t *testing.T) {
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
-				e.cacheBundle = tt.cacheBundle()
+				e.cacheSource = tt.cacheBundle()
 			}
 
 			_, err = e.GetMultiple(tt.ctx, tt.withStmt)
@@ -425,7 +425,7 @@ func TestInsertOne(t *testing.T) {
 				mock.ExpectExec(`INSERT INTO users \(id, age, name\) VALUES \(\$1, \$2, \$3\)`).WithArgs(1, 28, "John Doe").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			cacheBundle: func() cache.Source {
-				b := &MockModelBundle{}
+				b := &MockCacheSource{}
 				b.On("Clean", mock.Anything)
 				return b
 			},
@@ -450,7 +450,7 @@ func TestInsertOne(t *testing.T) {
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
-				e.cacheBundle = tt.cacheBundle()
+				e.cacheSource = tt.cacheBundle()
 			}
 
 			err = e.InsertOne(context.Background(), tt.withStmt(), tt.withModel())
@@ -537,7 +537,7 @@ func TestUpdate(t *testing.T) {
 					WithArgs(28, "John Doe", 1).WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			cacheBundle: func() cache.Source {
-				b := &MockModelBundle{}
+				b := &MockCacheSource{}
 				b.On("Clean", mock.Anything)
 				return b
 			},
@@ -563,7 +563,7 @@ func TestUpdate(t *testing.T) {
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
-				e.cacheBundle = tt.cacheBundle()
+				e.cacheSource = tt.cacheBundle()
 			}
 
 			updatedRows, err := e.Update(context.Background(), tt.withStmt(), tt.withModel())
@@ -626,7 +626,7 @@ func TestCount(t *testing.T) {
 				return stmt
 			}(),
 			cacheBundle: func() cache.Source {
-				b := &MockModelBundle{}
+				b := &MockCacheSource{}
 				b.On("Get", mock.Anything, mock.Anything, mock.Anything).
 					Return(uint64(20), nil)
 				return b
@@ -668,7 +668,7 @@ func TestCount(t *testing.T) {
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
-				e.cacheBundle = tt.cacheBundle()
+				e.cacheSource = tt.cacheBundle()
 			}
 
 			res, err := e.Count(tt.ctx, tt.withStmt)
