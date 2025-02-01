@@ -48,7 +48,7 @@ func (e *executor[TModel]) getExecQuery(ctx context.Context) ExecQuery {
 
 func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, error) {
 	sql, args := stmt.SQL()
-	if cached, ok := get[TModel](ctx, e.cacheBundle, sql, args...); ok {
+	if cached, ok := get[TModel](ctx, e.cacheSource, sql, args...); ok {
 		return cached, nil
 	}
 	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
@@ -63,7 +63,7 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 		if err = rows.Scan(pointers...); err != nil {
 			return nil, err
 		}
-		set(ctx, e.cacheBundle, *model, sql, args...)
+		set(ctx, e.cacheSource, *model, sql, args...)
 	}
 	if model == nil {
 		return nil, dbsql.ErrNoRows
@@ -73,7 +73,7 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 
 func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TModel, error) {
 	sql, args := stmt.SQL()
-	if cached, ok := get[[]*TModel](ctx, e.cacheBundle, sql, args...); ok {
+	if cached, ok := get[[]*TModel](ctx, e.cacheSource, sql, args...); ok {
 		return *cached, nil
 	}
 	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
@@ -89,7 +89,7 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 		}
 		models = append(models, model)
 	}
-	set(ctx, e.cacheBundle, models, sql, args...)
+	set(ctx, e.cacheSource, models, sql, args...)
 	return models, nil
 }
 
@@ -106,7 +106,7 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 	if insertedRows == 0 {
 		return ErrNoInsertedRows
 	}
-	clean(ctx, e.cacheBundle)
+	clean(ctx, e.cacheSource)
 	return nil
 }
 
@@ -121,14 +121,14 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 		return 0, err
 	}
 	if updatedRows > 0 {
-		clean(ctx, e.cacheBundle)
+		clean(ctx, e.cacheSource)
 	}
 	return updatedRows, nil
 }
 
 func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, error) {
 	sql, args := stmt.SQL()
-	if cached, ok := get[uint64](ctx, e.cacheBundle, sql, args...); ok {
+	if cached, ok := get[uint64](ctx, e.cacheSource, sql, args...); ok {
 		return *cached, nil
 	}
 	count := uint64(0)
@@ -141,7 +141,7 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 			return 0, err
 		}
 	}
-	set(ctx, e.cacheBundle, count, sql, args...)
+	set(ctx, e.cacheSource, count, sql, args...)
 	return count, nil
 }
 
@@ -156,7 +156,7 @@ func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (int64, e
 		return 0, err
 	}
 	if deletedRows > 0 {
-		clean(ctx, e.cacheBundle)
+		clean(ctx, e.cacheSource)
 	}
 	return deletedRows, nil
 }
