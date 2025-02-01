@@ -40,14 +40,14 @@ func main() {
 		DB(db).
 		Table("tests").
 		Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
-			columns.Field(&m.ID).Column().WithInsertProtection().WithUpdateProtection()
-			columns.Field(&m.CreatedAt).Column().WithUpdateProtection()
-			columns.Field(&m.UpdatedAt).Column().WithInsertProtection()
-			columns.Field(&m.Name).Column()
-			columns.Field(&m.Age).Column()
-			columns.Field(&m.DeletedAt).Column().WithUpdateProtection().WithInsertProtection()
+			columns.Field(&m.ID).AsColumn().WithInsertProtection().WithUpdateProtection()
+			columns.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+			columns.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
+			columns.Field(&m.Name).AsColumn()
+			columns.Field(&m.Age).AsColumn()
+			columns.Field(&m.DeletedAt).AsColumn().WithUpdateProtection().WithInsertProtection()
 
-			columns.Field(&m.Bool).Virtual().
+			columns.Field(&m.Bool).AsVirtual().
 				WithSQL(func(ctx context.Context) string {
 					return `tests.created_at > now()`
 				}).
