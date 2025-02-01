@@ -148,8 +148,10 @@ func deleteFunc[S ~[]E, E any](s S, del func(E) bool) S {
 
 func (b *executionColumns) Exclude(cols ...Column) {
 	b.columns = deleteFunc(b.columns, func(column Column) bool {
-		if slices.Contains(cols, column) {
-			return true
+		for _, col := range cols {
+			if col == column {
+				return true
+			}
 		}
 		return false
 	})
@@ -164,8 +166,10 @@ func (b *executionColumns) GetByFieldPtr(model any, fieldPtr any) Column {
 	if err != nil {
 		panic(err)
 	}
-	if slices.Contains(b.columns, col) {
-		panic("trying to get excluded column?")
+	for _, c := range b.columns {
+		if c == col {
+			panic("trying to get excluded column?")
+		}
 	}
 	return col
 }
