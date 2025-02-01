@@ -17,21 +17,41 @@ const (
 	SQLActionSort   = SQLAction("sort")
 )
 
+// Column is an interface representing a table column within a database context.
+// It supports methods related to SQL actions, column metadata, and SQL conversion.
 type Column interface {
 	SQLFilterGetter
+
+	// IsAllowedAction determines if the specified SQLAction is permitted for the column and returns true if allowed.
 	IsAllowedAction(a SQLAction) bool
+
+	// GetAllowedActions returns a list of SQLActions that are permitted for this column.
 	GetAllowedActions() []SQLAction
+
+	// ToSQL generates the SQL representation of the column.
 	ToSQL(ctx context.Context) string
+
+	// GetPtr retrieves a pointer to the field of the provided model corresponding to this column.
 	GetPtr(model any) any
+
+	// GetField retrieves the associated fmap.Field for the column.
 	GetField() fmap.Field
+
+	// Name returns the name of the column as a string and a boolean indicating whether the name is valid or exists.
 	Name() (string, bool)
+
+	// Table returns the name of the table associated with the column and a boolean indicating success or failure of the retrieval.
 	Table() (string, bool)
 }
 
+// ColumnsGetter is an interface for retrieving a list of Column objects representing database table columns.
 type ColumnsGetter interface {
+
+	// GetColumns retrieves a list of Column objects representing database table columns.
 	GetColumns() []Column
 }
 
+// NewColumnBase creates a new instance of ColumnBase with the provided field, SQL generation function, and filters manager.
 func NewColumnBase(field fmap.Field, toSQLFn func(ctx context.Context) string, filters SQLFilterManager) *ColumnBase {
 	return &ColumnBase{
 		Field:          field,
@@ -44,6 +64,7 @@ func NewColumnBase(field fmap.Field, toSQLFn func(ctx context.Context) string, f
 	}
 }
 
+// ColumnBase represents a base structure for defining and manipulating column-related behaviors in SQL operations.
 type ColumnBase struct {
 	Field          fmap.Field
 	ToSQL          func(ctx context.Context) string
@@ -52,6 +73,7 @@ type ColumnBase struct {
 	GetPtr         func(model any) any
 }
 
+// IsAllowedAction determines if a given SQLAction is allowed for the column.
 func (c *ColumnBase) IsAllowedAction(act SQLAction) bool {
 	return slices.Contains(c.AllowedActions, act)
 }

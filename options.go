@@ -18,6 +18,8 @@ func (f optionFn[TModel]) apply(c *repository[TModel]) {
 	f(c)
 }
 
+// WithBeforeInsert sets a function to be executed before inserting a model into the repository.
+// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
 func WithBeforeInsert[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if fn != nil {
@@ -34,6 +36,8 @@ func WithBeforeInsert[TModel any](fn func(ctx context.Context, model *TModel)) O
 	})
 }
 
+// WithBeforeUpdate registers a function to be invoked before the update operation on the specified model in the repository.
+// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
 func WithBeforeUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if fn != nil {
@@ -50,6 +54,8 @@ func WithBeforeUpdate[TModel any](fn func(ctx context.Context, model *TModel)) O
 	})
 }
 
+// WithAfterSelect returns an Option that appends or assigns a callback executed after select queries in the repository.
+// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
 func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel)) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if fn != nil {
@@ -66,6 +72,8 @@ func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel))
 	})
 }
 
+// WithAfterInsert creates an option to set a callback function that is executed after an insert operation in the repository.
+// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
 func WithAfterInsert[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if fn != nil {
@@ -82,6 +90,8 @@ func WithAfterInsert[TModel any](fn func(ctx context.Context, model *TModel)) Op
 	})
 }
 
+// WithAfterUpdate creates an Option to set or append a callback function that triggers after an update operation on the model.
+// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
 func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if fn != nil {
@@ -98,6 +108,7 @@ func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Op
 	})
 }
 
+// WithQuery applies a query function to configure query behavior in a repository instance.
 func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentHelper[TModel])) Option[TModel] {
 	return optionFn[TModel](func(r *repository[TModel]) {
 		if queryFn != nil {
@@ -106,6 +117,7 @@ func WithQuery[TModel any](queryFn func(m *TModel, h query.PersistentHelper[TMod
 	})
 }
 
+// WithErrorTransformer configures a repository to apply the provided error transformer function for error handling.
 func WithErrorTransformer[TModel any](fn func(err error) error) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) {
 		if fn != nil {

@@ -6,11 +6,19 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
+// GetListHelper is a generic interface for building complex queries to retrieve lists of data models.
 type GetListHelper[TModel any] interface {
+	// Exclude removes specified fields from requesting data from repository storage.
 	Exclude(fieldsPtr ...any)
+	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
 	Where() types.WhereTarget
+	// OrderBy defines the sorting criteria for a query and returns types.OrderTarget interface for further specification.
 	OrderBy() types.OrderTarget
+
+	// Page sets the page number for pagination in a query and returns the same GetListHelper instance.
 	Page(page uint64) GetListHelper[TModel]
+
+	// Size sets the maximum number of items to retrieve per page and returns the same GetListHelper instance.
 	Size(size uint64) GetListHelper[TModel]
 }
 
