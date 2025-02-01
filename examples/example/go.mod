@@ -12,4 +12,4 @@ require (
 	github.com/insei/fmap/v3 v3.1.2 // indirect
 )
 
-replace github.com/insei/gerpo v1.0.0 => ../
+replace github.com/insei/gerpo v1.0.0 => ../../

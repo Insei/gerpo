@@ -54,7 +54,7 @@ func TestInsert_SQL(t *testing.T) {
 		expectPanic    bool
 	}{
 		{
-			name: "SQL Generation with One Column\n",
+			name: "SQL Generation with One AsColumn\n",
 			setup: func(insert *Insert) {
 				mockColumns := newMockExecutionColumns([]types.Column{
 					&mockColumn{name: "id", hasName: true, allowedAction: true},
@@ -80,7 +80,7 @@ func TestInsert_SQL(t *testing.T) {
 			expectPanic:    false,
 		},
 		{
-			name: "SQL Generation with Missing Column Names",
+			name: "SQL Generation with Missing AsColumn Names",
 			setup: func(insert *Insert) {
 				mockColumns := newMockExecutionColumns([]types.Column{
 					&mockColumn{name: "id", hasName: true, allowedAction: true},

@@ -24,16 +24,16 @@ type ColumnTypeSelector[TModel any] struct {
 	fieldPtr any
 }
 
-// Virtual creates a new virtual column builder for the specified field and appends it to the list of column builders.
-func (s ColumnTypeSelector[TModel]) Virtual() *virtual.Builder {
+// AsVirtual creates a new virtual column builder for the specified field and appends it to the list of column builders.
+func (s ColumnTypeSelector[TModel]) AsVirtual() *virtual.Builder {
 	field := s.cb.getFmapField(s.fieldPtr)
 	vb := virtual.NewBuilder(field)
 	s.cb.builders = append(s.cb.builders, vb)
 	return vb
 }
 
-// Column initializes a column builder for the specified field and appends it to the column builder’s list of builders.
-func (s ColumnTypeSelector[TModel]) Column() *column.Builder {
+// AsColumn initializes a column builder for the specified field and appends it to the column builder’s list of builders.
+func (s ColumnTypeSelector[TModel]) AsColumn() *column.Builder {
 	field := s.cb.getFmapField(s.fieldPtr)
 	b := column.NewBuilder(field)
 	s.cb.builders = append(s.cb.builders, b)
