@@ -6,6 +6,7 @@ import (
 )
 
 type InsertHelper[TModel any] interface {
+	// Exclude removes specified fields from requesting data from repository storage.
 	Exclude(fieldsPtr ...any)
 }
 

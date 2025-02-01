@@ -7,10 +7,17 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
+// PersistentHelper is an interface for building and executing queries with conditions, joins, and group operations.
 type PersistentHelper[TModel any] interface {
-	Where() types.WhereTarget
+	// Exclude removes specified fields from requesting data from repository storage.
 	Exclude(fieldsPtr ...any) PersistentHelper[TModel]
+	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
+	Where() types.WhereTarget
+
+	// GroupBy groups the query results by the specified fields, accepting variadic pointers to fields for grouping operations.
 	GroupBy(fieldsPtr ...any) PersistentHelper[TModel]
+
+	// LeftJoin adds a LEFT JOIN clause to the query using a provided function that returns the SQL join statement.
 	LeftJoin(func(ctx context.Context) string) PersistentHelper[TModel]
 }
 

@@ -24,6 +24,7 @@ type ColumnTypeSelector[TModel any] struct {
 	fieldPtr any
 }
 
+// Virtual creates a new virtual column builder for the specified field and appends it to the list of column builders.
 func (s ColumnTypeSelector[TModel]) Virtual() *virtual.Builder {
 	field := s.cb.getFmapField(s.fieldPtr)
 	vb := virtual.NewBuilder(field)
@@ -31,6 +32,7 @@ func (s ColumnTypeSelector[TModel]) Virtual() *virtual.Builder {
 	return vb
 }
 
+// Column initializes a column builder for the specified field and appends it to the column builder’s list of builders.
 func (s ColumnTypeSelector[TModel]) Column() *column.Builder {
 	field := s.cb.getFmapField(s.fieldPtr)
 	b := column.NewBuilder(field)
@@ -55,6 +57,7 @@ func (b *ColumnBuilder[TModel]) getFmapField(fieldPtr any) fmap.Field {
 	return field
 }
 
+// Field initializes the building process for a specific field of the model and returns a ColumnTypeSelector for further configuration.
 func (b *ColumnBuilder[TModel]) Field(fieldPtr any) *ColumnTypeSelector[TModel] {
 	return &ColumnTypeSelector[TModel]{
 		cb:       b,

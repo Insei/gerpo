@@ -6,7 +6,9 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
+// DeleteHelper is an interface that provides functionality for constructing delete queries using conditions.
 type DeleteHelper[TModel any] interface {
+	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
 	Where() types.WhereTarget
 }
 

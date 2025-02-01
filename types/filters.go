@@ -15,6 +15,7 @@ type column struct {
 	avail      []Operation
 }
 
+// NewFilterManagerForField creates a new SQLFilterManager for the given field, managing filter functions and operations.
 func NewFilterManagerForField(field fmap.Field) SQLFilterManager {
 	return &column{
 		operations: map[Operation]func(ctx context.Context, value any) (string, bool, error){},

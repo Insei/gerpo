@@ -8,11 +8,22 @@ import (
 	"github.com/insei/fmap/v3"
 )
 
+// ColumnsStorage defines an interface for managing a collection of database columns.
 type ColumnsStorage interface {
+
+	// AsSlice returns all stored columns as a slice of type Column.
 	AsSlice() []Column
+
+	// NewExecutionColumns creates a new ExecutionColumns instance for the specified SQLAction within the provided context.
 	NewExecutionColumns(ctx context.Context, action SQLAction) ExecutionColumns
+
+	// GetByFieldPtr retrieves a Column by using the provided model and field pointer, returning an error if the Column is not found.
 	GetByFieldPtr(model any, fieldPtr any) (Column, error)
+
+	// Get checks if the specified field exists and returns the corresponding Column along with a boolean indicating success.
 	Get(f fmap.Field) (Column, bool)
+
+	// Add adds a new column to the storage, incorporating it into the collection of managed columns.
 	Add(column Column)
 }
 
@@ -24,6 +35,7 @@ type columnsStorage struct {
 	model   any
 }
 
+// NewEmptyColumnsStorage creates a new empty ColumnsStorage instance with initialized internal structures.
 func NewEmptyColumnsStorage(fields fmap.Storage) ColumnsStorage {
 	return &columnsStorage{
 		s:       make([]Column, 0),
@@ -86,11 +98,24 @@ func (c *columnsStorage) Add(column Column) {
 	}
 }
 
+// ExecutionColumns represents an interface to manage and interact with a collection of database execution columns.
+// It provides functionality to exclude columns, retrieve all columns, fetch columns by field pointers, and extract model data.
 type ExecutionColumns interface {
+
+	// Exclude removes the specified columns from the existing collection of execution columns, effectively excluding them from usage.
 	Exclude(...Column)
+
+	// GetAll retrieves and returns all the columns contained within the execution columns as a slice.
 	GetAll() []Column
+
+	// GetByFieldPtr retrieves a Column based on the provided model and field pointer.
+	// The method allows fetching specific columns related to the field in the execution context.
 	GetByFieldPtr(model any, fieldPtr any) Column
+
+	// GetModelPointers retrieves a slice of pointers to the fields of the given model based on the current execution columns.
 	GetModelPointers(model any) []any
+
+	// GetModelValues retrieves the values of the model's fields mapped to the execution columns and returns them as a slice.
 	GetModelValues(model any) []any
 }
 
