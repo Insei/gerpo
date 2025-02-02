@@ -3,7 +3,7 @@ package executor
 import (
 	"testing"
 
-	"github.com/insei/gerpo/cache"
+	"github.com/insei/gerpo/executor/cache"
 )
 
 func TestWithCacheBundle(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/insei/gerpo/cache/types"
+	"github.com/insei/gerpo/executor/cache/types"
 	"github.com/insei/gerpo/logger"
 	"github.com/stretchr/testify/assert"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/insei/gerpo/cache/types"
+	"github.com/insei/gerpo/executor/cache/types"
 	"github.com/insei/gerpo/logger"
 )
 

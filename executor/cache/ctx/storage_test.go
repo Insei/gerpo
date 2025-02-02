@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/insei/gerpo/cache/types"
+	"github.com/insei/gerpo/executor/cache/types"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -11,8 +11,8 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/insei/gerpo"
-	"github.com/insei/gerpo/cache/ctx"
 	"github.com/insei/gerpo/executor"
+	"github.com/insei/gerpo/executor/cache/ctx"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/virtual"
 )
