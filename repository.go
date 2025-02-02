@@ -165,7 +165,7 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 	return nil
 }
 
-func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (err error) {
+func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (count int64, err error) {
 	r.beforeUpdate(ctx, model)
 	stmt := sqlstmt.NewUpdate(ctx, r.columns, r.table)
 	r.persistentQuery.Apply(stmt)
@@ -176,14 +176,14 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 
 	updatedCount, err := r.executor.Update(ctx, stmt, model)
 	if err != nil {
-		return r.errorTransformer(err)
+		return updatedCount, r.errorTransformer(err)
 	}
 
 	if updatedCount < 1 {
-		return r.errorTransformer(fmt.Errorf("nothing to update: %w", ErrNotFound))
+		return updatedCount, r.errorTransformer(fmt.Errorf("nothing to update: %w", ErrNotFound))
 	}
 	r.afterUpdate(ctx, model)
-	return nil
+	return updatedCount, nil
 }
 
 func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {

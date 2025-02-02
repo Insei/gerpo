@@ -26,7 +26,7 @@ type Repository[TModel any] interface {
 	// Insert adds a new record to the database using the provided model and query options.
 	Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertHelper[TModel])) (err error)
 	// Update modifies an existing record in the database based on the provided model and query options.
-	Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (err error)
+	Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (count int64, err error)
 	// Delete removes records from the database based on the query conditions and returns the count of deleted records.
 	Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error)
 }
