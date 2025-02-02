@@ -571,7 +571,7 @@ func TestRepository_Update(t *testing.T) {
 			repoCasted.executor = tt.executor
 
 			ctx := context.Background()
-			err = repo.Update(ctx, tt.model, tt.qFns...)
+			_, err = repo.Update(ctx, tt.model, tt.qFns...)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
 			}
