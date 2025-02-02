@@ -6,16 +6,33 @@ import (
 )
 
 type Tx struct {
-	tx *sql.Tx
-	db *sql.DB
+	commited                      bool
+	rollbackUnlessCommittedNeeded bool
+	tx                            *sql.Tx
+	db                            *sql.DB
 }
 
 func (t *Tx) Commit() error {
-	return t.tx.Commit()
+	err := t.tx.Commit()
+	if err != nil {
+		return err
+	}
+	t.commited = true
+	return nil
 }
 
 func (t *Tx) Rollback() error {
+	t.rollbackUnlessCommittedNeeded = false
 	return t.tx.Rollback()
+}
+
+func (t *Tx) RollbackUnlessCommitted() {
+	if !t.commited && t.rollbackUnlessCommittedNeeded {
+		err := t.Rollback()
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func BeginTx(ctx context.Context, db *sql.DB, opts ...*sql.TxOptions) (*Tx, error) {
@@ -28,7 +45,8 @@ func BeginTx(ctx context.Context, db *sql.DB, opts ...*sql.TxOptions) (*Tx, erro
 		return nil, err
 	}
 	return &Tx{
-		tx: tx,
-		db: db,
+		tx:                            tx,
+		db:                            db,
+		rollbackUnlessCommittedNeeded: true,
 	}, nil
 }

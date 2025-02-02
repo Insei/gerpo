@@ -70,3 +70,179 @@ func TestBeginTx(t *testing.T) {
 		})
 	}
 }
+
+// Test for Commit method
+func TestCommit(t *testing.T) {
+	testCases := []struct {
+		description string
+		commitErr   error
+		expectedErr error
+	}{
+		{
+			description: "successful commit",
+			commitErr:   nil,
+			expectedErr: nil,
+		},
+		{
+			description: "failed commit",
+			commitErr:   errors.New("commit error"),
+			expectedErr: errors.New("commit error"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectBegin()
+			if tc.commitErr != nil {
+				mock.ExpectCommit().WillReturnError(tc.commitErr)
+			} else {
+				mock.ExpectCommit()
+			}
+
+			sqlTx, err := db.Begin()
+			require.NoError(t, err)
+
+			tx := &Tx{tx: sqlTx}
+
+			err = tx.Commit()
+			if tc.expectedErr != nil {
+				require.EqualError(t, err, tc.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+				require.True(t, tx.commited)
+			}
+		})
+	}
+}
+
+// Test for Rollback method
+func TestRollback(t *testing.T) {
+	testCases := []struct {
+		description  string
+		rollbackErr  error
+		expectedErr  error
+		initialFlag  bool
+		expectedFlag bool
+	}{
+		{
+			description:  "successful rollback",
+			rollbackErr:  nil,
+			expectedErr:  nil,
+			initialFlag:  true,
+			expectedFlag: false,
+		},
+		{
+			description:  "failed rollback",
+			rollbackErr:  errors.New("rollback error"),
+			expectedErr:  errors.New("rollback error"),
+			initialFlag:  true,
+			expectedFlag: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectBegin()
+			if tc.rollbackErr != nil {
+				mock.ExpectRollback().WillReturnError(tc.rollbackErr)
+			} else {
+				mock.ExpectRollback()
+			}
+
+			sqlTx, err := db.Begin()
+			require.NoError(t, err)
+
+			tx := &Tx{
+				tx:                            sqlTx,
+				rollbackUnlessCommittedNeeded: tc.initialFlag,
+			}
+			err = tx.Rollback()
+			if tc.expectedErr != nil {
+				require.EqualError(t, err, tc.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.expectedFlag, tx.rollbackUnlessCommittedNeeded)
+		})
+	}
+}
+
+// Test for RollbackUnlessCommitted method
+func TestRollbackUnlessCommitted(t *testing.T) {
+	testCases := []struct {
+		description    string
+		committed      bool
+		rollbackNeeded bool
+		rollbackErr    error
+		shouldPanic    bool
+	}{
+		{
+			description:    "no rollback if committed",
+			committed:      true,
+			rollbackNeeded: true,
+			rollbackErr:    nil,
+			shouldPanic:    false,
+		},
+		{
+			description:    "no rollback if not needed",
+			committed:      false,
+			rollbackNeeded: false,
+			rollbackErr:    nil,
+			shouldPanic:    false,
+		},
+		{
+			description:    "rollback without error",
+			committed:      false,
+			rollbackNeeded: true,
+			rollbackErr:    nil,
+			shouldPanic:    false,
+		},
+		{
+			description:    "rollback with error",
+			committed:      false,
+			rollbackNeeded: true,
+			rollbackErr:    errors.New("rollback error"),
+			shouldPanic:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectBegin()
+			if tc.rollbackErr != nil {
+				mock.ExpectRollback().WillReturnError(tc.rollbackErr)
+			} else {
+				mock.ExpectRollback()
+			}
+
+			sqlTx, err := db.Begin()
+			require.NoError(t, err)
+
+			tx := &Tx{
+				tx:                            sqlTx,
+				commited:                      tc.committed,
+				rollbackUnlessCommittedNeeded: tc.rollbackNeeded,
+			}
+
+			if tc.shouldPanic {
+				require.Panics(t, func() {
+					tx.RollbackUnlessCommitted()
+				})
+			} else {
+				tx.RollbackUnlessCommitted()
+			}
+		})
+	}
+}
