@@ -3,7 +3,7 @@ package executor
 import (
 	"context"
 
-	"github.com/insei/gerpo/cache"
+	"github.com/insei/gerpo/executor/cache"
 )
 
 func get[TCached any](ctx context.Context, b cache.Source, stmt string, stmtArgs ...any) (*TCached, bool) {

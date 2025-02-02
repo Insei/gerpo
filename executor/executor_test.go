@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/insei/gerpo/cache"
+	"github.com/insei/gerpo/executor/cache"
 	"github.com/insei/gerpo/sqlstmt"
 	"github.com/insei/gerpo/types"
 	"github.com/stretchr/testify/assert"

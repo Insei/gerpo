@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/insei/gerpo/cache"
+	"github.com/insei/gerpo/executor/cache"
 	"github.com/stretchr/testify/mock"
 )
 

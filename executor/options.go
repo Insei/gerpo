@@ -1,6 +1,8 @@
 package executor
 
-import "github.com/insei/gerpo/cache"
+import (
+	"github.com/insei/gerpo/executor/cache"
+)
 
 type options struct {
 	cacheSource cache.Source

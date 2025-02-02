@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 
-	"github.com/insei/gerpo/cache/types"
+	"github.com/insei/gerpo/executor/cache/types"
 )
 
 var (
