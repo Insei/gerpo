@@ -27,6 +27,7 @@ Essentially, **GERPO** is a helper for building SQL queries and mapping results 
     - Protect certain fields from being updated or inserted.
     - Add callbacks and hooks.
     - Define persistent filters, groupings, and joins.
+    - Configure soft deletion
 
 - **Per-request configuration**:
     - Exclude certain columns (SELECT/INSERT/UPDATE) using a builder.
@@ -115,6 +116,55 @@ func main() {
             h.LeftJoin(func(ctx context.Context) string {
                 return "<SQL JOIN COMMAND>"
             })
+        }).
+        Build()
+
+    // Handle err and proceed with repo usage
+}
+```
+
+#### Soft Deletion
+```go
+package main
+
+import (
+    "context"
+    "time"
+    "github.com/insei/gerpo"
+    "github.com/insei/gerpo/query"
+)
+
+type test struct {
+    ID        int
+    CreatedAt time.Time
+    UpdatedAt *time.Time
+    Name      string
+    Age       int
+	DeletedAt *time.Time
+}
+
+func main() {
+    repo, err := gerpo.NewBuilder[test]().
+        DB(db).
+        Table("tests").
+        Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
+            columns.Field(&m.ID).Column().WithUpdateProtection()
+            columns.Field(&m.CreatedAt).Column().WithUpdateProtection()
+            columns.Field(&m.UpdatedAt).Column().WithInsertProtection()
+            columns.Field(&m.Name).Column()
+            columns.Field(&m.Age).Column()
+            columns.Field(&m.DeletedAt).Column().WithInsertProtection() // configure soft deletion field/column
+        }).
+        WithSoftDeletion(func(m *User, softDeletion *gerpo.SoftDeletionBuilder[User]) {
+            //Configure set value for soft deletion fields/columns
+            softDeletion.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
+                deletedAt := time.Now().UTC()
+                return &deletedAt
+            })
+        }).
+        WithQuery(func(m *test, h query.PersistentHelper[test]) {
+            // Permanently exclude deleted elements from all queries
+            h.Where().Field(&m.DeletedAt).EQ(nil)
         }).
         Build()
 

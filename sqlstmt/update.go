@@ -29,6 +29,8 @@ func NewUpdate(ctx context.Context, colStorage types.ColumnsStorage, table strin
 		table:       table,
 		vals:        newValues(columns),
 		columns:     columns,
+
+		where: sqlpart.NewWhereBuilder(ctx),
 	}
 }
 

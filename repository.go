@@ -29,6 +29,8 @@ type repository[TModel any] struct {
 	// SQL Query, execution and dependency
 	executor        executor.Executor[TModel]
 	persistentQuery *query.Persistent[TModel]
+
+	deleteFn func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error)
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
@@ -71,6 +73,7 @@ func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, build
 		baseModel:       model,
 		persistentQuery: query.NewPersistent(model),
 	}
+	repo.deleteFn = repo.delete
 
 	for _, opt := range opts {
 		opt.apply(repo)
@@ -186,7 +189,7 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	return updatedCount, nil
 }
 
-func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
+func (r *repository[TModel]) delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
 	stmt := sqlstmt.NewDelete(ctx, r.table, r.columns)
 	r.persistentQuery.Apply(stmt)
 
@@ -203,4 +206,8 @@ func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel,
 		return 0, r.errorTransformer(fmt.Errorf("nothing to delete: %w", ErrNotFound))
 	}
 	return count, r.errorTransformer(err)
+}
+
+func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
+	return r.deleteFn(ctx, qFns...)
 }
