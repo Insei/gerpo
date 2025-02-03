@@ -155,7 +155,7 @@ func TestBuilder_BeforeInsert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := NewBuilder[mockModel]().(*builder[mockModel])
-			b.BeforeInsert(tt.beforeInsertFn)
+			b.WithBeforeInsert(tt.beforeInsertFn)
 			if len(b.opts) != tt.expected {
 				t.Errorf("expected %v opts, got %v", tt.expected, len(b.opts))
 			}
@@ -176,7 +176,7 @@ func TestBuilder_AfterInsert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := NewBuilder[mockModel]().(*builder[mockModel])
-			b.AfterInsert(tt.afterInsertFn)
+			b.WithAfterInsert(tt.afterInsertFn)
 			if len(b.opts) != tt.expected {
 				t.Errorf("expected %v opts, got %v", tt.expected, len(b.opts))
 			}
