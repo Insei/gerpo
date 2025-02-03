@@ -56,10 +56,10 @@ func main() {
 					b.AddTrueSQLFn(func(ctx context.Context) string { return "tests.created_at < now()" })
 				})
 		}).
-		BeforeInsert(func(ctx context.Context, m *test) {
+		WithBeforeInsert(func(ctx context.Context, m *test) {
 			m.CreatedAt = time.Now()
 		}).
-		BeforeUpdate(func(ctx context.Context, m *test) {
+		WithBeforeUpdate(func(ctx context.Context, m *test) {
 			updAt := time.Now()
 			m.UpdatedAt = &updAt
 		}).

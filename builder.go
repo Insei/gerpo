@@ -69,31 +69,31 @@ func (b *builder[TModel]) WithQuery(queryFn func(m *TModel, h query.PersistentHe
 }
 
 // BeforeInsert registers a function that is executed before performing an insert operation on the model in the database.
-func (b *builder[TModel]) BeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+func (b *builder[TModel]) WithBeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithBeforeInsert[TModel](fn))
 	return b
 }
 
 // BeforeUpdate registers a function to be executed before performing an update operation on the model in the database.
-func (b *builder[TModel]) BeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+func (b *builder[TModel]) WithBeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithBeforeUpdate[TModel](fn))
 	return b
 }
 
 // AfterSelect registers a callback function to be executed after models are retrieved through a select operation.
-func (b *builder[TModel]) AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel] {
+func (b *builder[TModel]) WithAfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterSelect[TModel](fn))
 	return b
 }
 
 // AfterUpdate registers a callback function to be executed after an update operation is performed on the model.
-func (b *builder[TModel]) AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+func (b *builder[TModel]) WithAfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterUpdate[TModel](fn))
 	return b
 }
 
 // AfterInsert registers a callback function to be executed after an insert operation is performed on the model.
-func (b *builder[TModel]) AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+func (b *builder[TModel]) WithAfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterInsert[TModel](fn))
 	return b
 }

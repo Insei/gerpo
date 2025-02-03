@@ -35,16 +35,16 @@ type Repository[TModel any] interface {
 type Builder[TModel any] interface {
 	// WithQuery applies a persistent query function to customize the query process for the model.
 	WithQuery(queryFn func(m *TModel, h query.PersistentHelper[TModel])) Builder[TModel]
-	// BeforeInsert registers a function to modify the model before insert operations.
-	BeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	// BeforeUpdate registers a function to modify the model before update operations.
-	BeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	// AfterSelect registers a function to process or transform models after selection operations.
-	AfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
-	// AfterInsert registers a function to process or transform the model after insert operations.
-	AfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	// AfterUpdate registers a function to process or transform the model after update operations.
-	AfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	// WithBeforeInsert registers a function to modify the model before insert operations.
+	WithBeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	// WithBeforeUpdate registers a function to modify the model before update operations.
+	WithBeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	// WithAfterSelect registers a function to process or transform models after selection operations.
+	WithAfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
+	// WithAfterInsert registers a function to process or transform the model after insert operations.
+	WithAfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	// WithAfterUpdate registers a function to process or transform the model after update operations.
+	WithAfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	// WithErrorTransformer allows customizing or wrapping errors during repository operations.
 	WithErrorTransformer(fn func(err error) error) Builder[TModel]
 	// Build finalizes and constructs the configured repository for the model.

@@ -209,7 +209,7 @@ func TestRepository_GetList(t *testing.T) {
 			expectedErr:  ErrTest,
 		},
 		{
-			name: "AfterSelect modifies models",
+			name: "WithAfterSelect modifies models",
 			executor: &MockExecutor[model]{
 				GetMultipleFunc: func(ctx context.Context, stmt executor.Stmt) ([]*model, error) {
 					return []*model{
@@ -430,10 +430,10 @@ func TestRepository_Insert(t *testing.T) {
 			model:       &model{Name: "John Doe", Email: "john@example.com"},
 			expectedErr: nil,
 			beforeInsert: func(ctx context.Context, model *model) {
-				model.Name = "BeforeInsert Name"
+				model.Name = "WithBeforeInsert Name"
 			},
 			afterInsert: func(ctx context.Context, model *model) {
-				model.Name = "AfterInsert Name"
+				model.Name = "WithAfterInsert Name"
 			},
 		},
 		{
@@ -447,7 +447,7 @@ func TestRepository_Insert(t *testing.T) {
 			expectedErr: ErrTest,
 		},
 		{
-			name: "BeforeInsert modifies model",
+			name: "WithBeforeInsert modifies model",
 			executor: &MockExecutor[model]{
 				InsertOneFunc: func(ctx context.Context, stmt executor.Stmt, model *model) error {
 					if model.Name != "Modified Name" {
@@ -463,7 +463,7 @@ func TestRepository_Insert(t *testing.T) {
 			},
 		},
 		{
-			name: "AfterInsert modifies model",
+			name: "WithAfterInsert modifies model",
 			executor: &MockExecutor[model]{
 				InsertOneFunc: func(ctx context.Context, stmt executor.Stmt, model *model) error {
 					return nil
@@ -534,10 +534,10 @@ func TestRepository_Update(t *testing.T) {
 			model:       &model{ID: 1, Name: "Updated Name", Email: "updated@example.com"},
 			expectedErr: nil,
 			beforeUpdate: func(ctx context.Context, model *model) {
-				model.Name = "BeforeUpdate Name"
+				model.Name = "WithBeforeUpdate Name"
 			},
 			afterUpdate: func(ctx context.Context, model *model) {
-				model.Name = "AfterUpdate Name"
+				model.Name = "WithAfterUpdate Name"
 			},
 		},
 		{
