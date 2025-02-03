@@ -47,6 +47,8 @@ type Builder[TModel any] interface {
 	WithAfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
 	// WithErrorTransformer allows customizing or wrapping errors during repository operations.
 	WithErrorTransformer(fn func(err error) error) Builder[TModel]
+	// WithSoftDeletion configures soft deletion behavior for the model using the provided function and SoftDeletionBuilder.
+	WithSoftDeletion(fn func(m *TModel, softDeletion *SoftDeletionBuilder[TModel])) Builder[TModel]
 	// Build finalizes and constructs the configured repository for the model.
 	Build() (Repository[TModel], error)
 }

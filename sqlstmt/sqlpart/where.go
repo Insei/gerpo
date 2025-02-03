@@ -194,6 +194,9 @@ func (b *WhereBuilder) Values() []any {
 }
 
 func (b *WhereBuilder) StartGroup() {
+	if b.needANDBeforeCondition() {
+		b.AND()
+	}
 	b.sql += "("
 }
 func (b *WhereBuilder) EndGroup() {

@@ -36,6 +36,7 @@ func (s ColumnTypeSelector[TModel]) AsVirtual() *virtual.Builder {
 func (s ColumnTypeSelector[TModel]) AsColumn() *column.Builder {
 	field := s.cb.getFmapField(s.fieldPtr)
 	b := column.NewBuilder(field)
+	b.WithTable(s.cb.table)
 	s.cb.builders = append(s.cb.builders, b)
 	return b
 }
