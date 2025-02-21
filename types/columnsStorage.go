@@ -166,10 +166,15 @@ func (b *executionColumns) GetByFieldPtr(model any, fieldPtr any) Column {
 	if err != nil {
 		panic(err)
 	}
+	ok := false
 	for _, c := range b.columns {
 		if c == col {
-			panic("trying to get excluded column?")
+			ok = true
+			break
 		}
+	}
+	if !ok {
+		panic("trying to get excluded column?")
 	}
 	return col
 }

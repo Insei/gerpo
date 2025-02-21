@@ -23,6 +23,7 @@ func NewGetFirst(ctx context.Context, table string, columnsStorage types.Columns
 		ctx:       ctx,
 		table:     table,
 		sqlselect: newSelect(ctx, columnsStorage),
+		columns:   columnsStorage.NewExecutionColumns(ctx, types.SQLActionSelect),
 	}
 	return f
 }

@@ -5,6 +5,7 @@ import (
 )
 
 type ExcludeApplier interface {
+	ColumnsStorage() types.ColumnsStorage
 	Columns() types.ExecutionColumns
 }
 
@@ -21,8 +22,12 @@ func NewExcludeBuilder(baseModel any) *ExcludeBuilder {
 
 func (b *ExcludeBuilder) Exclude(fieldPtrs ...any) {
 	for _, fieldPtr := range fieldPtrs {
+		fieldSavePtr := fieldPtr
 		b.opts = append(b.opts, func(applier ExcludeApplier) {
-			col := applier.Columns().GetByFieldPtr(b.baseModel, fieldPtr)
+			col, err := applier.ColumnsStorage().GetByFieldPtr(b.baseModel, fieldSavePtr)
+			if err != nil {
+				panic(err)
+			}
 			applier.Columns().Exclude(col)
 		})
 	}

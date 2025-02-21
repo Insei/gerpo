@@ -9,11 +9,28 @@ import (
 
 // mockExcludeApplier implements the ExcludeApplier interface for testing purposes.
 type mockExcludeApplier struct {
-	cols types.ExecutionColumns
+	cols    types.ExecutionColumns
+	storage types.ColumnsStorage
 }
 
 func (m *mockExcludeApplier) Columns() types.ExecutionColumns {
 	return m.cols
+}
+
+func (m *mockExcludeApplier) ColumnsStorage() types.ColumnsStorage {
+	return m.storage
+}
+
+type mockColumnsStorage struct {
+	types.ColumnsStorage
+	columns map[string]types.Column
+}
+
+func (m *mockColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (types.Column, error) {
+	if col, ok := m.columns[fieldPtr.(string)]; ok {
+		return col, nil
+	}
+	return nil, nil
 }
 
 // mockExecColumns is a simplified implementation for testing that focuses on
@@ -99,7 +116,11 @@ func TestExcludeBuilder(t *testing.T) {
 			}
 
 			excludeBuilder.Exclude(scenario.fieldPtrs...)
-			testApplier := &mockExcludeApplier{cols: testColumns}
+			testApplier := &mockExcludeApplier{cols: testColumns, storage: &mockColumnsStorage{columns: map[string]types.Column{
+				"fieldPtrA": &mockColumn{name: "fieldPtrA"},
+				"fieldPtrB": &mockColumn{name: "fieldPtrB"},
+				"fieldPtrC": &mockColumn{name: "fieldPtrC"},
+			}}}
 			excludeBuilder.Apply(testApplier)
 
 			if excludeCallsCount != scenario.expectExcl {

@@ -173,7 +173,7 @@ func TestGetFirst_SQL(t *testing.T) {
 			}()
 
 			ctx := context.Background()
-			getFirst := NewGetFirst(ctx, "products", nil)
+			getFirst := NewGetFirst(ctx, "products", newMockStorage([]types.Column{}))
 
 			tc.setup(getFirst)
 
