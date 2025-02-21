@@ -11,6 +11,7 @@ type InsertHelper[TModel any] interface {
 }
 
 type InsertApplier interface {
+	ColumnsStorage() types.ColumnsStorage
 	Columns() types.ExecutionColumns
 }
 

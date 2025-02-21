@@ -29,8 +29,9 @@ func (q *GroupBuilder) Apply(applier GroupApplier) {
 
 func (q *GroupBuilder) GroupBy(fieldsPtr ...any) {
 	for _, fieldPtr := range fieldsPtr {
+		savedPtr := fieldPtr
 		q.opts = append(q.opts, func(applier GroupApplier) {
-			col, err := applier.ColumnsStorage().GetByFieldPtr(q.model, fieldPtr)
+			col, err := applier.ColumnsStorage().GetByFieldPtr(q.model, savedPtr)
 			if err != nil {
 				panic(err)
 			}

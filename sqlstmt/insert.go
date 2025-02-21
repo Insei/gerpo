@@ -13,6 +13,7 @@ type Insert struct {
 
 	table   string
 	columns types.ExecutionColumns
+	storage types.ColumnsStorage
 
 	vals *values
 }
@@ -22,6 +23,7 @@ func NewInsert(ctx context.Context, table string, colStorage types.ColumnsStorag
 	return &Insert{
 		ctx:     ctx,
 		columns: columns,
+		storage: colStorage,
 
 		vals:  newValues(columns),
 		table: table,
@@ -54,6 +56,10 @@ func (i *Insert) sql() string {
 
 func (i *Insert) Columns() types.ExecutionColumns {
 	return i.columns
+}
+
+func (i *Insert) ColumnsStorage() types.ColumnsStorage {
+	return i.storage
 }
 
 func (i *Insert) SQL(opts ...Option) (string, []any) {
