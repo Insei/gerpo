@@ -8,11 +8,12 @@
 Welcome to the **GERPO** repository! This document provides a brief overview of the project, build and run instructions, and other helpful information.
 
 ## About GERPO
-**GERPO** (Golang + Repository) is a generic repository implementation with advanced configuration capabilities and LINQ-like (Language Integrated Query) support.
+**GERPO** (Golang + Repository) is a generic repository implementation with advanced configuration capabilities and easy to use query builder.
+This project under active development.
 
 ### Why GERPO?
 1. Easily handle CRUD operations (Create, Read, Update, Delete) with powerful filtering and sorting.
-2. LINQ-like capabilities (while not exactly LINQ, it’s conceptually close).
+2. Query builder (while not exactly LINQ, it’s conceptually close).
 3. Straightforward configuration using SQL commands and user-friendly builders.
 4. All SQL code in one place — inside the configuration.
 5. Virtual (calculated, joined) columns with mapping to struct fields.
@@ -20,7 +21,10 @@ Welcome to the **GERPO** repository! This document provides a brief overview of 
 
 ## Features
 Essentially, **GERPO** is a helper for building SQL queries and mapping results to Go structs.
-
+- **Data Sources (Executor adapters)**:
+    - pgx pool v4
+    - any database/sql driver (but now supports only **postgresql**, because we not have auto determination for placeholder)
+    - any other: you can add dbWrapper for any other database library, by implementing simple wrapper - executor.DBWrapper.
 - **Repository configuration**:
     - Map struct fields to SQL columns via a LINQ-like builder.
     - Define virtual (calculated) fields (currently supports only bool; contributions welcome).
@@ -46,6 +50,37 @@ Below you’ll find various configurations and usage examples.
 
 ### Repository Configuration
 
+#### DB Adapter
+Choose Database adapter that you need:
+
+```go
+package main
+
+import (
+  "database/sql"
+  "time"
+  "github.com/insei/gerpo"
+  "github.com/insei/gerpo/executor/adapters/databasesql"
+  "github.com/insei/gerpo/executor/adapters/pgx4"
+  "github.com/jackc/pgx/v4/pgxpool"
+)
+
+func main() {
+  // for database/sql
+  // "github.com/insei/gerpo/executor/adapters/databasesql"
+  var db *sql.DB
+  dbWrap := databasesql.NewAdapter(db)
+
+  // for pgx4 pool
+  // "github.com/insei/gerpo/executor/adapters/pgx4"
+  var pool *pgxpool.Pool
+  dbWrap := pgx4.NewPoolAdapter(pool)
+
+  repo, err := gerpo.NewBuilder[ModelType]().DB(dbWrap)
+  // ...
+}
+```
+
 #### Columns
 ```go
 package main
@@ -65,7 +100,7 @@ type test struct {
 
 func main() {
     repo, err := gerpo.NewBuilder[test]().
-        DB(db).
+        DB(dbWrap).
         Table("tests").
         Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
             columns.Field(&m.ID).AsColumn().WithUpdateProtection()
@@ -102,7 +137,7 @@ type test struct {
 
 func main() {
     repo, err := gerpo.NewBuilder[test]().
-        DB(db).
+        DB(dbWrap).
         Table("tests").
         Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
             columns.Field(&m.ID).AsColumn().WithUpdateProtection()
@@ -145,7 +180,7 @@ type test struct {
 
 func main() {
     repo, err := gerpo.NewBuilder[test]().
-        DB(db).
+        DB(dbWrap).
         Table("tests").
         Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
             columns.Field(&m.ID).AsColumn().WithUpdateProtection()
@@ -196,7 +231,7 @@ type test struct {
 
 func main() {
   var repo gerpo.Repository[test] // Already initialized
-    list, err := repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
+    list, err := repo.GetList(ctx, func(m *test, h query.GetListHelper[test]) {
         h.Page(1).Size(2) // Pagination
         h.Exclude(&m.UpdatedAt, &m.ID)
     })
@@ -226,7 +261,7 @@ type test struct {
 
 func main() {
     var repo gerpo.Repository[test] // Already initialized
-    list, err := repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
+    list, err := repo.GetList(ctx, func(m *test, h query.GetListHelper[test]) {
         h.Where().Field(&m.ID).LT(7) // Items with ID < 7
     })
     // Handle err and use the list
@@ -255,7 +290,7 @@ type test struct {
 
 func main() {
   var repo gerpo.Repository[test] // Already initialized
-    item, err := repo.GetFirst(ctxCache, func(m *test, h query.GetFirstHelper[test]) {
+    item, err := repo.GetFirst(ctx, func(m *test, h query.GetFirstHelper[test]) {
         h.OrderBy().Field(&m.CreatedAt).DESC()
     })
     // Handle err and use 'item'

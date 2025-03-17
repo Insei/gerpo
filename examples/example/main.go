@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/insei/gerpo/executor/adapters/databasesql"
 	_ "github.com/lib/pq"
 
 	"github.com/insei/gerpo"
-	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/executor/cache/ctx"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/virtual"
@@ -35,9 +35,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-
+	dbWrap := databasesql.NewAdapter(db)
 	b := gerpo.NewBuilder[test]().
-		DB(db).
+		DB(dbWrap).
 		Table("tests").
 		Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
 			columns.Field(&m.ID).AsColumn().WithInsertProtection().WithUpdateProtection()
@@ -78,7 +78,7 @@ func main() {
 		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)
 	})
 
-	tx, err := executor.BeginTx(ctxCache, db)
+	tx, err := dbWrap.BeginTx(ctxCache)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -211,7 +211,7 @@ func main() {
 	log.Printf("Repo GetList limit 2, page 1 from cache %s", elapsed)
 
 	model.Age = 777
-	err = repo.Update(ctxCache, model, func(m *test, h query.UpdateHelper[test]) {
+	_, err = repo.Update(ctxCache, model, func(m *test, h query.UpdateHelper[test]) {
 		h.Where().Field(&m.ID).EQ(5)
 	})
 	if err != nil {

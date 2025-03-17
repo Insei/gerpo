@@ -2,20 +2,19 @@ package executor
 
 import (
 	"context"
-	dbsql "database/sql"
 	"fmt"
 
+	extypes "github.com/insei/gerpo/executor/types"
 	"github.com/insei/gerpo/sqlstmt"
 	"github.com/insei/gerpo/types"
 )
 
 var ErrNoInsertedRows = fmt.Errorf("failed to insert: inserted 0 rows")
-var ErrTxDBNotSame = fmt.Errorf("tx db not the same as in main executor")
+var ErrNoRows = fmt.Errorf("executor: no rows in result set")
 
-type ExecQuery interface {
-	ExecContext(ctx context.Context, query string, args ...any) (dbsql.Result, error)
-	QueryContext(ctx context.Context, query string, args ...any) (*dbsql.Rows, error)
-}
+type Tx = extypes.Tx
+type ExecQuery = extypes.ExecQuery
+type DBAdapter extypes.DBAdapter
 
 type Executor[TModel any] interface {
 	GetOne(ctx context.Context, stmt Stmt) (*TModel, error)
@@ -24,7 +23,7 @@ type Executor[TModel any] interface {
 	Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error)
 	Count(ctx context.Context, stmt CountStmt) (uint64, error)
 	Delete(ctx context.Context, stmt CountStmt) (int64, error)
-	Tx(tx *Tx) (Executor[TModel], error)
+	Tx(tx Tx) (Executor[TModel], error)
 }
 
 type CountStmt interface {

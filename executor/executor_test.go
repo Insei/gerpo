@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/insei/gerpo/executor/adapters/databasesql"
 	"github.com/insei/gerpo/executor/cache"
 	"github.com/insei/gerpo/sqlstmt"
 	"github.com/insei/gerpo/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -86,7 +86,7 @@ func TestGetOne(t *testing.T) {
 			setupDb: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("query").WillReturnRows(sqlmock.NewRows(nil)).RowsWillBeClosed()
 			},
-			expectedErr: dbsql.ErrNoRows,
+			expectedErr: ErrNoRows,
 		},
 		{
 			name: "Success",
@@ -170,7 +170,7 @@ func TestGetOne(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          db,
+				db:          databasesql.NewAdapter(db),
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
@@ -303,7 +303,7 @@ func TestGetMultiple(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          db,
+				db:          databasesql.NewAdapter(db),
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
@@ -446,7 +446,7 @@ func TestInsertOne(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          db,
+				db:          databasesql.NewAdapter(db),
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
@@ -559,7 +559,7 @@ func TestUpdate(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          db,
+				db:          databasesql.NewAdapter(db),
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
@@ -664,7 +664,7 @@ func TestCount(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          db,
+				db:          databasesql.NewAdapter(db),
 				placeholder: func(s string) string { return s },
 			}
 			if tt.cacheBundle != nil {
@@ -753,7 +753,7 @@ func TestDelete(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          db,
+				db:          databasesql.NewAdapter(db),
 				placeholder: func(s string) string { return s },
 			}
 
@@ -799,7 +799,7 @@ func TestGetExecQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &dbsql.DB{}
 			e := &executor[testModel]{
-				db:                   db,
+				db:                   databasesql.NewAdapter(db),
 				getExecQueryReplaced: tt.getExecQueryReplaced,
 				placeholder:          func(s string) string { return s },
 			}
@@ -807,57 +807,6 @@ func TestGetExecQuery(t *testing.T) {
 			if (execQuery == nil) != tt.expectedExecQueryNil {
 				t.Errorf("executor.getExecQuery() is %v, but expected %v", e.getExecQuery(tt.ctx), nil)
 			}
-		})
-	}
-}
-
-func TestTx(t *testing.T) {
-	sameDB := &dbsql.DB{}
-	testCases := []struct {
-		description string
-		mockDB      func() *dbsql.DB
-		txDB        func() *dbsql.DB
-		expectedErr error
-	}{
-		{
-			description: "success - Tx db is the same with executor db",
-			mockDB: func() *dbsql.DB {
-				return sameDB
-			},
-			txDB: func() *dbsql.DB {
-				return sameDB
-			},
-			expectedErr: nil,
-		},
-		{
-			description: "error - Tx db is not the same with executor db",
-			mockDB: func() *dbsql.DB {
-				return sameDB
-			},
-			txDB: func() *dbsql.DB {
-				return &dbsql.DB{}
-			},
-			expectedErr: ErrTxDBNotSame,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
-			// Prepare executor
-			db := test.mockDB()
-			e := New[any](db)
-
-			// Prepare Tx
-			txDb := test.txDB()
-			tx := &Tx{
-				db: txDb,
-			}
-
-			// Executing method
-			_, err := e.Tx(tx)
-
-			// Asserting
-			assert.Equal(t, test.expectedErr, err)
 		})
 	}
 }

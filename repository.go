@@ -54,7 +54,7 @@ func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	}
 }
 
-func New[TModel any](db *dbsql.DB, table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
+func New[TModel any](db executor.DBAdapter, table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
 	model, fields, err := getModelAndFields[TModel]()
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (r *repository[TModel]) GetColumns() types.ColumnsStorage {
 	return r.columns
 }
 
-func (r *repository[TModel]) Tx(tx *executor.Tx) (Repository[TModel], error) {
+func (r *repository[TModel]) Tx(tx executor.Tx) (Repository[TModel], error) {
 	txExecutor, err := r.executor.Tx(tx)
 	if err != nil {
 		return nil, err
