@@ -136,6 +136,7 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 	if err != nil {
 		return 0, err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		if err = rows.Scan(&count); err != nil {
 			return 0, err
