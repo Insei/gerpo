@@ -16,7 +16,7 @@ type Repository[TModel any] interface {
 	// GetColumns returns the column storage associated with the repository.
 	GetColumns() types.ColumnsStorage
 	// Tx creates a new repository instance bound to the provided database transaction.
-	Tx(tx *executor.Tx) (Repository[TModel], error)
+	Tx(tx executor.Tx) (Repository[TModel], error)
 	// GetFirst retrieves the first record matching the query conditions.
 	GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error)
 	// GetList retrieves a list of records matching the query conditions.

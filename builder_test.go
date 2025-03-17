@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/insei/gerpo/executor"
+	"github.com/insei/gerpo/executor/adapters/databasesql"
 	"github.com/insei/gerpo/query"
 )
 
@@ -39,9 +41,9 @@ func TestBuilder_DB(t *testing.T) {
 	mockDB := &sql.DB{}
 	tests := []struct {
 		name string
-		db   *sql.DB
+		db   executor.DBAdapter
 	}{
-		{"valid_db", mockDB},
+		{"valid_db", databasesql.NewAdapter(mockDB)},
 		{"nil_db", nil},
 	}
 
@@ -57,7 +59,7 @@ func TestBuilder_DB(t *testing.T) {
 }
 
 func TestBuilder_Build(t *testing.T) {
-	mockDB := &sql.DB{}
+	mockDB := databasesql.NewAdapter(&sql.DB{})
 	tests := []struct {
 		name        string
 		configure   func(b *builder[mockModel])

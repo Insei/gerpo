@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -26,6 +25,6 @@ func postgres(sql string, i int) string {
 	return postgres(sql, i)
 }
 
-func determinePlaceHolder(_ *sql.DB) Placeholder {
+func determinePlaceHolder(_ DBAdapter) Placeholder {
 	return PostgresPlaceholder
 }

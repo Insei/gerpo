@@ -2,20 +2,19 @@ package executor
 
 import (
 	"context"
-	dbsql "database/sql"
 
 	"github.com/insei/gerpo/sqlstmt"
 )
 
 type executor[TModel any] struct {
-	db                   *dbsql.DB
+	db                   DBAdapter
 	placeholder          Placeholder
 	getExecQueryReplaced func(ctx context.Context) ExecQuery
 
 	options
 }
 
-func New[TModel any](db *dbsql.DB, opts ...Option) Executor[TModel] {
+func New[TModel any](db DBAdapter, opts ...Option) Executor[TModel] {
 	o := &options{}
 	for _, opt := range opts {
 		opt.apply(o)
@@ -28,13 +27,10 @@ func New[TModel any](db *dbsql.DB, opts ...Option) Executor[TModel] {
 	return e
 }
 
-func (e *executor[TModel]) Tx(tx *Tx) (Executor[TModel], error) {
-	if tx.db != e.db {
-		return nil, ErrTxDBNotSame
-	}
+func (e *executor[TModel]) Tx(tx Tx) (Executor[TModel], error) {
 	ecp := *e
 	ecp.getExecQueryReplaced = func(ctx context.Context) ExecQuery {
-		return tx.tx
+		return tx
 	}
 	return &ecp, nil
 }
@@ -66,7 +62,7 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 		set(ctx, e.cacheSource, *model, sql, args...)
 	}
 	if model == nil {
-		return nil, dbsql.ErrNoRows
+		return nil, ErrNoRows
 	}
 	return model, nil
 }

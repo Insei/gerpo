@@ -8,7 +8,6 @@ import (
 
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
-	"github.com/insei/gerpo/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -126,7 +125,7 @@ func TestRepository_GetFirst(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](&sql.DB{}, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 				builder.Field(&m.Name).AsColumn()
 				builder.Field(&m.Email).AsColumn()
@@ -231,7 +230,7 @@ func TestRepository_GetList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](&sql.DB{}, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 				builder.Field(&m.Name).AsColumn()
 				builder.Field(&m.Email).AsColumn()
@@ -306,7 +305,7 @@ func TestRepository_Count(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](&sql.DB{}, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 				builder.Field(&m.Name).AsColumn()
 				builder.Field(&m.Email).AsColumn()
@@ -376,13 +375,9 @@ func TestRepository_Delete(t *testing.T) {
 		},
 	}
 
-	type stor struct {
-		types.ColumnsStorage
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](&sql.DB{}, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 			})
 			repoCasted := repo.(*repository[model])
@@ -479,7 +474,7 @@ func TestRepository_Insert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](&sql.DB{}, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 				builder.Field(&m.Name).AsColumn()
 				builder.Field(&m.Email).AsColumn()
@@ -564,7 +559,7 @@ func TestRepository_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](&sql.DB{}, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 			})
 			repoCasted := repo.(*repository[model])

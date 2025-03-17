@@ -2,16 +2,16 @@ package gerpo
 
 import (
 	"context"
-	dbsql "database/sql"
 	"errors"
 
 	"github.com/insei/fmap/v3"
+	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
 )
 
 type builder[TModel any] struct {
-	db              *dbsql.DB
+	db              executor.DBAdapter
 	table           string
 	opts            []Option[TModel]
 	model           *TModel
@@ -25,7 +25,7 @@ type TableChooser[TModel any] interface {
 }
 
 type DbChooser[TModel any] interface {
-	DB(db *dbsql.DB) TableChooser[TModel]
+	DB(db executor.DBAdapter) TableChooser[TModel]
 }
 
 type ColumnsAppender[TModel any] interface {
@@ -51,7 +51,7 @@ func (b *builder[TModel]) Table(table string) ColumnsAppender[TModel] {
 }
 
 // DB sets the database connection to be used for the builder and returns a TableChooser for further configuration.
-func (b *builder[TModel]) DB(db *dbsql.DB) TableChooser[TModel] {
+func (b *builder[TModel]) DB(db executor.DBAdapter) TableChooser[TModel] {
 	b.db = db
 	return b
 }
