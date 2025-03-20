@@ -19,6 +19,9 @@ type PersistentHelper[TModel any] interface {
 
 	// LeftJoin adds a LEFT JOIN clause to the query using a provided function that returns the SQL join statement.
 	LeftJoin(func(ctx context.Context) string) PersistentHelper[TModel]
+
+	// InnerJoin adds a INNER JOIN clause to the query using a provided function that returns the SQL join statement.
+	InnerJoin(fn func(ctx context.Context) string) PersistentHelper[TModel]
 }
 
 type Persistent[TModel any] struct {
@@ -36,6 +39,11 @@ func (h *Persistent[TModel]) Where() types.WhereTarget {
 
 func (h *Persistent[TModel]) LeftJoin(fn func(ctx context.Context) string) PersistentHelper[TModel] {
 	h.joinBuilder.LeftJoin(fn)
+	return h
+}
+
+func (h *Persistent[TModel]) InnerJoin(fn func(ctx context.Context) string) PersistentHelper[TModel] {
+	h.joinBuilder.InnerJoin(fn)
 	return h
 }
 
