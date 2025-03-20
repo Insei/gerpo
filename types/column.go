@@ -2,7 +2,6 @@ package types
 
 import (
 	"context"
-	"slices"
 
 	"github.com/insei/fmap/v3"
 )
@@ -75,5 +74,10 @@ type ColumnBase struct {
 
 // IsAllowedAction determines if a given SQLAction is allowed for the column.
 func (c *ColumnBase) IsAllowedAction(act SQLAction) bool {
-	return slices.Contains(c.AllowedActions, act)
+	for _, a := range c.AllowedActions {
+		if a == act {
+			return true
+		}
+	}
+	return false
 }
