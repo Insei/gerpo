@@ -2,8 +2,6 @@ package gerpo
 
 import (
 	"context"
-	dbsql "database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/insei/gerpo/executor"
@@ -107,9 +105,6 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 
 	model, err = r.executor.GetOne(ctx, stmt)
 	if err != nil {
-		if errors.Is(err, dbsql.ErrNoRows) {
-			return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrNotFound, err))
-		}
 		return nil, r.errorTransformer(err)
 	}
 

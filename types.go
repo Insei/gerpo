@@ -2,14 +2,13 @@ package gerpo
 
 import (
 	"context"
-	"errors"
 
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
 )
 
-var ErrNotFound = errors.New("model(s) not found in the repository")
+var ErrNotFound = executor.ErrNoRows
 
 // Repository represents a generic data repository interface for managing models in the database.
 type Repository[TModel any] interface {

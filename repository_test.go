@@ -2,13 +2,13 @@ package gerpo
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
-	"github.com/stretchr/testify/require"
 )
 
 type MockExecutor[TModel any] struct {
@@ -84,7 +84,7 @@ func TestRepository_GetFirst(t *testing.T) {
 			name: "No matching records",
 			executor: &MockExecutor[model]{
 				GetOneFunc: func(ctx context.Context, stmt executor.Stmt) (*model, error) {
-					return nil, sql.ErrNoRows
+					return nil, executor.ErrNoRows
 				},
 			},
 			expected:    nil,
