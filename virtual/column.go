@@ -2,9 +2,10 @@ package virtual
 
 import (
 	"context"
-	"slices"
 
 	"github.com/insei/fmap/v3"
+
+	"github.com/insei/gerpo/slices"
 	"github.com/insei/gerpo/types"
 )
 

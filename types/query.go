@@ -2,7 +2,8 @@ package types
 
 import (
 	"context"
-	"slices"
+
+	"github.com/insei/gerpo/slices"
 )
 
 type Operation string

@@ -3,10 +3,11 @@ package column
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/insei/fmap/v3"
+
+	"github.com/insei/gerpo/slices"
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )

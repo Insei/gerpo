@@ -3,9 +3,10 @@ package types
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/insei/fmap/v3"
+
+	"github.com/insei/gerpo/slices"
 )
 
 // ColumnsStorage defines an interface for managing a collection of database columns.

@@ -2,10 +2,10 @@ package ctx
 
 import (
 	"context"
-	"slices"
 	"sync"
 
 	"github.com/insei/gerpo/executor/cache/types"
+	"github.com/insei/gerpo/slices"
 )
 
 type ctxCacheKeyType struct {
