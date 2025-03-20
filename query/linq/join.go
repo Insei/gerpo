@@ -36,3 +36,15 @@ func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
 		})
 	})
 }
+
+func (q *JoinBuilder) InnerJoin(leftJoinFn func(ctx context.Context) string) {
+	q.opts = append(q.opts, func(applier JoinApplier) {
+		applier.Join().JOIN(func(ctx context.Context) string {
+			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
+			if leftLoinStr != "" {
+				return "INNER JOIN " + leftLoinStr
+			}
+			return ""
+		})
+	})
+}
