@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/insei/fmap/v3"
+
+	"github.com/insei/gerpo/slices"
 )
 
 type SQLAction string
@@ -74,10 +76,5 @@ type ColumnBase struct {
 
 // IsAllowedAction determines if a given SQLAction is allowed for the column.
 func (c *ColumnBase) IsAllowedAction(act SQLAction) bool {
-	for _, a := range c.AllowedActions {
-		if a == act {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.AllowedActions, act)
 }
