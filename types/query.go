@@ -2,7 +2,6 @@ package types
 
 import (
 	"context"
-	"slices"
 )
 
 type Operation string
