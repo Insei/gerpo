@@ -7,8 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/insei/fmap/v3"
-	"github.com/insei/gerpo/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/insei/gerpo/types"
 )
 
 func (m *MockColumn) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
@@ -533,25 +534,39 @@ func TestGenINFn(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name        string
-		query       string
-		value       any
-		expectedSQL string
-		expectedOK  bool
+		name                     string
+		query                    string
+		value                    any
+		expectedSQL              string
+		expectedNeedAppendValues bool
 	}{
 		{
-			name:        "With valid slice",
-			query:       "fieldType",
-			value:       []any{1, 2, 3},
-			expectedSQL: "fieldType IN (?,?,?)",
-			expectedOK:  true,
+			name:                     "With valid slice",
+			query:                    "fieldType",
+			value:                    []any{1, 2, 3},
+			expectedSQL:              "fieldType IN (?,?,?)",
+			expectedNeedAppendValues: true,
 		},
 		{
-			name:        "With empty slice",
-			query:       "fieldType",
-			value:       []any{},
-			expectedSQL: "",
-			expectedOK:  false,
+			name:                     "With empty slice",
+			query:                    "fieldType",
+			value:                    []any{},
+			expectedSQL:              "1 = 2",
+			expectedNeedAppendValues: false,
+		},
+		{
+			name:                     "With nil slice",
+			query:                    "fieldType",
+			value:                    ([]any)(nil),
+			expectedSQL:              "1 = 2",
+			expectedNeedAppendValues: false,
+		},
+		{
+			name:                     "With nil",
+			query:                    "fieldType",
+			value:                    nil,
+			expectedSQL:              "1 = 2",
+			expectedNeedAppendValues: false,
 		},
 	}
 
@@ -560,7 +575,7 @@ func TestGenINFn(t *testing.T) {
 			fn := genINFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
-			assert.Equal(t, tc.expectedOK, ok)
+			assert.Equal(t, tc.expectedNeedAppendValues, ok)
 		})
 	}
 }
@@ -569,34 +584,48 @@ func TestGenNINFn(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name        string
-		query       string
-		value       any
-		expectedSQL string
-		expectedOK  bool
+		name                     string
+		query                    string
+		value                    any
+		expectedSQL              string
+		expectedNeedAppendValues bool
 	}{
 		{
-			name:        "With valid slice",
-			query:       "fieldType",
-			value:       []any{1, 2, 3},
-			expectedSQL: "fieldType NOT IN (?,?,?)",
-			expectedOK:  true,
+			name:                     "With valid slice",
+			query:                    "fieldType",
+			value:                    []any{1, 2, 3},
+			expectedSQL:              "fieldType NOT IN (?,?,?)",
+			expectedNeedAppendValues: true,
 		},
 		{
-			name:        "With empty slice",
-			query:       "fieldType",
-			value:       []any{},
-			expectedSQL: "",
-			expectedOK:  false,
+			name:                     "With empty slice",
+			query:                    "fieldType",
+			value:                    []any{},
+			expectedSQL:              "1 = 1",
+			expectedNeedAppendValues: false,
+		},
+		{
+			name:                     "With nil slice",
+			query:                    "fieldType",
+			value:                    ([]any)(nil),
+			expectedSQL:              "1 = 1",
+			expectedNeedAppendValues: false,
+		},
+		{
+			name:                     "With nil",
+			query:                    "fieldType",
+			value:                    nil,
+			expectedSQL:              "1 = 1",
+			expectedNeedAppendValues: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fn := genNINFn(tc.query)
-			sql, ok := fn(ctx, tc.value)
+			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
-			assert.Equal(t, tc.expectedOK, ok)
+			assert.Equal(t, tc.expectedNeedAppendValues, needAppendValues)
 		})
 	}
 }
@@ -623,9 +652,9 @@ func TestGenCTFn(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fn := genCTFn(tc.query)
-			sql, ok := fn(ctx, tc.value)
+			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
-			assert.Equal(t, tc.expectedOK, ok)
+			assert.Equal(t, tc.expectedOK, needAppendValues)
 		})
 	}
 }

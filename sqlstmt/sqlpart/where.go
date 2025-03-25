@@ -57,24 +57,24 @@ func genINFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
 		anyArr := (*[]any)(fPtr)
-		if anyArr != nil && len(*anyArr) > 0 && len(*anyArr) < 9000 {
-			placeholders := strings.Repeat("?,", len(*anyArr))
-			placeholders = placeholders[:len(placeholders)-1]
-			return fmt.Sprintf("%s IN (%s)", query, placeholders), true
+		if value == nil || len(*anyArr) == 0 {
+			return "1 = 2", false
 		}
-		return "", false
+		placeholders := strings.Repeat("?,", len(*anyArr))
+		placeholders = placeholders[:len(placeholders)-1]
+		return fmt.Sprintf("%s IN (%s)", query, placeholders), true
 	}
 }
 func genNINFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
 		anyArr := (*[]any)(fPtr)
-		if anyArr != nil && len(*anyArr) > 0 && len(*anyArr) < 9000 {
-			placeholders := strings.Repeat("?,", len(*anyArr))
-			placeholders = placeholders[:len(placeholders)-1]
-			return fmt.Sprintf("%s NOT IN (%s)", query, placeholders), true
+		if value == nil || len(*anyArr) == 0 {
+			return "1 = 1", false
 		}
-		return "", false
+		placeholders := strings.Repeat("?,", len(*anyArr))
+		placeholders = placeholders[:len(placeholders)-1]
+		return fmt.Sprintf("%s NOT IN (%s)", query, placeholders), true
 	}
 }
 
