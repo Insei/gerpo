@@ -8,6 +8,8 @@ import (
 type InsertHelper[TModel any] interface {
 	// Exclude removes specified fields from requesting data from repository storage.
 	Exclude(fieldsPtr ...any)
+	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
+	Only(fieldsPtr ...any)
 }
 
 type InsertApplier interface {
@@ -23,6 +25,10 @@ type Insert[TModel any] struct {
 
 func (h *Insert[TModel]) Exclude(fieldsPtr ...any) {
 	h.excludeBuilder.Exclude(fieldsPtr...)
+}
+
+func (h *Insert[TModel]) Only(fieldPointers ...any) {
+	h.excludeBuilder.Only(fieldPointers...)
 }
 
 func (h *Insert[TModel]) Apply(applier InsertApplier) {
