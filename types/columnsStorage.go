@@ -106,6 +106,9 @@ type ExecutionColumns interface {
 	// Exclude removes the specified columns from the existing collection of execution columns, effectively excluding them from usage.
 	Exclude(...Column)
 
+	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
+	Only(cols ...Column)
+
 	// GetAll retrieves and returns all the columns contained within the execution columns as a slice.
 	GetAll() []Column
 
@@ -156,6 +159,10 @@ func (b *executionColumns) Exclude(cols ...Column) {
 		}
 		return false
 	})
+}
+
+func (b *executionColumns) Only(cols ...Column) {
+	b.columns = cols
 }
 
 func (b *executionColumns) GetAll() []Column {

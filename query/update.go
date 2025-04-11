@@ -11,6 +11,8 @@ import (
 type UpdateHelper[TModel any] interface {
 	// Exclude removes specified fields from requesting data from repository storage.
 	Exclude(fieldsPtr ...any)
+	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
+	Only(fieldsPtr ...any)
 	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
 	Where() types.WhereTarget
 }
@@ -29,6 +31,10 @@ type Update[TModel any] struct {
 
 func (h *Update[TModel]) Exclude(fieldsPtr ...any) {
 	h.excludeBuilder.Exclude(fieldsPtr...)
+}
+
+func (h *Update[TModel]) Only(fieldPointers ...any) {
+	h.excludeBuilder.Only(fieldPointers...)
 }
 
 func (h *Update[TModel]) Where() types.WhereTarget {

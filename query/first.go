@@ -16,6 +16,9 @@ type GetFirstHelper[TModel any] interface {
 	// Exclude removes specified fields from requesting data from repository storage.
 	Exclude(fieldsPtr ...any)
 
+	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
+	Only(fieldsPtr ...any)
+
 	// OrderBy defines the sorting criteria for a query and returns types.OrderTarget interface for further specification.
 	OrderBy() types.OrderTarget
 }
@@ -39,6 +42,10 @@ type GetFirst[TModel any] struct {
 
 func (h *GetFirst[TModel]) Exclude(fieldPointers ...any) {
 	h.excludeBuilder.Exclude(fieldPointers...)
+}
+
+func (h *GetFirst[TModel]) Only(fieldPointers ...any) {
+	h.excludeBuilder.Only(fieldPointers...)
 }
 
 func (h *GetFirst[TModel]) Where() types.WhereTarget {
