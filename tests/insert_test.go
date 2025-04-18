@@ -67,7 +67,7 @@ func TestInsert(t *testing.T) {
 				Name: "InsertTest",
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`INSERT INTO users \(id, created_at, name\) VALUES \(\$1,\$2,\$3\)`).
+				mockDB.ExpectExec(`INSERT INTO users \(id, created_at, name\) VALUES \(\?,\?,\?\)`).
 					WithArgs(sqlmock.AnyArg(), &dateAt, m.Name).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoInsertFn: func(repo gerpo.Repository[User], user *User) error {
@@ -80,7 +80,7 @@ func TestInsert(t *testing.T) {
 				Name: "InsertTest",
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`INSERT INTO users \(id, created_at\) VALUES \(\$1,\$2\)`).
+				mockDB.ExpectExec(`INSERT INTO users \(id, created_at\) VALUES \(\?,\?\)`).
 					WithArgs(sqlmock.AnyArg(), &dateAt).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoInsertFn: func(repo gerpo.Repository[User], user *User) error {
@@ -95,7 +95,7 @@ func TestInsert(t *testing.T) {
 				Name: "InsertTest",
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`INSERT INTO users \(id\) VALUES \(\$1\)`).
+				mockDB.ExpectExec(`INSERT INTO users \(id\) VALUES \(\?\)`).
 					WithArgs(sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoInsertFn: func(repo gerpo.Repository[User], user *User) error {
@@ -110,7 +110,7 @@ func TestInsert(t *testing.T) {
 				Name: "InsertTest",
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`INSERT INTO users \(id\) VALUES \(\$1\)`).
+				mockDB.ExpectExec(`INSERT INTO users \(id\) VALUES \(\?\)`).
 					WithArgs(sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoInsertFn: func(repo gerpo.Repository[User], user *User) error {

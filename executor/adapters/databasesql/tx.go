@@ -3,7 +3,9 @@ package databasesql
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
+	"github.com/insei/gerpo/executor/adapters/placeholder"
 	"github.com/insei/gerpo/executor/types"
 )
 
@@ -11,14 +13,23 @@ type txWrap struct {
 	commited                      bool
 	rollbackUnlessCommittedNeeded bool
 	tx                            *sql.Tx
+	placeholder                   placeholder.PlaceholderFormat
 }
 
 func (t *txWrap) ExecContext(ctx context.Context, query string, args ...any) (types.Result, error) {
-	return t.tx.ExecContext(ctx, query, args...)
+	sql, err := t.placeholder.ReplacePlaceholders(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
+	}
+	return t.tx.ExecContext(ctx, sql, args...)
 }
 
 func (t *txWrap) QueryContext(ctx context.Context, query string, args ...any) (types.Rows, error) {
-	return t.tx.QueryContext(ctx, query, args...)
+	sql, err := t.placeholder.ReplacePlaceholders(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
+	}
+	return t.tx.QueryContext(ctx, sql, args...)
 }
 
 func (t *txWrap) Commit() error {

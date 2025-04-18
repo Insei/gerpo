@@ -15,10 +15,12 @@ type MockCacheSource struct {
 func (m *MockCacheSource) Clean(ctx context.Context) {
 	m.Called(ctx)
 }
+
 func (m *MockCacheSource) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
 	args := m.Called(ctx, statement, statementArgs)
 	return args.Get(0), args.Error(1)
 }
+
 func (m *MockCacheSource) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
 	m.Called(ctx, cache, statement, statementArgs)
 }

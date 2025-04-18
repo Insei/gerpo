@@ -73,7 +73,7 @@ func TestUpdate(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`UPDATE users SET updated_at = \$1, name = \$2, deleted_at = \$3 WHERE \(users.deleted_at IS NULL\) AND \(users.id = \$4\)`).
+				mockDB.ExpectExec(`UPDATE users SET updated_at = \?, name = \?, deleted_at = \? WHERE \(users.deleted_at IS NULL\) AND \(users.id = \?\)`).
 					WithArgs(&dateAt, m.Name, m.DeletedAt, m.ID).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoUpdateFn: func(repo gerpo.Repository[User], user *User) (int64, error) {
@@ -90,7 +90,7 @@ func TestUpdate(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`UPDATE users SET updated_at = \$1, deleted_at = \$2 WHERE \(users.deleted_at IS NULL\) AND \(users.id = \$3\)`).
+				mockDB.ExpectExec(`UPDATE users SET updated_at = \?, deleted_at = \? WHERE \(users.deleted_at IS NULL\) AND \(users.id = \?\)`).
 					WithArgs(&dateAt, m.DeletedAt, m.ID).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoUpdateFn: func(repo gerpo.Repository[User], user *User) (int64, error) {
@@ -108,7 +108,7 @@ func TestUpdate(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`UPDATE users SET updated_at = \$1 WHERE \(users.deleted_at IS NULL\) AND \(users.id = \$2\)`).
+				mockDB.ExpectExec(`UPDATE users SET updated_at = \? WHERE \(users.deleted_at IS NULL\) AND \(users.id = \?\)`).
 					WithArgs(&dateAt, m.ID).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoUpdateFn: func(repo gerpo.Repository[User], user *User) (int64, error) {
@@ -126,7 +126,7 @@ func TestUpdate(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`UPDATE users SET updated_at = \$1, name = \$2, deleted_at = \$3 WHERE \(users.deleted_at IS NULL\) AND \(users.id = \$4\ OR users.name = \$5\)`).
+				mockDB.ExpectExec(`UPDATE users SET updated_at = \?, name = \?, deleted_at = \? WHERE \(users.deleted_at IS NULL\) AND \(users.id = \?\ OR users.name = \?\)`).
 					WithArgs(&dateAt, m.Name, m.DeletedAt, m.ID, m.Name).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoUpdateFn: func(repo gerpo.Repository[User], user *User) (int64, error) {
@@ -146,7 +146,7 @@ func TestUpdate(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`UPDATE users SET updated_at = \$1, name = \$2, deleted_at = \$3 WHERE \(users.deleted_at IS NULL\) AND \(users.id = \$4\ AND users.name = \$5\)`).
+				mockDB.ExpectExec(`UPDATE users SET updated_at = \?, name = \?, deleted_at = \? WHERE \(users.deleted_at IS NULL\) AND \(users.id = \?\ AND users.name = \?\)`).
 					WithArgs(&dateAt, m.Name, m.DeletedAt, m.ID, m.Name).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoUpdateFn: func(repo gerpo.Repository[User], user *User) (int64, error) {
@@ -166,7 +166,7 @@ func TestUpdate(t *testing.T) {
 				CreatedAt: time.Now().UTC(),
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
-				mockDB.ExpectExec(`UPDATE users SET updated_at = \$1, name = \$2, deleted_at = \$3 WHERE \(users.deleted_at IS NULL\) AND \(users.id = \$4\ AND users.name = \$5\)`).
+				mockDB.ExpectExec(`UPDATE users SET updated_at = \?, name = \?, deleted_at = \? WHERE \(users.deleted_at IS NULL\) AND \(users.id = \?\ AND users.name = \?\)`).
 					WithArgs(&dateAt, m.Name, m.DeletedAt, m.ID, m.Name).WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			repoUpdateFn: func(repo gerpo.Repository[User], user *User) (int64, error) {
