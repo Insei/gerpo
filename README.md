@@ -21,9 +21,9 @@ This project under active development.
 
 ## Features
 Essentially, **GERPO** is a helper for building SQL queries and mapping results to Go structs.
-- **Data Sources (Executor adapters)**:
+- **Data Sources (executor adapters)**:
     - pgx pool v4
-    - any database/sql driver (but now supports only **postgresql**, because we not have auto determination for placeholder)
+    - any database/sql driver
     - any other: you can add dbWrapper for any other database library, by implementing simple wrapper - executor.DBWrapper.
 - **Repository configuration**:
     - Map struct fields to SQL columns via a LINQ-like builder.
@@ -34,10 +34,11 @@ Essentially, **GERPO** is a helper for building SQL queries and mapping results 
     - Configure soft deletion
 
 - **Per-request configuration**:
-    - Exclude certain columns (SELECT/INSERT/UPDATE) using a builder.
+    - Exclude certain fields by fields pointers.
+    - Select only needed columns by fields pointers.
     - Work with transactions.
-    - Configure filtering and sorting via a LINQ-like builder.
-    - Implement pagination in your GetList requests.
+    - Configure filtering and sorting via fields pointers.
+    - Use pagination in your GetList requests.
 
 ## Installation
 
