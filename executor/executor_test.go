@@ -170,8 +170,7 @@ func TestGetOne(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          databasesql.NewAdapter(db),
-				placeholder: func(s string) string { return s },
+				db: databasesql.NewAdapter(db),
 			}
 			if tt.cacheBundle != nil {
 				e.cacheSource = tt.cacheBundle()
@@ -303,8 +302,7 @@ func TestGetMultiple(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          databasesql.NewAdapter(db),
-				placeholder: func(s string) string { return s },
+				db: databasesql.NewAdapter(db),
 			}
 			if tt.cacheBundle != nil {
 				e.cacheSource = tt.cacheBundle()
@@ -446,8 +444,7 @@ func TestInsertOne(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          databasesql.NewAdapter(db),
-				placeholder: func(s string) string { return s },
+				db: databasesql.NewAdapter(db),
 			}
 			if tt.cacheBundle != nil {
 				e.cacheSource = tt.cacheBundle()
@@ -559,8 +556,7 @@ func TestUpdate(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          databasesql.NewAdapter(db),
-				placeholder: func(s string) string { return s },
+				db: databasesql.NewAdapter(db),
 			}
 			if tt.cacheBundle != nil {
 				e.cacheSource = tt.cacheBundle()
@@ -664,8 +660,7 @@ func TestCount(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          databasesql.NewAdapter(db),
-				placeholder: func(s string) string { return s },
+				db: databasesql.NewAdapter(db),
 			}
 			if tt.cacheBundle != nil {
 				e.cacheSource = tt.cacheBundle()
@@ -753,8 +748,7 @@ func TestDelete(t *testing.T) {
 			}
 
 			e := &executor[testModel]{
-				db:          databasesql.NewAdapter(db),
-				placeholder: func(s string) string { return s },
+				db: databasesql.NewAdapter(db),
 			}
 
 			res, err := e.Delete(tt.ctx, tt.stmt)
@@ -801,7 +795,6 @@ func TestGetExecQuery(t *testing.T) {
 			e := &executor[testModel]{
 				db:                   databasesql.NewAdapter(db),
 				getExecQueryReplaced: tt.getExecQueryReplaced,
-				placeholder:          func(s string) string { return s },
 			}
 			execQuery := e.getExecQuery(tt.ctx)
 			if (execQuery == nil) != tt.expectedExecQueryNil {

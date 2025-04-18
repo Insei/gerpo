@@ -2,7 +2,9 @@ package pgx4
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/insei/gerpo/executor/adapters/placeholder"
 	"github.com/insei/gerpo/executor/types"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -13,7 +15,11 @@ type poolWrap struct {
 }
 
 func (p *poolWrap) ExecContext(ctx context.Context, query string, args ...any) (types.Result, error) {
-	res, err := p.pool.Exec(ctx, query, args...)
+	sql, err := placeholder.Dollar.ReplacePlaceholders(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
+	}
+	res, err := p.pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +27,11 @@ func (p *poolWrap) ExecContext(ctx context.Context, query string, args ...any) (
 }
 
 func (p *poolWrap) QueryContext(ctx context.Context, query string, args ...any) (types.Rows, error) {
-	rows, err := p.pool.Query(ctx, query, args...)
+	sql, err := placeholder.Dollar.ReplacePlaceholders(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
+	}
+	rows, err := p.pool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}

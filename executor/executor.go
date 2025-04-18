@@ -8,7 +8,6 @@ import (
 
 type executor[TModel any] struct {
 	db                   DBAdapter
-	placeholder          Placeholder
 	getExecQueryReplaced func(ctx context.Context) ExecQuery
 
 	options
@@ -20,9 +19,8 @@ func New[TModel any](db DBAdapter, opts ...Option) Executor[TModel] {
 		opt.apply(o)
 	}
 	e := &executor[TModel]{
-		options:     *o,
-		db:          db,
-		placeholder: determinePlaceHolder(db),
+		options: *o,
+		db:      db,
 	}
 	return e
 }
@@ -47,7 +45,7 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 	if cached, ok := get[TModel](ctx, e.cacheSource, sql, args...); ok {
 		return cached, nil
 	}
-	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
+	rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +70,7 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 	if cached, ok := get[[]*TModel](ctx, e.cacheSource, sql, args...); ok {
 		return *cached, nil
 	}
-	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
+	rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +89,7 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 
 func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TModel) error {
 	sql, values := stmt.SQL(sqlstmt.WithModelValues(model))
-	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), values...)
+	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
 	if err != nil {
 		return err
 	}
@@ -108,7 +106,7 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 
 func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error) {
 	sql, values := stmt.SQL(sqlstmt.WithModelValues(model))
-	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), values...)
+	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -128,7 +126,7 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 		return *cached, nil
 	}
 	count := uint64(0)
-	rows, err := e.getExecQuery(ctx).QueryContext(ctx, e.placeholder(sql), args...)
+	rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -144,7 +142,7 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 
 func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (int64, error) {
 	sql, args := stmt.SQL()
-	result, err := e.getExecQuery(ctx).ExecContext(ctx, e.placeholder(sql), args...)
+	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, args...)
 	if err != nil {
 		return 0, err
 	}
