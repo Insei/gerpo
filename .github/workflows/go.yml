@@ -44,7 +44,9 @@ jobs:
         run: go build -v ./...
 
       - name: Test
-        run: go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+        run: go test -v -coverprofile=coverage.txt.tmp -covermode=atomic ./...
+      - name: Exclude adapters
+        run: cat coverage.txt.tmp | grep -v "/adapters/" > coverage.txt && rm coverage.txt.tmp
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
