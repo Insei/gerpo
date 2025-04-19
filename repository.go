@@ -59,7 +59,10 @@ func New[TModel any](db executor.DBAdapter, table string, columnsFn func(m *TMod
 	}
 	columnsBuilder := newColumnBuilder(table, model, fields)
 	columnsFn(model, columnsBuilder)
-	columns := columnsBuilder.build()
+	columns, err := columnsBuilder.build()
+	if err != nil {
+		return nil, err
+	}
 
 	if len(columns.AsSlice()) < 1 {
 		return nil, fmt.Errorf("failed to create repository with empty columns")
@@ -74,7 +77,10 @@ func New[TModel any](db executor.DBAdapter, table string, columnsFn func(m *TMod
 	repo.deleteFn = repo.delete
 
 	for _, opt := range opts {
-		opt.apply(repo)
+		err := opt.apply(repo)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	replaceNilCallbacks(repo)
@@ -97,11 +103,17 @@ func (r *repository[TModel]) Tx(tx executor.Tx) (Repository[TModel], error) {
 
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error) {
 	stmt := sqlstmt.NewGetFirst(ctx, r.table, r.columns)
-	r.persistentQuery.Apply(stmt)
+	err = r.persistentQuery.Apply(stmt)
+	if err != nil {
+		return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
+	}
 
 	q := query.NewGetFirst(r.baseModel)
 	q.HandleFn(qFns...)
-	q.Apply(stmt)
+	err = q.Apply(stmt)
+	if err != nil {
+		return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
 
 	model, err = r.executor.GetOne(ctx, stmt)
 	if err != nil {
@@ -114,11 +126,17 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 
 func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListHelper[TModel])) (models []*TModel, err error) {
 	stmt := sqlstmt.NewGetList(ctx, r.table, r.columns)
-	r.persistentQuery.Apply(stmt)
+	err = r.persistentQuery.Apply(stmt)
+	if err != nil {
+		return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
+	}
 
 	q := query.NewGetList(r.baseModel)
 	q.HandleFn(qFns...)
-	q.Apply(stmt)
+	err = q.Apply(stmt)
+	if err != nil {
+		return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
 
 	models, err = r.executor.GetMultiple(ctx, stmt)
 	if err != nil {
@@ -131,11 +149,17 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 
 func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountHelper[TModel])) (count uint64, err error) {
 	stmt := sqlstmt.NewCount(ctx, r.table, r.columns)
-	r.persistentQuery.Apply(stmt)
+	err = r.persistentQuery.Apply(stmt)
+	if err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
+	}
 
 	q := query.NewCount(r.baseModel)
 	q.HandleFn(qFns...)
-	q.Apply(stmt)
+	err = q.Apply(stmt)
+	if err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
 
 	count, err = r.executor.Count(ctx, stmt)
 	if err != nil {
@@ -148,11 +172,17 @@ func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, 
 func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertHelper[TModel])) (err error) {
 	r.beforeInsert(ctx, model)
 	stmt := sqlstmt.NewInsert(ctx, r.table, r.columns)
-	r.persistentQuery.Apply(stmt)
+	err = r.persistentQuery.Apply(stmt)
+	if err != nil {
+		return r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
+	}
 
 	q := query.NewInsert(r.baseModel)
 	q.HandleFn(qFns...)
-	q.Apply(stmt)
+	err = q.Apply(stmt)
+	if err != nil {
+		return r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
 
 	err = r.executor.InsertOne(ctx, stmt, model)
 	if err != nil {
@@ -166,11 +196,17 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (count int64, err error) {
 	r.beforeUpdate(ctx, model)
 	stmt := sqlstmt.NewUpdate(ctx, r.columns, r.table)
-	r.persistentQuery.Apply(stmt)
+	err = r.persistentQuery.Apply(stmt)
+	if err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
+	}
 
 	q := query.NewUpdate(r.baseModel)
 	q.HandleFn(qFns...)
-	q.Apply(stmt)
+	err = q.Apply(stmt)
+	if err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
 
 	updatedCount, err := r.executor.Update(ctx, stmt, model)
 	if err != nil {
@@ -186,11 +222,17 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 
 func (r *repository[TModel]) delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
 	stmt := sqlstmt.NewDelete(ctx, r.table, r.columns)
-	r.persistentQuery.Apply(stmt)
+	err = r.persistentQuery.Apply(stmt)
+	if err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
+	}
 
 	q := query.NewDelete(r.baseModel)
 	q.HandleFn(qFns...)
-	q.Apply(stmt)
+	err = q.Apply(stmt)
+	if err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
 
 	count, err = r.executor.Delete(ctx, stmt)
 	if err != nil {

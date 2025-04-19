@@ -182,10 +182,11 @@ func TestColumnNew(t *testing.T) {
 	fields, _ := fmap.Get[TestModel]()
 	field := fields.MustFind("NonBool")
 
-	c := New(field).(*column)
+	c, err := New(field)
 
 	t.Run("Test New column initialization", func(t *testing.T) {
-		assert.NotNil(t, c.base)
+		assert.Nil(t, err)
+		assert.NotNil(t, c)
 		assert.Equal(t, []types.SQLAction{types.SQLActionSelect}, c.GetAllowedActions())
 	})
 }

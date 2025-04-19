@@ -30,13 +30,15 @@ func NewInsert(ctx context.Context, table string, colStorage types.ColumnsStorag
 	}
 }
 
-func (i *Insert) sql() string {
-	cols := i.columns.GetAll()
-	sql := ""
-	sqlTemplate := "(%s) VALUES (%s)"
-	if len(cols) < 1 {
-		return sql
+func (i *Insert) sql() (string, error) {
+	if i.table == "" {
+		return "", ErrTableIsNoSet
 	}
+	cols := i.columns.GetAll()
+	if len(cols) < 1 {
+		return "", ErrEmptyColumnsInExecutionSet
+	}
+	sqlTemplate := "(%s) VALUES (%s)"
 	colsStr := ""
 	valuesCount := 0
 	for _, col := range cols {
@@ -51,7 +53,7 @@ func (i *Insert) sql() string {
 		valuesCount++
 	}
 	valuesSQLTemplate := strings.Repeat("?,", valuesCount)
-	return fmt.Sprintf("INSERT INTO %s "+sqlTemplate, i.table, colsStr, valuesSQLTemplate[:len(valuesSQLTemplate)-1])
+	return fmt.Sprintf("INSERT INTO %s "+sqlTemplate, i.table, colsStr, valuesSQLTemplate[:len(valuesSQLTemplate)-1]), nil
 }
 
 func (i *Insert) Columns() types.ExecutionColumns {
@@ -62,9 +64,13 @@ func (i *Insert) ColumnsStorage() types.ColumnsStorage {
 	return i.storage
 }
 
-func (i *Insert) SQL(opts ...Option) (string, []any) {
+func (i *Insert) SQL(opts ...Option) (string, []any, error) {
 	for _, opt := range opts {
 		opt(i.vals)
 	}
-	return i.sql(), i.vals.values
+	sql, err := i.sql()
+	if err != nil {
+		return "", nil, err
+	}
+	return sql, i.vals.values, nil
 }

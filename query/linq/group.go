@@ -13,7 +13,7 @@ func NewGroupBuilder(baseModel any) *GroupBuilder {
 
 type GroupBuilder struct {
 	model any
-	opts  []func(GroupApplier)
+	opts  []func(GroupApplier) error
 }
 
 type GroupApplier interface {
@@ -21,21 +21,26 @@ type GroupApplier interface {
 	Group() sqlpart.Group
 }
 
-func (q *GroupBuilder) Apply(applier GroupApplier) {
+func (q *GroupBuilder) Apply(applier GroupApplier) error {
 	for _, opt := range q.opts {
-		opt(applier)
+		err := opt(applier)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (q *GroupBuilder) GroupBy(fieldsPtr ...any) {
 	for _, fieldPtr := range fieldsPtr {
 		savedPtr := fieldPtr
-		q.opts = append(q.opts, func(applier GroupApplier) {
+		q.opts = append(q.opts, func(applier GroupApplier) error {
 			col, err := applier.ColumnsStorage().GetByFieldPtr(q.model, savedPtr)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			applier.Group().GroupBy(col)
+			return nil
 		})
 	}
 }

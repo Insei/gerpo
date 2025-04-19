@@ -1,13 +1,15 @@
 package linq
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
 type WhereBuilder struct {
 	model any
-	opts  []func(applier WhereApplier)
+	opts  []func(applier WhereApplier) error
 }
 
 type WhereApplier interface {
@@ -21,14 +23,18 @@ func NewWhereBuilder(baseModel any) *WhereBuilder {
 	}
 }
 
-func (q *WhereBuilder) Apply(applier WhereApplier) {
+func (q *WhereBuilder) Apply(applier WhereApplier) error {
 	if len(q.opts) > 0 {
 		applier.Where().StartGroup()
 		for _, opt := range q.opts {
-			opt(applier)
+			err := opt(applier)
+			if err != nil {
+				return err
+			}
 		}
 		applier.Where().EndGroup()
 	}
+	return nil
 }
 
 func (q *WhereBuilder) IsEmpty() bool {
@@ -36,12 +42,14 @@ func (q *WhereBuilder) IsEmpty() bool {
 }
 
 func (q *WhereBuilder) Group(f func(t types.WhereTarget)) types.ANDOR {
-	q.opts = append(q.opts, func(applier WhereApplier) {
+	q.opts = append(q.opts, func(applier WhereApplier) error {
 		applier.Where().StartGroup()
+		return nil
 	})
 	f(q)
-	q.opts = append(q.opts, func(applier WhereApplier) {
+	q.opts = append(q.opts, func(applier WhereApplier) error {
 		applier.Where().EndGroup()
+		return nil
 	})
 	return q
 }
@@ -105,26 +113,32 @@ func (o OperationFn) OP(operation types.Operation, val any) types.ANDOR {
 }
 
 func (q *WhereBuilder) AND() types.WhereTarget {
-	q.opts = append(q.opts, func(applier WhereApplier) {
+	q.opts = append(q.opts, func(applier WhereApplier) error {
 		applier.Where().AND()
+		return nil
 	})
 	return q
 }
 
 func (q *WhereBuilder) OR() types.WhereTarget {
-	q.opts = append(q.opts, func(applier WhereApplier) {
+	q.opts = append(q.opts, func(applier WhereApplier) error {
 		applier.Where().OR()
+		return nil
 	})
 	return q
 }
 
 func (q *WhereBuilder) Column(column types.Column) types.WhereOperation {
 	return OperationFn(func(operation types.Operation, val any) types.ANDOR {
-		q.opts = append(q.opts, func(applier WhereApplier) {
+		q.opts = append(q.opts, func(applier WhereApplier) error {
+			if column == nil {
+				return fmt.Errorf("column is nil")
+			}
 			err := applier.Where().AppendCondition(column, operation, val)
 			if err != nil {
-				panic(err)
+				return err
 			}
+			return err
 		})
 		return q
 	})
@@ -132,15 +146,16 @@ func (q *WhereBuilder) Column(column types.Column) types.WhereOperation {
 
 func (q *WhereBuilder) Field(fieldPtr any) types.WhereOperation {
 	return OperationFn(func(operation types.Operation, val any) types.ANDOR {
-		q.opts = append(q.opts, func(applier WhereApplier) {
+		q.opts = append(q.opts, func(applier WhereApplier) error {
 			column, err := applier.ColumnsStorage().GetByFieldPtr(q.model, fieldPtr)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			err = applier.Where().AppendCondition(column, operation, val)
 			if err != nil {
-				panic(err)
+				return err
 			}
+			return nil
 		})
 		return q
 	})

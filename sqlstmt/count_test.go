@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCount(t *testing.T) {
@@ -98,7 +99,8 @@ func TestCount_SQL(t *testing.T) {
 
 			tc.setup(count)
 
-			sql, values := count.SQL()
+			sql, values, err := count.SQL()
+			assert.NoError(t, err)
 
 			if sql != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sql)

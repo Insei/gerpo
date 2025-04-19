@@ -2,6 +2,7 @@ package linq
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
@@ -50,7 +51,7 @@ func (m *mockColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (types.Colum
 	if col, ok := m.columns[fieldPtr]; ok {
 		return col, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("column not found")
 }
 
 type mockGroup struct {
@@ -116,7 +117,8 @@ func TestGroupBuilder_GroupBy(t *testing.T) {
 
 			builder := NewGroupBuilder(tc.model)
 			builder.GroupBy(tc.fields...)
-			builder.Apply(mockApplier)
+			err := builder.Apply(mockApplier)
+			assert.NoError(t, err)
 
 			actualGroupings := make([]string, len(mockG.groupings))
 			for i, col := range mockG.groupings {

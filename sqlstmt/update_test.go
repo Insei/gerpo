@@ -6,6 +6,7 @@ import (
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewUpdate(t *testing.T) {
@@ -56,6 +57,7 @@ func TestUpdate_sql(t *testing.T) {
 		table            string
 		executionColumns []types.Column
 		expectedSQL      string
+		expectErr        bool
 	}{
 		{
 			name:  "BasicSQL",
@@ -70,7 +72,7 @@ func TestUpdate_sql(t *testing.T) {
 			name:             "NoColumns",
 			table:            "products",
 			executionColumns: []types.Column{},
-			expectedSQL:      "",
+			expectErr:        true,
 		},
 		{
 			name:  "SomeColumnsWithoutName",
@@ -87,7 +89,7 @@ func TestUpdate_sql(t *testing.T) {
 			executionColumns: []types.Column{
 				&mockColumn{name: "", hasName: false},
 			},
-			expectedSQL: "",
+			expectErr: true,
 		},
 	}
 
@@ -96,7 +98,12 @@ func TestUpdate_sql(t *testing.T) {
 			storage := newMockStorage(tc.executionColumns)
 			u := NewUpdate(context.Background(), storage, tc.table)
 
-			sqlStr := u.sql()
+			sqlStr, err := u.sql()
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 
 			if sqlStr != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sqlStr)
@@ -113,6 +120,7 @@ func TestUpdate_SQL(t *testing.T) {
 		executionColumns []types.Column
 		expectedSQL      string
 		expectedValues   []any
+		expectErr        bool
 	}{
 		{
 			name:  "BasicUpdate",
@@ -128,8 +136,15 @@ func TestUpdate_SQL(t *testing.T) {
 			name:             "NoColumns",
 			table:            "products",
 			executionColumns: []types.Column{},
-			expectedSQL:      "",
-			expectedValues:   []any{},
+			expectErr:        true,
+		},
+		{
+			name: "NoTable",
+			executionColumns: []types.Column{
+				&mockColumn{name: "id", hasName: true, allowedAction: true},
+				&mockColumn{name: "name", hasName: true, allowedAction: true},
+			},
+			expectErr: true,
 		},
 	}
 
@@ -141,7 +156,12 @@ func TestUpdate_SQL(t *testing.T) {
 
 			u.where = sqlpart.NewWhereBuilder(ctx)
 
-			sqlStr, vals := u.SQL()
+			sqlStr, vals, err := u.SQL()
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 
 			if sqlStr != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sqlStr)

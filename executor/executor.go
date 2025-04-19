@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/insei/gerpo/sqlstmt"
 )
@@ -41,7 +42,10 @@ func (e *executor[TModel]) getExecQuery(ctx context.Context) ExecQuery {
 }
 
 func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, error) {
-	sql, args := stmt.SQL()
+	sql, args, err := stmt.SQL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sql query from stmt: %w", err)
+	}
 	if cached, ok := get[TModel](ctx, e.cacheSource, sql, args...); ok {
 		return cached, nil
 	}
@@ -66,7 +70,10 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 }
 
 func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TModel, error) {
-	sql, args := stmt.SQL()
+	sql, args, err := stmt.SQL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sql query from stmt: %w", err)
+	}
 	if cached, ok := get[[]*TModel](ctx, e.cacheSource, sql, args...); ok {
 		return *cached, nil
 	}
@@ -88,7 +95,10 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 }
 
 func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TModel) error {
-	sql, values := stmt.SQL(sqlstmt.WithModelValues(model))
+	sql, values, err := stmt.SQL(sqlstmt.WithModelValues(model))
+	if err != nil {
+		return fmt.Errorf("failed to get sql query from stmt: %w", err)
+	}
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
 	if err != nil {
 		return err
@@ -105,7 +115,10 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 }
 
 func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error) {
-	sql, values := stmt.SQL(sqlstmt.WithModelValues(model))
+	sql, values, err := stmt.SQL(sqlstmt.WithModelValues(model))
+	if err != nil {
+		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
+	}
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
 	if err != nil {
 		return 0, err
@@ -121,7 +134,10 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 }
 
 func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, error) {
-	sql, args := stmt.SQL()
+	sql, args, err := stmt.SQL()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
+	}
 	if cached, ok := get[uint64](ctx, e.cacheSource, sql, args...); ok {
 		return *cached, nil
 	}
@@ -141,7 +157,10 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 }
 
 func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (int64, error) {
-	sql, args := stmt.SQL()
+	sql, args, err := stmt.SQL()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
+	}
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, args...)
 	if err != nil {
 		return 0, err

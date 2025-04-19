@@ -1,10 +1,12 @@
 package linq_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 // mockExcludeApplier implements the ExcludeApplier interface for testing purposes.
@@ -30,20 +32,20 @@ func (m *mockColumnsStorage) GetByFieldPtr(model any, fieldPtr any) (types.Colum
 	if col, ok := m.columns[fieldPtr.(string)]; ok {
 		return col, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("column not found")
 }
 
 // mockExecColumns is a simplified implementation for testing that focuses on
 // calls to GetByFieldPtr and Exclude.
 type mockExecColumns struct {
 	types.ExecutionColumns
-	getByFieldPtrFunc func(model, fieldPtr any) types.Column
+	getByFieldPtrFunc func(model, fieldPtr any) (types.Column, error)
 	excludeFunc       func(cols ...types.Column)
 }
 
 func (m *mockExecColumns) GetAll() []types.Column       { return nil }
 func (m *mockExecColumns) Exclude(cols ...types.Column) { m.excludeFunc(cols...) }
-func (m *mockExecColumns) GetByFieldPtr(model any, fieldPtr any) types.Column {
+func (m *mockExecColumns) GetByFieldPtr(model any, fieldPtr any) (types.Column, error) {
 	return m.getByFieldPtrFunc(model, fieldPtr)
 }
 func (m *mockExecColumns) GetModelPointers(model any) []any { return nil }
@@ -61,14 +63,15 @@ func TestExcludeBuilder(t *testing.T) {
 		fieldPtrs  []any
 		setupMocks func() *mockExecColumns
 		expectExcl int
+		expectErr  bool
 	}{
 		{
 			name:      "No fields to exclude",
 			fieldPtrs: []any{},
 			setupMocks: func() *mockExecColumns {
 				return &mockExecColumns{
-					getByFieldPtrFunc: func(model, fieldPtr any) types.Column {
-						return &mockColumn{name: "unused"}
+					getByFieldPtrFunc: func(model, fieldPtr any) (types.Column, error) {
+						return &mockColumn{name: "unused"}, nil
 					},
 					excludeFunc: func(cols ...types.Column) {},
 				}
@@ -80,8 +83,8 @@ func TestExcludeBuilder(t *testing.T) {
 			fieldPtrs: []any{"fieldPtrA"},
 			setupMocks: func() *mockExecColumns {
 				return &mockExecColumns{
-					getByFieldPtrFunc: func(model, fieldPtr any) types.Column {
-						return &mockColumn{name: fieldPtr.(string)}
+					getByFieldPtrFunc: func(model, fieldPtr any) (types.Column, error) {
+						return &mockColumn{name: fieldPtr.(string)}, nil
 					},
 					excludeFunc: func(cols ...types.Column) {},
 				}
@@ -93,13 +96,26 @@ func TestExcludeBuilder(t *testing.T) {
 			fieldPtrs: []any{"fieldPtrA", "fieldPtrB", "fieldPtrC"},
 			setupMocks: func() *mockExecColumns {
 				return &mockExecColumns{
-					getByFieldPtrFunc: func(model, fieldPtr any) types.Column {
-						return &mockColumn{name: fieldPtr.(string)}
+					getByFieldPtrFunc: func(model, fieldPtr any) (types.Column, error) {
+						return &mockColumn{name: fieldPtr.(string)}, nil
 					},
 					excludeFunc: func(cols ...types.Column) {},
 				}
 			},
 			expectExcl: 3,
+		},
+		{
+			name:      "Error while getting column",
+			fieldPtrs: []any{"fieldPtrG"},
+			setupMocks: func() *mockExecColumns {
+				return &mockExecColumns{
+					getByFieldPtrFunc: func(model, fieldPtr any) (types.Column, error) {
+						return nil, fmt.Errorf("any error while getting column")
+					},
+					excludeFunc: func(cols ...types.Column) {},
+				}
+			},
+			expectErr: true,
 		},
 	}
 
@@ -121,7 +137,12 @@ func TestExcludeBuilder(t *testing.T) {
 				"fieldPtrB": &mockColumn{name: "fieldPtrB"},
 				"fieldPtrC": &mockColumn{name: "fieldPtrC"},
 			}}}
-			excludeBuilder.Apply(testApplier)
+			err := excludeBuilder.Apply(testApplier)
+			if scenario.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 
 			if excludeCallsCount != scenario.expectExcl {
 				t.Errorf("Expected %d call(s) to Exclude, got %d",

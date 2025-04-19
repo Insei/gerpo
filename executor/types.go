@@ -27,7 +27,7 @@ type Executor[TModel any] interface {
 }
 
 type CountStmt interface {
-	SQL(...sqlstmt.Option) (string, []any)
+	SQL(...sqlstmt.Option) (string, []any, error)
 }
 
 type Columns interface {

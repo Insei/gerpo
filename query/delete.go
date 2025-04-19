@@ -1,6 +1,8 @@
 package query
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -29,9 +31,16 @@ func (h *Delete[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *Delete[TModel]) Apply(applier DeleteApplier) {
-	h.whereBuilder.Apply(applier)
-	h.joinBuilder.Apply(applier)
+func (h *Delete[TModel]) Apply(applier DeleteApplier) error {
+	err := h.whereBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyWhereClause, err)
+	}
+	err = h.joinBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyJoinClause, err)
+	}
+	return nil
 }
 
 func (h *Delete[TModel]) HandleFn(qFns ...func(m *TModel, h DeleteHelper[TModel])) {

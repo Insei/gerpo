@@ -1,6 +1,8 @@
 package query
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -41,9 +43,16 @@ func (h *Update[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *Update[TModel]) Apply(applier UpdateApplier) {
-	h.excludeBuilder.Apply(applier)
-	h.whereBuilder.Apply(applier)
+func (h *Update[TModel]) Apply(applier UpdateApplier) error {
+	err := h.excludeBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyExcludeColumnRules, err)
+	}
+	err = h.whereBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyWhereClause, err)
+	}
+	return nil
 }
 
 func (h *Update[TModel]) HandleFn(qFns ...func(m *TModel, h UpdateHelper[TModel])) {

@@ -3,11 +3,11 @@ package column
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/insei/fmap/v3"
 
-	"github.com/insei/gerpo/slices"
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
@@ -76,7 +76,10 @@ func generateToSQLFn(sql, alias string) func(ctx context.Context) string {
 	}
 }
 
-func New(field fmap.Field, opts ...Option) types.Column {
+func New(field fmap.Field, opts ...Option) (types.Column, error) {
+	if field == nil {
+		return nil, fmt.Errorf("field is nil")
+	}
 	forOpts := &options{}
 	forOpts.name = strings.TrimSpace(toSnakeCase(field.GetName()))
 	for _, opt := range opts {
@@ -100,5 +103,5 @@ func New(field fmap.Field, opts ...Option) types.Column {
 	c.base.AllowedActions = slices.DeleteFunc(c.base.AllowedActions, func(action types.SQLAction) bool {
 		return slices.Contains(forOpts.notAvailActions, action)
 	})
-	return c
+	return c, nil
 }

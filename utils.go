@@ -62,17 +62,12 @@ func zero(obj interface{}) error {
 	return err
 }
 
-// MustZero will panic instead of return error
-func mustZero(obj interface{}) {
-	err := zero(obj)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func getModelAndFields[TModel any]() (*TModel, fmap.Storage, error) {
 	model := new(TModel)
-	mustZero(model)
+	err := zero(model)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to zero model: %w", err)
+	}
 	fields, err := fmap.GetFrom(model)
 	if err != nil {
 		return nil, nil, err

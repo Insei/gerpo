@@ -75,6 +75,6 @@ func (b *Builder) WithBoolEqFilter(fn func(b *BoolEQFilterBuilder)) *Builder {
 }
 
 // Build constructs and returns an instance of types.Column based on the current field and options in the Builder.
-func (b *Builder) Build() types.Column {
+func (b *Builder) Build() (types.Column, error) {
 	return New(b.field, b.opts...)
 }

@@ -51,6 +51,6 @@ func (b *Builder) WithUpdateProtection() *Builder {
 }
 
 // Build constructs and returns a types.Column instance based on the field and options configured in the Builder.
-func (b *Builder) Build() types.Column {
+func (b *Builder) Build() (types.Column, error) {
 	return New(b.field, b.opts...)
 }

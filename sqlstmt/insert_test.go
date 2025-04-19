@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewInsert(t *testing.T) {
@@ -51,7 +52,7 @@ func TestInsert_SQL(t *testing.T) {
 		setup          func(insert *Insert)
 		expectedSQL    string
 		expectedValues []any
-		expectPanic    bool
+		expectError    bool
 	}{
 		{
 			name: "SQL Generation with One AsColumn\n",
@@ -63,7 +64,6 @@ func TestInsert_SQL(t *testing.T) {
 			},
 			expectedSQL:    "INSERT INTO products (id) VALUES (?)",
 			expectedValues: []any{},
-			expectPanic:    false,
 		},
 		{
 			name: "SQL Generation with Multiple Columns",
@@ -77,7 +77,6 @@ func TestInsert_SQL(t *testing.T) {
 			},
 			expectedSQL:    "INSERT INTO products (id, name, price) VALUES (?,?,?)",
 			expectedValues: []any{},
-			expectPanic:    false,
 		},
 		{
 			name: "SQL Generation with Missing AsColumn Names",
@@ -91,7 +90,6 @@ func TestInsert_SQL(t *testing.T) {
 			},
 			expectedSQL:    "INSERT INTO products (id, price) VALUES (?,?)",
 			expectedValues: []any{},
-			expectPanic:    false,
 		},
 		{
 			name: "SQL Generation Without Columns",
@@ -99,9 +97,7 @@ func TestInsert_SQL(t *testing.T) {
 				mockColumns := newMockExecutionColumns([]types.Column{})
 				insert.columns = mockColumns
 			},
-			expectedSQL:    "",
-			expectedValues: []any{},
-			expectPanic:    false,
+			expectError: true,
 		},
 		{
 			name: "SQL Generation with an Empty Table",
@@ -112,27 +108,13 @@ func TestInsert_SQL(t *testing.T) {
 				})
 				insert.columns = mockColumns
 			},
-			expectedSQL:    "INSERT INTO  (id) VALUES (?)",
-			expectedValues: []any{},
-			expectPanic:    false,
+			expectError: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			defer func() {
-				if r := recover(); r != nil {
-					if !tc.expectPanic {
-						t.Errorf("Unexcpected panic: %v", r)
-					}
-				} else {
-					if tc.expectPanic {
-						t.Errorf("Expected panic, but not occurred")
-					}
-				}
-			}()
-
 			ctx := context.Background()
 			insert := &Insert{
 				ctx:   ctx,
@@ -141,16 +123,19 @@ func TestInsert_SQL(t *testing.T) {
 			tc.setup(insert)
 			insert.vals = newValues(insert.columns)
 
-			sql, values := insert.SQL()
+			sql, values, err := insert.SQL()
+			if tc.expectError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 
-			if !tc.expectPanic {
-				if sql != tc.expectedSQL {
-					t.Errorf("Excpected SQL '%s', got '%s'", tc.expectedSQL, sql)
-				}
+			if sql != tc.expectedSQL {
+				t.Errorf("Excpected SQL '%s', got '%s'", tc.expectedSQL, sql)
+			}
 
-				if !compareSlices(values, tc.expectedValues) {
-					t.Errorf("Expected values %v, got %v", tc.expectedValues, values)
-				}
+			if !compareSlices(values, tc.expectedValues) {
+				t.Errorf("Expected values %v, got %v", tc.expectedValues, values)
 			}
 		})
 	}

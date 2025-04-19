@@ -2,10 +2,11 @@ package virtual
 
 import (
 	"context"
+	"fmt"
+	"slices"
 
 	"github.com/insei/fmap/v3"
 
-	"github.com/insei/gerpo/slices"
 	"github.com/insei/gerpo/types"
 )
 
@@ -52,7 +53,10 @@ func (c *column) Table() (string, bool) {
 	return "", false
 }
 
-func New(field fmap.Field, opts ...Option) types.Column {
+func New(field fmap.Field, opts ...Option) (types.Column, error) {
+	if field == nil {
+		return nil, fmt.Errorf("field is nil")
+	}
 	base := types.NewColumnBase(field, nil, types.NewFilterManagerForField(field))
 	c := &column{
 		base: base,
@@ -61,5 +65,5 @@ func New(field fmap.Field, opts ...Option) types.Column {
 	for _, opt := range opts {
 		opt.apply(c)
 	}
-	return c
+	return c, nil
 }
