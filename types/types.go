@@ -96,6 +96,8 @@ type ColumnsStorage interface {
 type Operation string
 
 const (
+	// Shared operations
+
 	// OperationEQ is a constant of type Operation that represents the operation where the field is equal to the value
 	OperationEQ = Operation("eq")
 
@@ -120,10 +122,14 @@ const (
 	// OperationNIN is a constant of type Operation that represents the operation where the field is not in the specified values.
 	OperationNIN = Operation("nin")
 
+	// Strings filter operations
+
 	// OperationCT is a constant of type Operation that represents the operation where the field contains the value string.
 	OperationCT = Operation("ct")
+
 	// OperationNCT is a constant of type Operation that represents the operation where the field not contains the value string.
 	OperationNCT = Operation("nct")
+
 	// OperationEW is a constant of type Operation that represents the operation where the field ends with the value string.
 	OperationEW = Operation("ew")
 
@@ -135,6 +141,26 @@ const (
 
 	// OperationNBW is a constant of type Operation that represents the operation where the field begins with the value string.
 	OperationNBW = Operation("nbw")
+
+	// Case-insensitive strings filter operations
+
+	// OperationCT_IC represents a case-insensitive "contains" operation for filtering or comparison logic.
+	OperationCT_IC = Operation("ct_ic")
+
+	// OperationNCT_IC represents a case-insensitive "not contains" operation for evaluating string-based conditions.
+	OperationNCT_IC = Operation("nct_ic")
+
+	// OperationEW_IC represents a case-insensitive "ends with" operation for string comparison.
+	OperationEW_IC = Operation("ew_ic")
+
+	// OperationNEW_IC represents a case-insensitive "ends with" operation for string comparison.
+	OperationNEW_IC = Operation("new_ic")
+
+	// OperationBW_IC represents a case-insensitive "begins with" operation for string comparison.
+	OperationBW_IC = Operation("bw_ic")
+
+	// OperationNBW_IC represents a case-insensitive "not begins" operation used for string comparison.
+	OperationNBW_IC = Operation("nbw_ic")
 )
 
 type OrderDirection string
@@ -167,6 +193,8 @@ type SQLFilterGetter interface {
 	IsAvailableFilterOperation(operation Operation) bool
 }
 
+type WhereOption func(op Operation) Operation
+
 // WhereOperation defines an interface to apply various conditional operations for building queries.
 type WhereOperation interface {
 
@@ -177,23 +205,23 @@ type WhereOperation interface {
 	// It returns an ANDOR interface to chain further logical conditions.
 	NEQ(val any) ANDOR
 
-	// CT applies a "contains, ignore case" condition on the field with the provided value and returns an ANDOR for chaining.
-	CT(val any) ANDOR
+	// CT applies a "contains" condition on the field with the provided value and returns an ANDOR for chaining.
+	CT(val any, ignoreCase ...bool) ANDOR
 
-	// NCT applies a "not contains, ignore case" condition on the field with the provided value and returns an ANDOR for chaining.
-	NCT(val any) ANDOR
+	// NCT applies a "not contains" condition on the field with the provided value and returns an ANDOR for chaining.
+	NCT(val any, ignoreCase ...bool) ANDOR
 
-	// BW applies a "begins with, ignore case" condition on the field with the provided value and returns an ANDOR for chaining.
-	BW(val any) ANDOR
+	// BW applies a "begins with" condition on the field with the provided value and returns an ANDOR for chaining.
+	BW(val any, ignoreCase ...bool) ANDOR
 
-	// NBW applies a "not begins with, ignore case" condition on the field with the provided value and returns an ANDOR for chaining.
-	NBW(val any) ANDOR
+	// NBW applies a "not begins with" condition on the field with the provided value and returns an ANDOR for chaining.
+	NBW(val any, ignoreCase ...bool) ANDOR
 
-	// EW applies "ends with, ignore case" condition on the field with the provided value and returns an ANDOR for chaining.
-	EW(val any) ANDOR
+	// EW applies "ends with" condition on the field with the provided value and returns an ANDOR for chaining.
+	EW(val any, ignoreCase ...bool) ANDOR
 
-	// NEW applies "not ends with, ignore case" condition on the field with the provided value and returns an ANDOR for chaining.
-	NEW(val any) ANDOR
+	// NEW applies "not ends with" condition on the field with the provided value and returns an ANDOR for chaining.
+	NEW(val any, ignoreCase ...bool) ANDOR
 
 	// GT applies a greater-than (>) condition on the field with the provided value and returns an ANDOR for chaining.
 	GT(val any) ANDOR
