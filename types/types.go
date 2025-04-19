@@ -2,8 +2,96 @@ package types
 
 import (
 	"context"
-	"slices"
+
+	"github.com/insei/fmap/v3"
 )
+
+type SQLAction string
+
+const (
+	SQLActionSelect = SQLAction("select")
+	SQLActionInsert = SQLAction("insert")
+	SQLActionGroup  = SQLAction("group")
+	SQLActionUpdate = SQLAction("update")
+	SQLActionSort   = SQLAction("sort")
+)
+
+// Column is an interface representing a table column within a database context.
+// It supports methods related to SQL actions, column metadata, and SQL conversion.
+type Column interface {
+	SQLFilterGetter
+
+	// IsAllowedAction determines if the specified SQLAction is permitted for the column and returns true if allowed.
+	IsAllowedAction(a SQLAction) bool
+
+	// GetAllowedActions returns a list of SQLActions that are permitted for this column.
+	GetAllowedActions() []SQLAction
+
+	// ToSQL generates the SQL representation of the column.
+	ToSQL(ctx context.Context) string
+
+	// GetPtr retrieves a pointer to the field of the provided model corresponding to this column.
+	GetPtr(model any) any
+
+	// GetField retrieves the associated fmap.Field for the column.
+	GetField() fmap.Field
+
+	// Name returns the name of the column as a string and a boolean indicating whether the name is valid or exists.
+	Name() (string, bool)
+
+	// Table returns the name of the table associated with the column and a boolean indicating success or failure of the retrieval.
+	Table() (string, bool)
+}
+
+// ColumnsGetter is an interface for retrieving a list of Column objects representing database table columns.
+type ColumnsGetter interface {
+
+	// GetColumns retrieves a list of Column objects representing database table columns.
+	GetColumns() []Column
+}
+
+// ExecutionColumns represents an interface to manage and interact with a collection of database execution columns.
+// It provides functionality to exclude columns, retrieve all columns, fetch columns by field pointers, and extract model data.
+type ExecutionColumns interface {
+
+	// Exclude removes the specified columns from the existing collection of execution columns, effectively excluding them from usage.
+	Exclude(...Column)
+
+	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
+	Only(cols ...Column)
+
+	// GetAll retrieves and returns all the columns contained within the execution columns as a slice.
+	GetAll() []Column
+
+	// GetByFieldPtr retrieves a Column based on the provided model and field pointer.
+	// The method allows fetching specific columns related to the field in the execution context.
+	GetByFieldPtr(model any, fieldPtr any) (Column, error)
+
+	// GetModelPointers retrieves a slice of pointers to the fields of the given model based on the current execution columns.
+	GetModelPointers(model any) []any
+
+	// GetModelValues retrieves the values of the model's fields mapped to the execution columns and returns them as a slice.
+	GetModelValues(model any) []any
+}
+
+// ColumnsStorage defines an interface for managing a collection of database columns.
+type ColumnsStorage interface {
+
+	// AsSlice returns all stored columns as a slice of type Column.
+	AsSlice() []Column
+
+	// NewExecutionColumns creates a new ExecutionColumns instance for the specified SQLAction within the provided context.
+	NewExecutionColumns(ctx context.Context, action SQLAction) ExecutionColumns
+
+	// GetByFieldPtr retrieves a Column by using the provided model and field pointer, returning an error if the Column is not found.
+	GetByFieldPtr(model any, fieldPtr any) (Column, error)
+
+	// Get checks if the specified field exists and returns the corresponding Column along with a boolean indicating success.
+	Get(f fmap.Field) (Column, bool)
+
+	// Add adds a new column to the storage, incorporating it into the collection of managed columns.
+	Add(column Column)
+}
 
 type Operation string
 
@@ -55,27 +143,6 @@ const (
 	OrderDirectionASC  = OrderDirection("ASC")
 	OrderDirectionDESC = OrderDirection("DESC")
 )
-
-var supportedOperations = []Operation{
-	OperationEQ,
-	OperationNEQ,
-	OperationGT,
-	OperationGTE,
-	OperationLT,
-	OperationLTE,
-	OperationIN,
-	OperationNIN,
-	OperationCT,
-	OperationNCT,
-	OperationEW,
-	OperationNEW,
-	OperationBW,
-	OperationNBW,
-}
-
-func IsSupportedOperation(op Operation) bool {
-	return slices.Contains(supportedOperations, op)
-}
 
 // SQLFilterManager manages operations and corresponding SQL generation functions for filtering.
 // It allows adding custom filter functions for specific operations and retrieving available operations.
