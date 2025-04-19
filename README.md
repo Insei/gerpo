@@ -41,7 +41,7 @@ Essentially, **GERPO** is a helper for building SQL queries and mapping results 
     - Use pagination in your GetList requests.
 
 ## Installation
-
+Go minimal version is `1.21`.
 ```bash
 go get github.com/insei/gerpo@latest
 ```
