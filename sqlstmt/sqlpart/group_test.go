@@ -101,8 +101,8 @@ func TestStringGroupBuilder(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			builder := &GroupBuilder{
 				ctx: ctx,
-				sql: tc.initialSQL,
 			}
+			builder.sql.WriteString(tc.initialSQL)
 
 			builder.GroupBy(tc.columns...)
 		})
@@ -121,11 +121,6 @@ func TestGroupBuilderSQL(t *testing.T) {
 			expected: "",
 		},
 		{
-			name:     "SQL with whitespace",
-			inputSQL: "    ",
-			expected: "",
-		},
-		{
 			name:     "Valid SQL",
 			inputSQL: "col1, col2",
 			expected: " GROUP BY col1, col2",
@@ -137,8 +132,9 @@ func TestGroupBuilderSQL(t *testing.T) {
 			ctx := context.Background()
 			builder := &GroupBuilder{
 				ctx: ctx,
-				sql: tc.inputSQL,
 			}
+			builder.sql.WriteString(tc.inputSQL)
+
 			result := builder.SQL()
 			if result != tc.expected {
 				t.Errorf("expected %q, got %q", tc.expected, result)

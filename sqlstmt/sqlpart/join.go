@@ -21,10 +21,11 @@ func (b *JoinBuilder) JOIN(joinFn func(ctx context.Context) string) {
 }
 
 func (b *JoinBuilder) SQL() string {
-	sql := ""
+	var sb strings.Builder
 	for _, j := range b.joins {
-		sql += " " + j(b.ctx)
+		sb.WriteString(" " + j(b.ctx))
 	}
+	sql := sb.String()
 	if strings.TrimSpace(sql) == "" {
 		return ""
 	}

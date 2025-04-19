@@ -55,8 +55,8 @@ func TestOrderBuilder_OrderBy(t *testing.T) {
 				builder.OrderBy(action)
 			}
 
-			if builder.orderBy != tc.expected {
-				t.Errorf("Expected '%s', got '%s'", tc.expected, builder.orderBy)
+			if builder.orderBy.String() != tc.expected {
+				t.Errorf("Expected '%s', got '%s'", tc.expected, builder.orderBy.String())
 			}
 		})
 	}
@@ -98,12 +98,12 @@ func TestOrderBuilder_OrderByColumn(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			builder := NewOrderBuilder(ctx)
-			builder.orderBy = tc.initialOrder
+			builder.orderBy.WriteString(tc.initialOrder)
 
 			builder.OrderByColumn(tc.column, tc.direction)
 
-			if builder.orderBy != tc.expectedOrder {
-				t.Errorf("Expected '%s', got '%s'", tc.expectedOrder, builder.orderBy)
+			if builder.orderBy.String() != tc.expectedOrder {
+				t.Errorf("Expected '%s', got '%s'", tc.expectedOrder, builder.orderBy.String())
 			}
 		})
 	}

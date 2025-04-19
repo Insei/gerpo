@@ -1,7 +1,6 @@
 package sqlpart
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -53,14 +52,14 @@ func (p *LimitOffsetBuilder) getLimitStr() string {
 }
 
 func (p *LimitOffsetBuilder) SQL() string {
-	sql := ""
+	sb := strings.Builder{}
 	limitNumStr := p.getLimitStr()
 	if strings.TrimSpace(limitNumStr) != "" {
-		sql += fmt.Sprintf(" LIMIT %s", limitNumStr)
+		sb.WriteString(" LIMIT " + limitNumStr)
 	}
 	offsetNumStr := p.getOffsetStr()
 	if strings.TrimSpace(offsetNumStr) != "" {
-		sql += fmt.Sprintf(" OFFSET %s", offsetNumStr)
+		sb.WriteString(" OFFSET " + offsetNumStr)
 	}
-	return sql
+	return sb.String()
 }

@@ -95,6 +95,7 @@ func TestGetFirst(t *testing.T) {
 			model, err := test.repoGetFirstFn(repo)
 			if err != nil {
 				t.Errorf("an error '%s' was not expected when inserting", err)
+				return
 			}
 			if model.Name != "TestName" {
 				t.Errorf("Expected name to be TestName, got %s", model.Name)
@@ -105,29 +106,28 @@ func TestGetFirst(t *testing.T) {
 
 // BenchmarkGetFirst - Bench for check allocations and performance metrics, with db mock(without implementation).
 // cmd: go test -bench=^\QBenchmarkGetFirst\E$ -cpuprofile=cpu-result -memprofile=mem-result -benchmem -count 20
-// For now: per operation 4kb RAM, 0.000003379s. GC works ok, no memory leaks. All metrics stable.
+// For now: per operation 2,6kb RAM, 0.000002479s. GC works ok, no memory leaks. All metrics stable.
 // cpu: AMD Ryzen 9 5950X 16-Core Processor
-// BenchmarkGetFirst/GetFirst-32             327801              3486 ns/op            4108 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             343087              3645 ns/op            4108 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             346983              3446 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             361726              3398 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             342397              3452 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             345679              3406 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             335836              3395 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             356157              3388 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             356085              3395 ns/op            4107 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             348438              3375 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             360686              3386 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             344098              3396 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             355010              3440 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             342636              3382 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             367304              3364 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             357259              3360 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             359004              3368 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             351720              3368 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             348252              3379 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             361478              3346 ns/op            4106 B/op         66 allocs/op
-// BenchmarkGetFirst/GetFirst-32             348252              3379 ns/op            4106 B/op         66 allocs/op
+// BenchmarkGetFirst/GetFirst-32             461305              2523 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             459384              2489 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             470290              2556 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             481104              2516 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             482695              2488 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             486386              2480 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             479238              2453 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             477159              2484 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             472178              2458 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             477238              2484 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             474735              2451 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             449420              2465 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             489318              2442 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             491554              2513 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             502855              2513 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             472483              2467 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             503473              2498 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             462600              2495 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             439519              2502 ns/op            2584 B/op         47 allocs/op
+// BenchmarkGetFirst/GetFirst-32             483416              2483 ns/op            2584 B/op         47 allocs/op
 func BenchmarkGetFirst(b *testing.B) {
 	type User struct {
 		ID            uuid.UUID

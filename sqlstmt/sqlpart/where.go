@@ -17,39 +17,39 @@ import (
 func genEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		if value == nil {
-			return fmt.Sprintf("%s IS NULL", query), false
+			return query + " IS NULL", false
 		}
-		return fmt.Sprintf("%s = ?", query), true
+		return query + " = ?", true
 	}
 }
 func genNEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		if value == nil {
-			return fmt.Sprintf("%s IS NOT NULL", query), false
+			return query + " IS NOT NULL", false
 		}
-		return fmt.Sprintf("%s != ?", query), true
+		return query + " != ?", true
 	}
 }
 
 func genLTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s < ?", query), true
+		return query + " < ?", true
 	}
 }
 func genLTEFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s <= ?", query), true
+		return query + " <= ?", true
 	}
 }
 
 func genGTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s > ?", query), true
+		return query + " > ?", true
 	}
 }
 func genGTEFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s >= ?", query), true
+		return query + " >= ?", true
 	}
 }
 
@@ -62,7 +62,7 @@ func genINFn(query string) func(ctx context.Context, value any) (string, bool) {
 		}
 		placeholders := strings.Repeat("?,", len(*anyArr))
 		placeholders = placeholders[:len(placeholders)-1]
-		return fmt.Sprintf("%s IN (%s)", query, placeholders), true
+		return query + " IN (" + placeholders + ")", true
 	}
 }
 func genNINFn(query string) func(ctx context.Context, value any) (string, bool) {
@@ -74,76 +74,76 @@ func genNINFn(query string) func(ctx context.Context, value any) (string, bool) 
 		}
 		placeholders := strings.Repeat("?,", len(*anyArr))
 		placeholders = placeholders[:len(placeholders)-1]
-		return fmt.Sprintf("%s NOT IN (%s)", query, placeholders), true
+		return query + " NOT IN (" + placeholders + ")", true
 	}
 }
 
 func genCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s", query) + " LIKE CONCAT('%', ?, '%')", true
+		return query + " LIKE CONCAT('%', ?, '%')", true
 	}
 }
 func genNCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s", query) + " NOT LIKE CONCAT('%', ?, '%')", true
+		return query + " NOT LIKE CONCAT('%', ?, '%')", true
 	}
 }
 
 func genBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s", query) + " LIKE CONCAT(?, '%')", true
+		return query + " LIKE CONCAT(?, '%')", true
 	}
 }
 
 func genNBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s", query) + " NOT LIKE CONCAT(?, '%')", true
+		return query + " NOT LIKE CONCAT(?, '%')", true
 	}
 }
 
 func genEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s", query) + " LIKE CONCAT('%', ?)", true
+		return query + " LIKE CONCAT('%', ?)", true
 	}
 }
 
 func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("%s", query) + " NOT LIKE CONCAT('%', ?)", true
+		return query + " NOT LIKE CONCAT('%', ?)", true
 	}
 }
 
 func genCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?, '%'))", true
+		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', ?, '%'))", true
 	}
 }
 func genNCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?, '%'))", true
+		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', ?, '%'))", true
 	}
 }
 
 func genBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT(?, '%'))", true
+		return "LOWER(" + query + ") LIKE LOWER(CONCAT(?, '%'))", true
 	}
 }
 func genNBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT(?, '%'))", true
+		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT(?, '%'))", true
 	}
 }
 
 func genEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?))", true
+		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', ?))", true
 	}
 }
 
 func genNEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?))", true
+		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', ?))", true
 	}
 }
 
@@ -213,7 +213,7 @@ type Where interface {
 
 type WhereBuilder struct {
 	ctx    context.Context
-	sql    string
+	sql    []byte
 	values []any
 }
 
@@ -224,10 +224,10 @@ func NewWhereBuilder(ctx context.Context) *WhereBuilder {
 }
 
 func (b *WhereBuilder) SQL() string {
-	if strings.TrimSpace(b.sql) == "" {
+	if len(b.sql) < 1 {
 		return ""
 	}
-	return " WHERE " + b.sql
+	return " WHERE " + string(b.sql)
 }
 
 func (b *WhereBuilder) Values() []any {
@@ -238,18 +238,18 @@ func (b *WhereBuilder) StartGroup() {
 	if b.needANDBeforeCondition() {
 		b.AND()
 	}
-	b.sql += "("
+	b.sql = append(b.sql, []byte("(")...)
 }
 func (b *WhereBuilder) EndGroup() {
-	b.sql += ")"
+	b.sql = append(b.sql, []byte(")")...)
 }
 
 func (b *WhereBuilder) AND() {
-	b.sql += " AND "
+	b.sql = append(b.sql, []byte(" AND ")...)
 }
 
 func (b *WhereBuilder) OR() {
-	b.sql += " OR "
+	b.sql = append(b.sql, []byte(" OR ")...)
 }
 
 func (b *WhereBuilder) appendValue(val any) {
@@ -271,7 +271,7 @@ func (b *WhereBuilder) appendValue(val any) {
 }
 
 func (b *WhereBuilder) AppendSQLWithValues(sql string, appendValue bool, value any) {
-	b.sql += sql
+	b.sql = append(b.sql, []byte(sql)...)
 	if appendValue {
 		b.appendValue(value)
 	}
@@ -281,7 +281,7 @@ func (b *WhereBuilder) needANDBeforeCondition() bool {
 	if len(b.sql) < 4 {
 		return false
 	}
-	endsWith := b.sql[len(b.sql)-4:]
+	endsWith := string(b.sql[len(b.sql)-4:])
 	switch endsWith {
 	case "AND ", " OR ":
 		return false
@@ -306,7 +306,7 @@ func (b *WhereBuilder) AppendCondition(cl types.Column, operation types.Operatio
 	if b.needANDBeforeCondition() {
 		b.AND()
 	}
-	b.sql += sql
+	b.sql = append(b.sql, []byte(sql)...)
 	if !appendValue {
 		return nil
 	}
