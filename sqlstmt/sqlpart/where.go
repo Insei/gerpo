@@ -80,35 +80,35 @@ func genNINFn(query string) func(ctx context.Context, value any) (string, bool) 
 
 func genCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER('%' || ? || '%')", true
+		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?, '%'))", true
 	}
 }
 func genNCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER('%' || ? || '%')", true
+		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?, '%'))", true
 	}
 }
 
 func genBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(? || '%')", true
+		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT(?, '%'))", true
 	}
 }
 func genNBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(? || '%')", true
+		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT(?, '%'))", true
 	}
 }
 
 func genEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER('%' || ?)", true
+		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?))", true
 	}
 }
 
 func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER('%' || ?)", true
+		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?))", true
 	}
 }
 
