@@ -644,7 +644,7 @@ func TestGenCTFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) LIKE LOWER('%' || ? || '%')",
+			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT('%', ?, '%'))",
 			expectedOK:  true,
 		},
 	}
@@ -673,7 +673,7 @@ func TestGenNCTFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER('%' || ? || '%')",
+			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT('%', ?, '%'))",
 			expectedOK:  true,
 		},
 	}
@@ -702,7 +702,7 @@ func TestGenBWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) LIKE LOWER(? || '%')",
+			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT(?, '%'))",
 			expectedOK:  true,
 		},
 	}
@@ -731,7 +731,7 @@ func TestGenNBWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(? || '%')",
+			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT(?, '%'))",
 			expectedOK:  true,
 		},
 	}
@@ -760,7 +760,7 @@ func TestGenEWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) LIKE LOWER('%' || ?)",
+			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT('%', ?))",
 			expectedOK:  true,
 		},
 	}
@@ -789,7 +789,7 @@ func TestGenNEWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER('%' || ?)",
+			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT('%', ?))",
 			expectedOK:  true,
 		},
 	}
