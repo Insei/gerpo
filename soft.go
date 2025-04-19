@@ -14,6 +14,7 @@ type SoftDeletionBuilder[TModel any] struct {
 	model   *TModel
 	columns []types.Column
 	fns     map[types.Column]func(model any, ctx context.Context)
+	errors  []error
 }
 
 type SoftDeletionValueSetter interface {
@@ -28,10 +29,12 @@ func (f SoftDeletionValueFn) SetValueFn(fn func(ctx context.Context) any) {
 func (b *SoftDeletionBuilder[TModel]) Field(fieldPtr any) SoftDeletionValueSetter {
 	column, err := b.storage.GetByFieldPtr(b.model, fieldPtr)
 	if err != nil {
-		panic(err)
+		b.errors = append(b.errors, fmt.Errorf("soft delete: failed to get column for field: %w", err))
+		return SoftDeletionValueFn(func(fn func(ctx context.Context) any) {})
 	}
 	if !column.IsAllowedAction(types.SQLActionUpdate) {
-		panic("soft deletion can be used only on fields with allowed update action")
+		b.errors = append(b.errors, fmt.Errorf("soft deletion can be used only on fields with allowed update action"))
+		return SoftDeletionValueFn(func(fn func(ctx context.Context) any) {})
 	}
 	field := column.GetField()
 	return SoftDeletionValueFn(func(fn func(ctx context.Context) any) {
@@ -42,7 +45,10 @@ func (b *SoftDeletionBuilder[TModel]) Field(fieldPtr any) SoftDeletionValueSette
 	})
 }
 
-func (b *SoftDeletionBuilder[TModel]) apply(repo *repository[TModel]) {
+func (b *SoftDeletionBuilder[TModel]) apply(repo *repository[TModel]) error {
+	if len(b.errors) > 0 {
+		return b.errors[0]
+	}
 	softDeleteFn := func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
 		stmt := sqlstmt.NewUpdate(ctx, repo.columns, repo.table)
 		// exclude all columns except soft deletion columns
@@ -58,14 +64,20 @@ func (b *SoftDeletionBuilder[TModel]) apply(repo *repository[TModel]) {
 		}
 
 		// Apply persistent query
-		repo.persistentQuery.Apply(stmt)
+		err = repo.persistentQuery.Apply(stmt)
+		if err != nil {
+			return 0, repo.errorTransformer(fmt.Errorf("soft delete: %w: %w", ErrApplyPersistentQuery, err))
+		}
 
 		// create new update query and apply delete query functions
 		q := query.NewUpdate(repo.baseModel)
 		for _, qFn := range qFns {
 			qFn(repo.baseModel, q)
 		}
-		q.Apply(stmt)
+		err = q.Apply(stmt)
+		if err != nil {
+			return 0, repo.errorTransformer(fmt.Errorf("soft delete: %w: %w", ErrApplyQuery, err))
+		}
 
 		// Create new model and set soft deletion fields
 		model := new(TModel)
@@ -85,17 +97,22 @@ func (b *SoftDeletionBuilder[TModel]) apply(repo *repository[TModel]) {
 		return updatedCount, nil
 	}
 	repo.deleteFn = softDeleteFn
+	return nil
 }
 
 // WithSoftDeletion configures soft deletion functionality for a model via a provided SoftDeletionBuilder instance.
 func WithSoftDeletion[TModel any](fn func(m *TModel, builder *SoftDeletionBuilder[TModel])) Option[TModel] {
-	return optionFn[TModel](func(r *repository[TModel]) {
+	return optionFn[TModel](func(r *repository[TModel]) error {
 		b := &SoftDeletionBuilder[TModel]{
 			storage: r.columns,
 			model:   r.baseModel,
 			fns:     make(map[types.Column]func(model any, ctx context.Context)),
 		}
 		fn(b.model, b)
-		b.apply(r)
+		err := b.apply(r)
+		if err != nil {
+			return fmt.Errorf("failed to apply soft deletion option: %w", err)
+		}
+		return nil
 	})
 }

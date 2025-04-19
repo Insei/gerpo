@@ -3,7 +3,6 @@ package sqlstmt
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -37,26 +36,33 @@ func (f *GetList) LimitOffset() sqlpart.LimitOffset {
 	return f.limitOffset
 }
 
-func (f *GetList) sql() string {
+func (f *GetList) sql() (string, error) {
+	if f.table == "" {
+		return "", ErrTableIsNoSet
+	}
+	columns := f.columns.GetAll()
+	if len(columns) < 1 {
+		return "", ErrEmptyColumnsInExecutionSet
+	}
 	sql := ""
-	for _, col := range f.columns.GetAll() {
+	for _, col := range columns {
 		if sql != "" {
 			sql += ", "
 		}
 		sql += col.ToSQL(f.ctx)
 	}
-	if strings.TrimSpace(sql) == "" {
-		return ""
-	}
-	return fmt.Sprintf("SELECT %s FROM %s", sql, f.table)
+	return fmt.Sprintf("SELECT %s FROM %s", sql, f.table), nil
 }
 
-func (f *GetList) SQL(_ ...Option) (string, []any) {
-	sql := f.sql()
+func (f *GetList) SQL(_ ...Option) (string, []any, error) {
+	sql, err := f.sql()
+	if err != nil {
+		return "", nil, err
+	}
 	sql += f.join.SQL()
 	sql += f.where.SQL()
 	sql += f.order.SQL()
 	sql += f.group.SQL()
 	sql += f.limitOffset.SQL()
-	return sql, f.where.Values()
+	return sql, f.where.Values(), nil
 }

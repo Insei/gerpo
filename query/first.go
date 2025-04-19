@@ -1,6 +1,8 @@
 package query
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -62,10 +64,20 @@ func (h *GetFirst[TModel]) HandleFn(qFns ...func(m *TModel, h GetFirstHelper[TMo
 	}
 }
 
-func (h *GetFirst[TModel]) Apply(applier GetFirstApplier) {
-	h.excludeBuilder.Apply(applier)
-	h.whereBuilder.Apply(applier)
-	h.orderBuilder.Apply(applier)
+func (h *GetFirst[TModel]) Apply(applier GetFirstApplier) error {
+	err := h.excludeBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyExcludeColumnRules, err)
+	}
+	err = h.orderBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyOrderByOperator, err)
+	}
+	err = h.whereBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyWhereClause, err)
+	}
+	return nil
 }
 
 func NewGetFirst[TModel any](baseModel *TModel) *GetFirst[TModel] {

@@ -23,13 +23,14 @@ func (t txWrap) Commit() error {
 	return t.tx.Commit(context.Background())
 }
 
-func (t txWrap) RollbackUnlessCommitted() {
+func (t txWrap) RollbackUnlessCommitted() error {
 	if !t.commited && t.rollbackUnlessCommittedNeeded {
 		err := t.Rollback()
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func (t txWrap) ExecContext(ctx context.Context, query string, args ...any) (extypes.Result, error) {

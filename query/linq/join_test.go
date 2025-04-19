@@ -62,7 +62,8 @@ func TestJoinBuilder_LeftJoin(t *testing.T) {
 			applier := &mockJoinApplier{
 				join: &mockJoin{},
 			}
-			builder.Apply(applier)
+			err := builder.Apply(applier)
+			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedJoin, applier.join.join)
 		})
 	}

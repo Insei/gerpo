@@ -130,15 +130,26 @@ func TestBuilder_WithBoolEqFilter(t *testing.T) {
 }
 
 func TestBuilderBuild(t *testing.T) {
-	fields, _ := fmap.Get[TestModel]()
-	field := fields.MustFind("Active")
-
-	builder := &Builder{
-		field: field,
-	}
 
 	t.Run("Test Build", func(t *testing.T) {
-		col := builder.Build()
+		fields, _ := fmap.Get[TestModel]()
+		field := fields.MustFind("Active")
+
+		builder := &Builder{
+			field: field,
+		}
+
+		col, err := builder.Build()
+		assert.NoError(t, err)
 		assert.NotNil(t, col)
+	})
+
+	t.Run("Test Build nil field", func(t *testing.T) {
+		builder := &Builder{
+			field: nil,
+		}
+		col, err := builder.Build()
+		assert.Error(t, err)
+		assert.Nil(t, col)
 	})
 }

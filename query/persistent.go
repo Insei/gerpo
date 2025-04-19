@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/types"
@@ -63,28 +64,38 @@ func (h *Persistent[TModel]) HandleFn(qFns ...func(m *TModel, h PersistentHelper
 	}
 }
 
-func (h *Persistent[TModel]) Apply(applier any) {
+func (h *Persistent[TModel]) Apply(applier any) error {
 	if applier == nil {
-		return
+		return fmt.Errorf("applier is nil")
 	}
 	if whereApplier, ok := applier.(linq.WhereApplier); ok {
-		h.whereBuilder.Apply(whereApplier)
+		err := h.whereBuilder.Apply(whereApplier)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrApplyWhereClause, err)
+		}
 	}
 
 	if joinApplier, ok := applier.(linq.JoinApplier); ok {
-		h.joinBuilder.Apply(joinApplier)
+		err := h.joinBuilder.Apply(joinApplier)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrApplyJoinClause, err)
+		}
 	}
 
 	if excludeApplier, ok := applier.(linq.ExcludeApplier); ok {
-		h.excludeBuilder.Apply(excludeApplier)
+		err := h.excludeBuilder.Apply(excludeApplier)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrApplyExcludeColumnRules, err)
+		}
 	}
 
 	if groupApplier, ok := applier.(linq.GroupApplier); ok {
-		h.groupBuilder.Apply(groupApplier)
+		err := h.groupBuilder.Apply(groupApplier)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrApplyGroupByClause, err)
+		}
 	}
-	//if sqlStr := sqlBuilder.WhereBuilder().SQL(); sqlStr != "" && !h.whereBuilder.IsEmpty() {
-	//	sqlBuilder.WhereBuilder().AND()
-	//}
+	return nil
 }
 
 func NewPersistent[TModel any](baseModel *TModel) *Persistent[TModel] {

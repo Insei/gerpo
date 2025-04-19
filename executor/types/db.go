@@ -15,7 +15,7 @@ type Rows interface {
 type Tx interface {
 	Rollback() error
 	Commit() error
-	RollbackUnlessCommitted()
+	RollbackUnlessCommitted() error
 	ExecQuery
 }
 

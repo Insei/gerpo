@@ -2,10 +2,9 @@ package types
 
 import (
 	"context"
+	"slices"
 
 	"github.com/insei/fmap/v3"
-
-	"github.com/insei/gerpo/slices"
 )
 
 type SQLAction string

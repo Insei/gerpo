@@ -40,29 +40,42 @@ func TestPaginationBuilder(t *testing.T) {
 		defaultOffest   uint64
 		expectedPage    uint64
 		expectedNewPage uint64
+		expectErr       bool
 	}{
 		{
 			name:           "Default_pagination",
-			expectedLimit:  10,
+			expectedLimit:  0,
 			expectedOffset: 0,
 		},
 		{
-			name:           "Set_page_1",
+			name:           "Set_page_1_size_0",
 			page:           1,
+			size:           0,
+			expectedLimit:  0,
+			expectedOffset: 0,
+			expectErr:      true,
+		},
+		{
+			name:           "Set_page_2_size_0",
+			page:           2,
+			size:           0,
+			expectedLimit:  0,
+			expectedOffset: 0,
+			expectErr:      true,
+		},
+		{
+			name:           "Set_page_1_size_10",
+			page:           1,
+			size:           10,
 			expectedLimit:  10,
 			expectedOffset: 0,
 		},
 		{
-			name:           "Set_page_2",
+			name:           "Set_page_2_size_10",
 			page:           2,
+			size:           10,
 			expectedLimit:  10,
 			expectedOffset: 10,
-		},
-		{
-			name:           "Set_size_20",
-			size:           20,
-			expectedLimit:  20,
-			expectedOffset: 0,
 		},
 		{
 			name:           "Set_page_2_size_20",
@@ -88,8 +101,12 @@ func TestPaginationBuilder(t *testing.T) {
 			applier := &mockPaginationApplier{
 				limitOffset: mockLimitOffset,
 			}
-			builder.Apply(applier)
-
+			err := builder.Apply(applier)
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedLimit, mockLimitOffset.limit)
 			assert.Equal(t, tc.expectedOffset, mockLimitOffset.offset)
 		})

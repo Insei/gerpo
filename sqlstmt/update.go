@@ -3,7 +3,6 @@ package sqlstmt
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -34,12 +33,15 @@ func NewUpdate(ctx context.Context, colStorage types.ColumnsStorage, table strin
 	}
 }
 
-func (u *Update) sql() string {
-	cols := u.columns.GetAll()
-	colsStr := ""
-	if len(cols) < 1 {
-		return colsStr
+func (u *Update) sql() (string, error) {
+	if u.table == "" {
+		return "", ErrTableIsNoSet
 	}
+	cols := u.columns.GetAll()
+	if len(cols) < 1 {
+		return "", ErrEmptyColumnsInExecutionSet
+	}
+	colsStr := ""
 	for _, col := range cols {
 		colName, ok := col.Name()
 		if !ok {
@@ -47,10 +49,10 @@ func (u *Update) sql() string {
 		}
 		colsStr += colName + " = ?, "
 	}
-	if strings.TrimSpace(colsStr) == "" {
-		return ""
+	if colsStr == "" {
+		return "", fmt.Errorf("columns set is not empty, but no one column is not allowed to set")
 	}
-	return fmt.Sprintf("UPDATE %s SET %s", u.table, colsStr[:len(colsStr)-2])
+	return fmt.Sprintf("UPDATE %s SET %s", u.table, colsStr[:len(colsStr)-2]), nil
 }
 
 func (u *Update) ColumnsStorage() types.ColumnsStorage {
@@ -65,12 +67,15 @@ func (u *Update) Where() sqlpart.Where {
 	return u.where
 }
 
-func (u *Update) SQL(opts ...Option) (string, []any) {
-	sql := u.sql()
+func (u *Update) SQL(opts ...Option) (string, []any, error) {
+	sql, err := u.sql()
+	if err != nil {
+		return "", nil, err
+	}
 	sql += u.where.SQL()
 	for _, opt := range opts {
 		opt(u.vals)
 	}
 	vals := append(u.vals.values, u.where.Values()...)
-	return sql, vals
+	return sql, vals, nil
 }

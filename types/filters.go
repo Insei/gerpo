@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-
-	"github.com/insei/gerpo/slices"
+	"slices"
 
 	"github.com/insei/fmap/v3"
 )

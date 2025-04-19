@@ -87,6 +87,7 @@ func TestBuilderBuild(t *testing.T) {
 		field: field,
 	}
 
-	columns := builder.Build()
+	columns, err := builder.Build()
+	assert.NoError(t, err)
 	assert.NotEmpty(t, columns)
 }

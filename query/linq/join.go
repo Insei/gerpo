@@ -16,17 +16,21 @@ func NewJoinBuilder() *JoinBuilder {
 }
 
 type JoinBuilder struct {
-	opts []func(JoinApplier)
+	opts []func(JoinApplier) error
 }
 
-func (q *JoinBuilder) Apply(applier JoinApplier) {
+func (q *JoinBuilder) Apply(applier JoinApplier) error {
 	for _, opt := range q.opts {
-		opt(applier)
+		err := opt(applier)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
-	q.opts = append(q.opts, func(applier JoinApplier) {
+	q.opts = append(q.opts, func(applier JoinApplier) error {
 		applier.Join().JOIN(func(ctx context.Context) string {
 			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
 			if leftLoinStr != "" {
@@ -34,11 +38,12 @@ func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
 			}
 			return ""
 		})
+		return nil
 	})
 }
 
 func (q *JoinBuilder) InnerJoin(leftJoinFn func(ctx context.Context) string) {
-	q.opts = append(q.opts, func(applier JoinApplier) {
+	q.opts = append(q.opts, func(applier JoinApplier) error {
 		applier.Join().JOIN(func(ctx context.Context) string {
 			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
 			if leftLoinStr != "" {
@@ -46,5 +51,6 @@ func (q *JoinBuilder) InnerJoin(leftJoinFn func(ctx context.Context) string) {
 			}
 			return ""
 		})
+		return nil
 	})
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/types"
@@ -14,8 +13,6 @@ type builder[TModel any] struct {
 	db              executor.DBAdapter
 	table           string
 	opts            []Option[TModel]
-	model           *TModel
-	fields          fmap.Storage
 	columns         *types.ColumnsStorage
 	columnBuilderFn func(m *TModel, columns *ColumnBuilder[TModel])
 }
@@ -34,14 +31,7 @@ type ColumnsAppender[TModel any] interface {
 
 // NewBuilder creates a new instance of the repository builder using the specified generic type for model TModel.
 func NewBuilder[TModel any]() DbChooser[TModel] {
-	model, fields, err := getModelAndFields[TModel]()
-	if err != nil {
-		panic(err)
-	}
-	return &builder[TModel]{
-		model:  model,
-		fields: fields,
-	}
+	return &builder[TModel]{}
 }
 
 // Table sets the name of the database table to be used for the model and returns a ColumnsAppender for further configuration.

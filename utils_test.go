@@ -227,17 +227,6 @@ func TestZero(t *testing.T) {
 	}
 }
 
-func TestMustZero(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-		} else {
-			t.Errorf("mustZero() did not panic")
-		}
-	}()
-
-	mustZero("hello")
-}
-
 type testModelA struct {
 	FieldA *string
 }

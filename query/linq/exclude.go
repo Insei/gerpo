@@ -1,6 +1,8 @@
 package linq
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/types"
 )
 
@@ -11,7 +13,7 @@ type ExcludeApplier interface {
 
 type ExcludeBuilder struct {
 	baseModel any
-	opts      []func(applier ExcludeApplier)
+	opts      []func(applier ExcludeApplier) error
 }
 
 func NewExcludeBuilder(baseModel any) *ExcludeBuilder {
@@ -23,23 +25,24 @@ func NewExcludeBuilder(baseModel any) *ExcludeBuilder {
 func (b *ExcludeBuilder) Exclude(fieldPtrs ...any) {
 	for _, fieldPtr := range fieldPtrs {
 		fieldSavePtr := fieldPtr
-		b.opts = append(b.opts, func(applier ExcludeApplier) {
+		b.opts = append(b.opts, func(applier ExcludeApplier) error {
 			col, err := applier.ColumnsStorage().GetByFieldPtr(b.baseModel, fieldSavePtr)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			applier.Columns().Exclude(col)
+			return nil
 		})
 	}
 }
 
 func (b *ExcludeBuilder) Only(fieldPtrs ...any) {
-	b.opts = append(b.opts, func(applier ExcludeApplier) {
+	b.opts = append(b.opts, func(applier ExcludeApplier) error {
 		userSpecifiedCols := make([]types.Column, 0, len(fieldPtrs))
 		for _, fieldPtr := range fieldPtrs {
 			col, err := applier.ColumnsStorage().GetByFieldPtr(b.baseModel, fieldPtr)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			userSpecifiedCols = append(userSpecifiedCols, col)
 		}
@@ -54,15 +57,20 @@ func (b *ExcludeBuilder) Only(fieldPtrs ...any) {
 				}
 			}
 			if !allowed {
-				panic("only: specified field is not allowed in current operation")
+				return fmt.Errorf("only: specified field %s is not allowed in current operation", userCol.GetField().GetStructPath())
 			}
 		}
 		applier.Columns().Only(userSpecifiedCols...)
+		return nil
 	})
 }
 
-func (b *ExcludeBuilder) Apply(applier ExcludeApplier) {
+func (b *ExcludeBuilder) Apply(applier ExcludeApplier) error {
 	for _, opt := range b.opts {
-		opt(applier)
+		err := opt(applier)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }

@@ -3,6 +3,7 @@ package sqlstmt
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -22,7 +23,10 @@ func NewCount(ctx context.Context, table string, storage types.ColumnsStorage) *
 	return f
 }
 
-func (c *Count) SQL(_ ...Option) (string, []any) {
+func (c *Count) SQL(_ ...Option) (string, []any, error) {
+	if strings.TrimSpace(c.table) == "" {
+		return "", nil, ErrTableIsNoSet
+	}
 	sql := fmt.Sprintf("SELECT %s FROM %s", "count(*) over() AS count", c.table)
 	sql += c.join.SQL()
 	sql += c.where.SQL()
@@ -30,5 +34,5 @@ func (c *Count) SQL(_ ...Option) (string, []any) {
 	limitOffset := sqlpart.NewLimitOffsetBuilder()
 	limitOffset.SetLimit(1)
 	sql += limitOffset.SQL()
-	return sql, c.where.Values()
+	return sql, c.where.Values(), nil
 }

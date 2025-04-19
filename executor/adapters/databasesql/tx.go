@@ -46,11 +46,12 @@ func (t *txWrap) Rollback() error {
 	return t.tx.Rollback()
 }
 
-func (t *txWrap) RollbackUnlessCommitted() {
+func (t *txWrap) RollbackUnlessCommitted() error {
 	if !t.commited && t.rollbackUnlessCommittedNeeded {
 		err := t.Rollback()
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }

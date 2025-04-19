@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDelete(t *testing.T) {
@@ -54,6 +55,7 @@ func TestDelete_SQL(t *testing.T) {
 		setup          func(deleteStmt *Delete)
 		expectedSQL    string
 		expectedValues []any
+		expectError    bool
 	}{
 		{
 			name: "Generate SQL without conditions",
@@ -109,6 +111,7 @@ func TestDelete_SQL(t *testing.T) {
 			},
 			expectedSQL:    "",
 			expectedValues: []any{},
+			expectError:    true,
 		},
 	}
 
@@ -119,7 +122,12 @@ func TestDelete_SQL(t *testing.T) {
 
 			tc.setup(deleteStmt)
 
-			sql, values := deleteStmt.SQL()
+			sql, values, err := deleteStmt.SQL()
+			if tc.expectError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 
 			if sql != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sql)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewGetFirst(t *testing.T) {
@@ -54,7 +55,7 @@ func TestGetFirst_SQL(t *testing.T) {
 		setup          func(getFirst *GetFirst)
 		expectedSQL    string
 		expectedValues []any
-		expectPanic    bool
+		expectError    bool
 	}{
 		{
 			name: "Generate SQL with single column",
@@ -66,7 +67,6 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "SELECT id FROM products LIMIT 1",
 			expectedValues: []any{},
-			expectPanic:    false,
 		},
 		{
 			name: "Generate SQL with multiple columns",
@@ -80,7 +80,6 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "SELECT id, name, price FROM products LIMIT 1",
 			expectedValues: []any{},
-			expectPanic:    false,
 		},
 		{
 			name: "Generate SQL with WHERE condition",
@@ -94,7 +93,6 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "SELECT id, name FROM products WHERE price > ? LIMIT 1",
 			expectedValues: []any{100},
-			expectPanic:    false,
 		},
 		{
 			name: "Generate SQL with multiple WHERE conditions",
@@ -111,7 +109,6 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "SELECT id, name, price FROM products WHERE price > ? AND stock > ? LIMIT 1",
 			expectedValues: []any{50, 20},
-			expectPanic:    false,
 		},
 		{
 			name: "Generate SQL with JOIN",
@@ -127,7 +124,6 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "SELECT products.id, categories.name FROM products INNER JOIN categories ON products.category_id = categories.id LIMIT 1",
 			expectedValues: []any{},
-			expectPanic:    false,
 		},
 		{
 			name: "Generate SQL with WHERE and JOIN",
@@ -144,7 +140,6 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "SELECT products.id, categories.name FROM products LEFT JOIN categories ON products.category_id = categories.id WHERE categories.active = ? LIMIT 1",
 			expectedValues: []any{true},
-			expectPanic:    false,
 		},
 		{
 			name: "Panic when no columns are set",
@@ -153,40 +148,31 @@ func TestGetFirst_SQL(t *testing.T) {
 			},
 			expectedSQL:    "",
 			expectedValues: []any{},
-			expectPanic:    true,
+			expectError:    true,
 		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc // локальная копия для использования в defer/recover
 		t.Run(tc.name, func(t *testing.T) {
-			defer func() {
-				if r := recover(); r != nil {
-					if !tc.expectPanic {
-						t.Errorf("Unexpected panic: %v", r)
-					}
-				} else {
-					if tc.expectPanic {
-						t.Errorf("Expected panic but did not occur")
-					}
-				}
-			}()
-
 			ctx := context.Background()
 			getFirst := NewGetFirst(ctx, "products", newMockStorage([]types.Column{}))
 
 			tc.setup(getFirst)
 
-			sql, values := getFirst.SQL()
+			sql, values, err := getFirst.SQL()
+			if tc.expectError {
+				assert.Error(t, err)
+				return
+			}
 
-			if !tc.expectPanic {
-				if sql != tc.expectedSQL {
-					t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sql)
-				}
+			assert.NoError(t, err)
+			if sql != tc.expectedSQL {
+				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sql)
+			}
 
-				if !compareSlices(values, tc.expectedValues) {
-					t.Errorf("Expected values %v, got %v", tc.expectedValues, values)
-				}
+			if !compareSlices(values, tc.expectedValues) {
+				t.Errorf("Expected values %v, got %v", tc.expectedValues, values)
 			}
 		})
 	}

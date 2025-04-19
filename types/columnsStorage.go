@@ -3,10 +3,9 @@ package types
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/insei/fmap/v3"
-
-	"github.com/insei/gerpo/slices"
 )
 
 // ColumnsStorage defines an interface for managing a collection of database columns.
@@ -114,7 +113,7 @@ type ExecutionColumns interface {
 
 	// GetByFieldPtr retrieves a Column based on the provided model and field pointer.
 	// The method allows fetching specific columns related to the field in the execution context.
-	GetByFieldPtr(model any, fieldPtr any) Column
+	GetByFieldPtr(model any, fieldPtr any) (Column, error)
 
 	// GetModelPointers retrieves a slice of pointers to the fields of the given model based on the current execution columns.
 	GetModelPointers(model any) []any
@@ -169,10 +168,10 @@ func (b *executionColumns) GetAll() []Column {
 	return b.columns
 }
 
-func (b *executionColumns) GetByFieldPtr(model any, fieldPtr any) Column {
+func (b *executionColumns) GetByFieldPtr(model any, fieldPtr any) (Column, error) {
 	col, err := b.storage.GetByFieldPtr(model, fieldPtr)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to get column by field ptr: %w", err)
 	}
 	ok := false
 	for _, c := range b.columns {
@@ -182,9 +181,9 @@ func (b *executionColumns) GetByFieldPtr(model any, fieldPtr any) Column {
 		}
 	}
 	if !ok {
-		panic("trying to get excluded column?")
+		return nil, fmt.Errorf("column %s not found in execution columns", col.GetField().GetStructPath())
 	}
-	return col
+	return col, nil
 }
 
 // GetModelPointers returns a slice of pointers to the fields of the provided model corresponding to the execution columns.

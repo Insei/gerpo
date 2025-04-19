@@ -32,6 +32,7 @@ func (m *mockExecutionColumns) GetModelValues(model any) []any {
 
 type mockStorage struct {
 	types.ColumnsStorage
+	stor             map[any]types.Column
 	executionColumns []types.Column
 }
 
@@ -77,6 +78,7 @@ func TestOrderBuilder_Column(t *testing.T) {
 		column        types.Column
 		direction     types.OrderDirection
 		expectedOrder []string
+		expectErr     bool
 	}{
 		{
 			name: "Order_by_column_ASC",
@@ -99,6 +101,12 @@ func TestOrderBuilder_Column(t *testing.T) {
 				"updated_at DESC",
 			},
 		},
+		{
+			name:      "Order_by_Nil",
+			column:    nil,
+			direction: types.OrderDirectionASC,
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -119,8 +127,12 @@ func TestOrderBuilder_Column(t *testing.T) {
 					executionColumns: []types.Column{tc.column},
 				},
 			}
-			builder.Apply(applier)
-
+			err := builder.Apply(applier)
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedOrder, mockOrder.order)
 		})
 	}
@@ -138,16 +150,19 @@ func TestOrderBuilder_Field(t *testing.T) {
 		name          string
 		fieldPtr      any
 		direction     types.OrderDirection
-		columns       []types.Column
+		columns       *mockColumnsStorage
 		expectedOrder []string
+		expectErr     bool
 	}{
 		{
 			name:     "Order_by_field_ASC",
 			fieldPtr: &modelInstance.CreatedAt,
-			columns: []types.Column{
-				&mockColumn{
-					name:    "created_at",
-					hasName: true,
+			columns: &mockColumnsStorage{
+				columns: map[any]types.Column{
+					&modelInstance.CreatedAt: &mockColumn{
+						name:    "created_at",
+						hasName: true,
+					},
 				},
 			},
 			direction: types.OrderDirectionASC,
@@ -158,10 +173,12 @@ func TestOrderBuilder_Field(t *testing.T) {
 		{
 			name:     "Order_by_field_DESC",
 			fieldPtr: &modelInstance.UpdatedAt,
-			columns: []types.Column{
-				&mockColumn{
-					name:    "updated_at",
-					hasName: true,
+			columns: &mockColumnsStorage{
+				columns: map[any]types.Column{
+					&modelInstance.UpdatedAt: &mockColumn{
+						name:    "updated_at",
+						hasName: true,
+					},
 				},
 			},
 			direction: types.OrderDirectionDESC,
@@ -169,13 +186,39 @@ func TestOrderBuilder_Field(t *testing.T) {
 				"updated_at DESC",
 			},
 		},
+		{
+			name:     "Order_by_field_Nil",
+			fieldPtr: nil,
+			columns: &mockColumnsStorage{
+				columns: map[any]types.Column{
+					&modelInstance.UpdatedAt: &mockColumn{
+						name:    "updated_at",
+						hasName: true,
+					},
+				},
+			},
+			direction: types.OrderDirectionDESC,
+			expectErr: true,
+		},
+		{
+			name:     "Order_by_field_not_configured_field",
+			fieldPtr: &modelInstance.CreatedAt,
+			columns: &mockColumnsStorage{
+				columns: map[any]types.Column{
+					&modelInstance.UpdatedAt: &mockColumn{
+						name:    "updated_at",
+						hasName: true,
+					},
+				},
+			},
+			direction: types.OrderDirectionDESC,
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			builder := NewOrderBuilder(&modelInstance)
-
-			mockStorage := newMockStorage(tc.columns)
 
 			switch tc.direction {
 			case types.OrderDirectionASC:
@@ -186,11 +229,16 @@ func TestOrderBuilder_Field(t *testing.T) {
 			mockOrder := &mockOrder{}
 
 			applier := &mockOrderApplier{
-				storage: mockStorage,
+				storage: tc.columns,
 				order:   mockOrder,
 			}
 
-			builder.Apply(applier)
+			err := builder.Apply(applier)
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedOrder, mockOrder.order)
 
 		})

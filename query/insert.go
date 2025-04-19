@@ -1,6 +1,8 @@
 package query
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/types"
 )
@@ -31,8 +33,12 @@ func (h *Insert[TModel]) Only(fieldPointers ...any) {
 	h.excludeBuilder.Only(fieldPointers...)
 }
 
-func (h *Insert[TModel]) Apply(applier InsertApplier) {
-	h.excludeBuilder.Apply(applier)
+func (h *Insert[TModel]) Apply(applier InsertApplier) error {
+	err := h.excludeBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyExcludeColumnRules, err)
+	}
+	return nil
 }
 
 func (h *Insert[TModel]) HandleFn(qFns ...func(m *TModel, h InsertHelper[TModel])) {

@@ -1,6 +1,8 @@
 package query
 
 import (
+	"fmt"
+
 	"github.com/insei/gerpo/query/linq"
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -21,16 +23,18 @@ type Count[TModel any] struct {
 	baseModel any
 
 	whereBuilder *linq.WhereBuilder
-	groupBuilder *linq.GroupBuilder
-	joinBuilder  *linq.JoinBuilder
 }
 
 func (h *Count[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *Count[TModel]) Apply(applier CountApplier) {
-	h.whereBuilder.Apply(applier)
+func (h *Count[TModel]) Apply(applier CountApplier) error {
+	err := h.whereBuilder.Apply(applier)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyWhereClause, err)
+	}
+	return nil
 }
 
 func (h *Count[TModel]) HandleFn(qFns ...func(m *TModel, h CountHelper[TModel])) {
@@ -43,7 +47,5 @@ func NewCount[TModel any](baseModel *TModel) *Count[TModel] {
 	return &Count[TModel]{
 		baseModel:    baseModel,
 		whereBuilder: linq.NewWhereBuilder(baseModel),
-		groupBuilder: linq.NewGroupBuilder(baseModel),
-		joinBuilder:  linq.NewJoinBuilder(),
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/insei/gerpo/types"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewGetList tests the NewGetList constructor using a mock for columns storage.
@@ -57,6 +58,7 @@ func TestGetList_SQL(t *testing.T) {
 		executionColumns []types.Column
 		expectedSQL      string
 		expectedValues   []any
+		expectErr        bool
 	}{
 		{
 			name:  "BasicSelect",
@@ -72,8 +74,15 @@ func TestGetList_SQL(t *testing.T) {
 			name:             "EmptyColumns",
 			table:            "products",
 			executionColumns: []types.Column{},
-			expectedSQL:      "",
-			expectedValues:   []any{},
+			expectErr:        true,
+		},
+		{
+			name: "NoTable",
+			executionColumns: []types.Column{
+				&mockColumn{name: "id", hasName: true},
+				&mockColumn{name: "name", hasName: true},
+			},
+			expectErr: true,
 		},
 	}
 
@@ -81,7 +90,14 @@ func TestGetList_SQL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			storage := newMockStorage(tc.executionColumns)
 			gl := NewGetList(context.Background(), tc.table, storage)
-			sql, values := gl.SQL()
+
+			sql, values, err := gl.SQL()
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+
 			if sql != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sql)
 			}
