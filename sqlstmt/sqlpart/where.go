@@ -80,33 +80,68 @@ func genNINFn(query string) func(ctx context.Context, value any) (string, bool) 
 
 func genCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?, '%'))", true
+		return fmt.Sprintf("%s", query) + " LIKE CONCAT('%', ?, '%')", true
 	}
 }
 func genNCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?, '%'))", true
+		return fmt.Sprintf("%s", query) + " NOT LIKE CONCAT('%', ?, '%')", true
 	}
 }
 
 func genBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT(?, '%'))", true
+		return fmt.Sprintf("%s", query) + " LIKE CONCAT(?, '%')", true
 	}
 }
+
 func genNBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT(?, '%'))", true
+		return fmt.Sprintf("%s", query) + " NOT LIKE CONCAT(?, '%')", true
 	}
 }
 
 func genEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?))", true
+		return fmt.Sprintf("%s", query) + " LIKE CONCAT('%', ?)", true
 	}
 }
 
 func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		return fmt.Sprintf("%s", query) + " NOT LIKE CONCAT('%', ?)", true
+	}
+}
+
+func genCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?, '%'))", true
+	}
+}
+func genNCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?, '%'))", true
+	}
+}
+
+func genBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT(?, '%'))", true
+	}
+}
+func genNBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT(?, '%'))", true
+	}
+}
+
+func genEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		return fmt.Sprintf("LOWER(%s)", query) + " LIKE LOWER(CONCAT('%', ?))", true
+	}
+}
+
+func genNEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return fmt.Sprintf("LOWER(%s)", query) + " NOT LIKE LOWER(CONCAT('%', ?))", true
 	}
@@ -129,6 +164,12 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
 		filters[types.OperationIN] = genINFn(sqlColumnString)
 		filters[types.OperationNIN] = genNINFn(sqlColumnString)
+		filters[types.OperationCT_IC] = genCTICFn(sqlColumnString)
+		filters[types.OperationNCT_IC] = genNCTICFn(sqlColumnString)
+		filters[types.OperationBW_IC] = genBWICFn(sqlColumnString)
+		filters[types.OperationNBW_IC] = genNBWICFn(sqlColumnString)
+		filters[types.OperationEW_IC] = genEWICFn(sqlColumnString)
+		filters[types.OperationNEW_IC] = genNEWICFn(sqlColumnString)
 		filters[types.OperationCT] = genCTFn(sqlColumnString)
 		filters[types.OperationNCT] = genNCTFn(sqlColumnString)
 		filters[types.OperationBW] = genBWFn(sqlColumnString)

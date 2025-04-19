@@ -630,7 +630,7 @@ func TestGenNINFn(t *testing.T) {
 	}
 }
 
-func TestGenCTFn(t *testing.T) {
+func TestGenCTICFn(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
@@ -645,6 +645,180 @@ func TestGenCTFn(t *testing.T) {
 			query:       "fieldType",
 			value:       "value",
 			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT('%', ?, '%'))",
+			expectedOK:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := genCTICFn(tc.query)
+			sql, needAppendValues := fn(ctx, tc.value)
+			assert.Equal(t, tc.expectedSQL, sql)
+			assert.Equal(t, tc.expectedOK, needAppendValues)
+		})
+	}
+}
+
+func TestGenNCTICFn(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name        string
+		query       string
+		value       any
+		expectedSQL string
+		expectedOK  bool
+	}{
+		{
+			name:        "With value",
+			query:       "fieldType",
+			value:       "value",
+			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT('%', ?, '%'))",
+			expectedOK:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := genNCTICFn(tc.query)
+			sql, ok := fn(ctx, tc.value)
+			assert.Equal(t, tc.expectedSQL, sql)
+			assert.Equal(t, tc.expectedOK, ok)
+		})
+	}
+}
+
+func TestGenBWICFn(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name        string
+		query       string
+		value       any
+		expectedSQL string
+		expectedOK  bool
+	}{
+		{
+			name:        "With value",
+			query:       "fieldType",
+			value:       "value",
+			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT(?, '%'))",
+			expectedOK:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := genBWICFn(tc.query)
+			sql, ok := fn(ctx, tc.value)
+			assert.Equal(t, tc.expectedSQL, sql)
+			assert.Equal(t, tc.expectedOK, ok)
+		})
+	}
+}
+
+func TestGenNBWICFn(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name        string
+		query       string
+		value       any
+		expectedSQL string
+		expectedOK  bool
+	}{
+		{
+			name:        "With value",
+			query:       "fieldType",
+			value:       "value",
+			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT(?, '%'))",
+			expectedOK:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := genNBWICFn(tc.query)
+			sql, ok := fn(ctx, tc.value)
+			assert.Equal(t, tc.expectedSQL, sql)
+			assert.Equal(t, tc.expectedOK, ok)
+		})
+	}
+}
+
+func TestGenEWICFn(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name        string
+		query       string
+		value       any
+		expectedSQL string
+		expectedOK  bool
+	}{
+		{
+			name:        "With value",
+			query:       "fieldType",
+			value:       "value",
+			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT('%', ?))",
+			expectedOK:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := genEWICFn(tc.query)
+			sql, ok := fn(ctx, tc.value)
+			assert.Equal(t, tc.expectedSQL, sql)
+			assert.Equal(t, tc.expectedOK, ok)
+		})
+	}
+}
+
+func TestGenNEWICFn(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name        string
+		query       string
+		value       any
+		expectedSQL string
+		expectedOK  bool
+	}{
+		{
+			name:        "With value",
+			query:       "fieldType",
+			value:       "value",
+			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT('%', ?))",
+			expectedOK:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := genNEWICFn(tc.query)
+			sql, ok := fn(ctx, tc.value)
+			assert.Equal(t, tc.expectedSQL, sql)
+			assert.Equal(t, tc.expectedOK, ok)
+		})
+	}
+}
+
+func TestGenCTFn(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name        string
+		query       string
+		value       any
+		expectedSQL string
+		expectedOK  bool
+	}{
+		{
+			name:        "With value",
+			query:       "fieldType",
+			value:       "value",
+			expectedSQL: "fieldType LIKE CONCAT('%', ?, '%')",
 			expectedOK:  true,
 		},
 	}
@@ -673,7 +847,7 @@ func TestGenNCTFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT('%', ?, '%'))",
+			expectedSQL: "fieldType NOT LIKE CONCAT('%', ?, '%')",
 			expectedOK:  true,
 		},
 	}
@@ -702,7 +876,7 @@ func TestGenBWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT(?, '%'))",
+			expectedSQL: "fieldType LIKE CONCAT(?, '%')",
 			expectedOK:  true,
 		},
 	}
@@ -731,7 +905,7 @@ func TestGenNBWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT(?, '%'))",
+			expectedSQL: "fieldType NOT LIKE CONCAT(?, '%')",
 			expectedOK:  true,
 		},
 	}
@@ -760,7 +934,7 @@ func TestGenEWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) LIKE LOWER(CONCAT('%', ?))",
+			expectedSQL: "fieldType LIKE CONCAT('%', ?)",
 			expectedOK:  true,
 		},
 	}
@@ -789,7 +963,7 @@ func TestGenNEWFn(t *testing.T) {
 			name:        "With value",
 			query:       "fieldType",
 			value:       "value",
-			expectedSQL: "LOWER(fieldType) NOT LIKE LOWER(CONCAT('%', ?))",
+			expectedSQL: "fieldType NOT LIKE CONCAT('%', ?)",
 			expectedOK:  true,
 		},
 	}
@@ -834,6 +1008,12 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationNBW,
 				types.OperationEW,
 				types.OperationNEW,
+				types.OperationCT_IC,
+				types.OperationNCT_IC,
+				types.OperationBW_IC,
+				types.OperationNBW_IC,
+				types.OperationEW_IC,
+				types.OperationNEW_IC,
 			},
 		},
 		{
