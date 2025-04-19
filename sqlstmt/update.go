@@ -3,6 +3,7 @@ package sqlstmt
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -68,14 +69,33 @@ func (u *Update) Where() sqlpart.Where {
 }
 
 func (u *Update) SQL(opts ...Option) (string, []any, error) {
-	sql, err := u.sql()
-	if err != nil {
-		return "", nil, err
+	if u.table == "" {
+		return "", nil, ErrTableIsNoSet
 	}
-	sql += u.where.SQL()
+	cols := u.columns.GetAll()
+	if len(cols) < 1 {
+		return "", nil, ErrEmptyColumnsInExecutionSet
+	}
+	sb := strings.Builder{}
+	sb.WriteString("UPDATE " + u.table + " SET ")
+	lenAtStart := sb.Len()
+	for _, col := range cols {
+		colName, ok := col.Name()
+		if !ok {
+			continue
+		}
+		if sb.Len() > lenAtStart {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(colName + " = ?")
+	}
+	if sb.Len() == lenAtStart {
+		return "", nil, fmt.Errorf("columns set is not empty, but no one column is not allowed to set")
+	}
+	sb.WriteString(u.where.SQL())
 	for _, opt := range opts {
 		opt(u.vals)
 	}
 	vals := append(u.vals.values, u.where.Values()...)
-	return sql, vals, nil
+	return sb.String(), vals, nil
 }

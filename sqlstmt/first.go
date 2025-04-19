@@ -2,7 +2,7 @@ package sqlstmt
 
 import (
 	"context"
-	"fmt"
+	"strings"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -31,35 +31,30 @@ func (f *GetFirst) Columns() types.ExecutionColumns {
 	return f.columns
 }
 
-func (f *GetFirst) sql() (string, error) {
+func (f *GetFirst) SQL(_ ...Option) (string, []any, error) {
 	if f.table == "" {
-		return "", ErrTableIsNoSet
+		return "", nil, ErrTableIsNoSet
 	}
 	columns := f.columns.GetAll()
 	if len(columns) < 1 {
-		return "", ErrEmptyColumnsInExecutionSet
+		return "", nil, ErrEmptyColumnsInExecutionSet
 	}
-	sql := ""
+	sb := strings.Builder{}
+	sb.WriteString("SELECT ")
 	for _, col := range columns {
-		if sql != "" {
-			sql += ", "
+		if sb.Len() > 8 {
+			sb.WriteString(", ")
 		}
-		sql += col.ToSQL(f.ctx)
+		sb.WriteString(col.ToSQL(f.ctx))
 	}
-	return fmt.Sprintf("SELECT %s FROM %s", sql, f.table), nil
-}
-
-func (f *GetFirst) SQL(_ ...Option) (string, []any, error) {
-	sql, err := f.sql()
-	if err != nil {
-		return "", nil, err
-	}
-	sql += f.join.SQL()
-	sql += f.where.SQL()
-	sql += f.order.SQL()
-	sql += f.group.SQL()
+	sb.WriteString(" FROM ")
+	sb.WriteString(f.table)
+	sb.WriteString(f.join.SQL())
+	sb.WriteString(f.where.SQL())
+	sb.WriteString(f.order.SQL())
+	sb.WriteString(f.group.SQL())
 	limitOffset := sqlpart.NewLimitOffsetBuilder()
 	limitOffset.SetLimit(1)
-	sql += limitOffset.SQL()
-	return sql, f.where.Values(), nil
+	sb.WriteString(limitOffset.SQL())
+	return sb.String(), f.where.Values(), nil
 }

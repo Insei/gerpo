@@ -40,19 +40,13 @@ func (d *Delete) ColumnsStorage() types.ColumnsStorage {
 	return d.columnsStorage
 }
 
-func (d *Delete) sql() (string, error) {
-	if strings.TrimSpace(d.table) == "" {
-		return "", ErrTableIsNoSet
-	}
-	return "DELETE FROM " + d.table, nil
-}
-
 func (d *Delete) SQL(_ ...Option) (string, []any, error) {
-	sql, err := d.sql()
-	if err != nil {
-		return "", nil, err
+	if strings.TrimSpace(d.table) == "" {
+		return "", nil, ErrTableIsNoSet
 	}
-	sql += d.join.SQL()
-	sql += d.where.SQL()
-	return sql, d.where.Values(), nil
+	sb := strings.Builder{}
+	sb.WriteString("DELETE FROM " + d.table)
+	sb.WriteString(d.join.SQL())
+	sb.WriteString(d.where.SQL())
+	return sb.String(), d.where.Values(), nil
 }

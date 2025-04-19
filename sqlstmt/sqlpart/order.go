@@ -13,7 +13,7 @@ type Order interface {
 }
 
 type OrderBuilder struct {
-	orderBy string
+	orderBy strings.Builder
 	ctx     context.Context
 }
 
@@ -24,26 +24,33 @@ func NewOrderBuilder(ctx context.Context) *OrderBuilder {
 }
 
 func (b *OrderBuilder) OrderBy(columnAndDirection string) {
-	if b.orderBy != "" {
-		b.orderBy += ", "
+	if b.orderBy.Len() > 0 {
+		b.orderBy.WriteString(", ")
 	}
-	b.orderBy += columnAndDirection
+	b.orderBy.WriteString(columnAndDirection)
 }
 
 func (b *OrderBuilder) OrderByColumn(col types.Column, direction types.OrderDirection) {
 	if !col.IsAllowedAction(types.SQLActionSort) {
-		//TODO: Log it
+		//TODO: error
 		return
 	}
-	if b.orderBy != "" {
-		b.orderBy += ", "
+	sql := col.ToSQL(b.ctx)
+	if len(sql) < 1 {
+		//TODO: error
+		return
 	}
-	b.orderBy += col.ToSQL(b.ctx) + " " + string(direction)
+	if b.orderBy.Len() > 0 {
+		b.orderBy.WriteString(", ")
+	}
+	b.orderBy.WriteString(sql)
+	b.orderBy.WriteString(" ")
+	b.orderBy.WriteString(string(direction))
 }
 
 func (b *OrderBuilder) SQL() string {
-	if strings.TrimSpace(b.orderBy) == "" {
+	if b.orderBy.Len() < 1 {
 		return ""
 	}
-	return " ORDER BY " + b.orderBy
+	return " ORDER BY " + b.orderBy.String()
 }

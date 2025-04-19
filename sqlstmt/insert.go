@@ -68,9 +68,32 @@ func (i *Insert) SQL(opts ...Option) (string, []any, error) {
 	for _, opt := range opts {
 		opt(i.vals)
 	}
-	sql, err := i.sql()
-	if err != nil {
-		return "", nil, err
+	if i.table == "" {
+		return "", nil, ErrTableIsNoSet
 	}
-	return sql, i.vals.values, nil
+	cols := i.columns.GetAll()
+	if len(cols) < 1 {
+		return "", nil, ErrEmptyColumnsInExecutionSet
+	}
+	sb := strings.Builder{}
+	sb.WriteString("INSERT INTO ")
+	sb.WriteString(i.table)
+	sb.WriteString(" (")
+	lenAtStart := sb.Len()
+	valuesCount := 0
+	for _, col := range cols {
+		colName, ok := col.Name()
+		if !ok {
+			continue
+		}
+		if sb.Len() > lenAtStart {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(colName)
+		valuesCount++
+	}
+	sb.WriteString(") VALUES (")
+	valuesSQLTemplate := strings.Repeat("?,", valuesCount)
+	sb.WriteString(valuesSQLTemplate[:len(valuesSQLTemplate)-1] + ")")
+	return sb.String(), i.vals.values, nil
 }

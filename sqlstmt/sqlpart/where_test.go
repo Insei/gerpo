@@ -83,7 +83,7 @@ func TestWhereBuilder_StartAndEndGroup(t *testing.T) {
 
 			tc.setup(builder)
 
-			if builder.sql != tc.expectedSQL {
+			if string(builder.sql) != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, builder.sql)
 			}
 
@@ -142,7 +142,7 @@ func TestWhereBuilder_AND_OR(t *testing.T) {
 
 			tc.setup(builder)
 
-			if builder.sql != tc.expectedSQL {
+			if string(builder.sql) != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, builder.sql)
 			}
 
@@ -210,7 +210,7 @@ func TestWhereBuilder_AppendCondition(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			builder := NewWhereBuilder(ctx)
-			builder.sql = tc.initialSQL
+			builder.sql = []byte(tc.initialSQL)
 
 			err := builder.AppendCondition(tc.column, tc.operation, tc.value)
 			if tc.expectError {
@@ -223,7 +223,7 @@ func TestWhereBuilder_AppendCondition(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 			}
 
-			if builder.sql != tc.expectedSQL {
+			if string(builder.sql) != tc.expectedSQL {
 				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, builder.sql)
 			}
 
@@ -1094,6 +1094,42 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			for _, op := range tc.expectedOps {
 				assert.Contains(t, filters, op, "Filter for operation %v is missing", op)
 			}
+		})
+	}
+}
+
+func TestNeedANDBeforeCondition(t *testing.T) {
+	type testCase struct {
+		name         string
+		query        string
+		expectedNeed bool
+	}
+	testCases := []testCase{
+		{
+			name:         "With empty query",
+			query:        "",
+			expectedNeed: false,
+		},
+		{
+			name:  "Query with AND",
+			query: "AND ",
+		},
+		{
+			name:  "Query with OR",
+			query: "OR ",
+		},
+		{
+			name:  "Query with Group Starts at END",
+			query: "ANY SQL CODE) AND (",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := WhereBuilder{
+				sql: []byte(tc.query),
+			}
+			need := w.needANDBeforeCondition()
+			assert.Equal(t, tc.expectedNeed, need)
 		})
 	}
 }

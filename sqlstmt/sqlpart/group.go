@@ -13,7 +13,7 @@ type Group interface {
 
 type GroupBuilder struct {
 	ctx context.Context
-	sql string
+	sql strings.Builder
 }
 
 func NewGroupBuilder(ctx context.Context) *GroupBuilder {
@@ -21,18 +21,23 @@ func NewGroupBuilder(ctx context.Context) *GroupBuilder {
 }
 
 func (b *GroupBuilder) SQL() string {
-	if strings.TrimSpace(b.sql) == "" {
+	if b.sql.Len() < 1 {
 		return ""
 	}
-	return " GROUP BY " + b.sql
+	return " GROUP BY " + b.sql.String()
 }
 
 func (b *GroupBuilder) GroupBy(cols ...types.Column) {
 	for _, col := range cols {
 		if !col.IsAllowedAction(types.SQLActionGroup) {
 			continue
-			//TODO: log
+			//TODO: error
 		}
-		b.sql += col.ToSQL(b.ctx)
+		sql := strings.TrimSpace(col.ToSQL(b.ctx))
+		if len(sql) < 1 {
+			continue
+			//TODO: error
+		}
+		b.sql.WriteString(sql)
 	}
 }
