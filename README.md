@@ -22,7 +22,7 @@ This project under active development.
 ## Features
 Essentially, **GERPO** is a helper for building SQL queries and mapping results to Go structs.
 - **Data Sources (executor adapters)**:
-    - pgx pool v4
+    - pgx pool v4/v5
     - any database/sql driver
     - any other: you can add dbWrapper for any other database library, by implementing simple wrapper - executor.DBWrapper.
 - **Repository configuration**:
@@ -63,19 +63,28 @@ import (
   "github.com/insei/gerpo"
   "github.com/insei/gerpo/executor/adapters/databasesql"
   "github.com/insei/gerpo/executor/adapters/pgx4"
+  "github.com/insei/gerpo/executor/adapters/pgx5"
+  "github.com/insei/gerpo/executor/adapters/placeholder"
   "github.com/jackc/pgx/v4/pgxpool"
 )
 
 func main() {
-  // for database/sql
+  // for database/sql postgres variant
   // "github.com/insei/gerpo/executor/adapters/databasesql"
   var db *sql.DB
-  dbWrap := databasesql.NewAdapter(db)
+  // for postgres change placeholder to dollar, by default placeholder is Question
+  phOption := databasesql.WithPlaceholder(placeholder.Dollar)
+  dbWrap := databasesql.NewAdapter(db, phOption)
 
   // for pgx4 pool
   // "github.com/insei/gerpo/executor/adapters/pgx4"
-  var pool *pgxpool.Pool
-  dbWrap := pgx4.NewPoolAdapter(pool)
+  var poolv4 *pgxpool.Pool
+  dbWrap = pgx4.NewPoolAdapter(poolv4)
+
+  // for pgx5 pool
+  // "github.com/insei/gerpo/executor/adapters/pgx5"
+  var poolv5 *pgxpool.Pool
+  dbWrap = pgx5.NewPoolAdapter(poolv5)
 
   repo, err := gerpo.NewBuilder[ModelType]().DB(dbWrap)
   // ...
