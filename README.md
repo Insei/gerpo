@@ -8,37 +8,77 @@
 Welcome to the **GERPO** repository! This document provides a brief overview of the project, build and run instructions, and other helpful information.
 
 ## About GERPO
-**GERPO** (Golang + Repository) is a generic repository implementation with advanced configuration capabilities and easy to use query builder.
+**GERPO** (Golang + Repository) is a generic repository implementation with advanced configuration capabilities and easy to use builders.
+
 This project under active development.
 
+Release 1.0.0 Road Map:
+ * Repository builder changes:
+   * Add Caching engine configuration in repository builder.
+   * Column builder changes:
+     * New API for configuring virtual (calculated fields). Current Virtual fields configuration API marked as deprecated.
+ * **All other API is stable and not planned to change in 1.0.0 release.**
+
 ### Why GERPO?
-1. Easily handle CRUD operations (Create, Read, Update, Delete) with powerful filtering and sorting.
-2. Query builder (while not exactly LINQ, it’s conceptually close).
-3. Straightforward configuration using SQL commands and user-friendly builders.
-4. All SQL code in one place — inside the configuration.
-5. Virtual (calculated, joined) columns with mapping to struct fields.
-6. [Caching support](https://github.com/Insei/gerpo/tree/main/executor/cache) (currently only context-oriented cache is supported, but it’s easy to implement other caching mechanisms).
+1. Support any database drivers via simple [db adapters wrappers](https://github.com/Insei/gerpo/tree/main/executor/adapters#executor-db-adapters).
+2. Fast repository level implementation, oriented on microservices.
+3. Easily handle CRUD operations (Create, Read, Update, Delete) with powerful filtering and sorting.
+4. Already implemented pagination for list queries.
+5. Straightforward configuration user-friendly builders and there needed you can use SQL commands.
+6. All SQL code in one place — inside the configuration.
+7. Virtual (calculated, joined) columns with mapping to struct fields.
+8. No dependent to other libraries. Only [fmap](https://github.com/Insei/fmap) was used for working with fields pointers.
+9. [Caching support](https://github.com/Insei/gerpo/tree/main/executor/cache) (currently only context-oriented cache is supported, but it’s easy to implement other caching mechanisms).
+
+### Ideology
+
+The GERPO ideology consists of several rules:
+1) If SQL code is used, then only in the repository configuration.
+2) All columns are attached to entity fields via pointers to them in the repository settings.
+3) There are no references in the entities that they are stored in the database (i.e. there are no tags)
+4) We do not implement entity relationships.
+5) We do not do migrations or other actions on database structure.
 
 ## Features
-Essentially, **GERPO** is a helper for building SQL queries and mapping results to Go structs.
-- **Data Sources (executor adapters)**:
-    - pgx pool v4/v5
-    - any database/sql driver
-    - any other: you can add dbWrapper for any other database library, by implementing simple wrapper - executor.DBWrapper.
-- **Repository configuration**:
-    - Map struct fields to SQL columns via a LINQ-like builder.
-    - Define virtual (calculated) fields (currently supports only bool; contributions welcome).
-    - Protect certain fields from being updated or inserted.
-    - Add callbacks and hooks.
-    - Define persistent filters, groupings, and joins.
-    - Configure soft deletion
+Essentially, **GERPO** is generic repository pattern implementation,
+yes GERPO looks like ORM in some cases, but it's not an ORM.
 
-- **Per-request configuration**:
-    - Exclude certain fields by fields pointers.
-    - Select only needed columns by fields pointers.
+- **Database adapters support**:
+  - Any database can be used.
+  - You can use tracing wrappers and any other wrappers.
+- **Caching Engine**
+  - Cache results in context for do not thinking about duplicated queries to database.
+  - Cache in external store, like redis.
+- **Repository configuration**
+  - Map struct fields to SQL columns via pointers. 
+    - Easy rename and refactor them.
+    - Easy delete fields. Errors can be found at build time.
+    - You always know where you can found columns mapping settings.
+    - Protect fields to insert/update in database.
+    - Define virtual(calculated)/joined fields.
+  - Add callbacks and hooks.
+    - Before insert.
+    - Before update.
+    - After select.
+  - Define persistent filters, groupings, and joins.
+  - Configure soft deletion.
+    - Use special builder that replace delete function with update with needed fields update.
+    - Configure Persistent filters for excluding soft deleted entities.
+  - Configure Errors transformer to transform GERPO errors to you business Errors.
+
+- **Per-query configuration**:
+  - Query builder allows you to set up some query rules:
+    - Execution fields selector allows you manage fields at update/insert operations:
+        - Exclude certain fields by fields pointers.
+        - Select only needed columns by fields pointers.
+    - Where builder allows you:
+      - Configure grouped filters.
+      - Support OR/AND cases.
+      - All of this via fields pointers.
+    - Order builder:
+      - Configure order via fields pointers.
     - Work with transactions.
-    - Configure filtering and sorting via fields pointers.
-    - Use pagination in your GetList requests.
+    - Use already implemented pagination in your List queries.
 
 ## Installation
 Go minimal version is `1.21`.
@@ -50,46 +90,6 @@ go get github.com/insei/gerpo@latest
 Below you’ll find various configurations and usage examples.
 
 ### Repository Configuration
-
-#### DB Adapter
-Choose Database adapter that you need:
-
-```go
-package main
-
-import (
-  "database/sql"
-  "time"
-  "github.com/insei/gerpo"
-  "github.com/insei/gerpo/executor/adapters/databasesql"
-  "github.com/insei/gerpo/executor/adapters/pgx4"
-  "github.com/insei/gerpo/executor/adapters/pgx5"
-  "github.com/insei/gerpo/executor/adapters/placeholder"
-  "github.com/jackc/pgx/v4/pgxpool"
-)
-
-func main() {
-  // for database/sql postgres variant
-  // "github.com/insei/gerpo/executor/adapters/databasesql"
-  var db *sql.DB
-  // for postgres change placeholder to dollar, by default placeholder is Question
-  phOption := databasesql.WithPlaceholder(placeholder.Dollar)
-  dbWrap := databasesql.NewAdapter(db, phOption)
-
-  // for pgx4 pool
-  // "github.com/insei/gerpo/executor/adapters/pgx4"
-  var poolv4 *pgxpool.Pool
-  dbWrap = pgx4.NewPoolAdapter(poolv4)
-
-  // for pgx5 pool
-  // "github.com/insei/gerpo/executor/adapters/pgx5"
-  var poolv5 *pgxpool.Pool
-  dbWrap = pgx5.NewPoolAdapter(poolv5)
-
-  repo, err := gerpo.NewBuilder[ModelType]().DB(dbWrap)
-  // ...
-}
-```
 
 #### Columns
 ```go
@@ -310,3 +310,9 @@ func main() {
 ---
 
 We hope this information helps you quickly get started with **GERPO** and integrate it into your own projects. If you have any questions or suggestions, feel free to open an issue or contribute to the repository.
+## Documentation:
+* repository (main repository code - uses sqlstmt, query and executor for work, execute hooks, callbacks and error transformer)
+* query (User API Query interface - works with sqlstmt via linq API)
+  * linq (Internal Query API interface - works with sqlstmt)
+* sqlstmt (Internal SQL queries generator interface - generates SQL queries and stores arguments)
+* [executor](https://github.com/Insei/gerpo/tree/main/executor) (Internal SQL Queries executor API - execute SQL queries and map values to entities)
