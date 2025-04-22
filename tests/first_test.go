@@ -9,8 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/insei/gerpo"
 	"github.com/insei/gerpo/executor/adapters/databasesql"
-	extypes "github.com/insei/gerpo/executor/types"
+	"github.com/insei/gerpo/executor/adapters/pgx4"
 	"github.com/insei/gerpo/query"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestGetFirst(t *testing.T) {
@@ -130,21 +131,23 @@ func TestGetFirst(t *testing.T) {
 // BenchmarkGetFirst/GetFirst-32             483416              2483 ns/op            2584 B/op         47 allocs/op
 func BenchmarkGetFirst(b *testing.B) {
 	type User struct {
-		ID            uuid.UUID
-		CreatedAt     time.Time
-		UpdatedAt     *time.Time
-		Name          string
-		DeletedAt     *time.Time
-		VirtualString string
-		LastLoginTime *time.Time
+		ID        uuid.UUID
+		CreatedAt time.Time
+		UpdatedAt *time.Time
+		Name      string
+		DeletedAt *time.Time
+		//VirtualString string
+		//LastLoginTime *time.Time
 	}
 	dateAt := time.Now().UTC()
-	db := newMockDB()
-	db.QueryContextFn = func(ctx context.Context, query string, args ...any) (extypes.Rows, error) {
-		return &mockRows{alwaysNext: true}, nil
-	}
+	db, err := pgxpool.Connect(context.Background(), "postgresql://postgres:903632as@localhost:5432/gerpo_test?sslmode=disable")
+	adapter := pgx4.NewPoolAdapter(db)
+	//db := newMockDB()
+	//db.QueryContextFn = func(ctx context.Context, query string, args ...any) (extypes.Rows, error) {
+	//	return &mockRows{alwaysNext: true}, nil
+	//}
 	repo, err := gerpo.NewBuilder[User]().
-		DB(db).
+		DB(adapter).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {
 			columns.Field(&m.ID).AsColumn().WithUpdateProtection()
@@ -152,13 +155,13 @@ func BenchmarkGetFirst(b *testing.B) {
 			columns.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
 			columns.Field(&m.Name).AsColumn()
 			columns.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
-			columns.Field(&m.VirtualString).AsVirtual().
-				WithSQL(func(ctx context.Context) string {
-					return `convert(varchar(25), getdate(), 120)`
-				}) //Check that not appends to update sql query
-			columns.Field(&m.LastLoginTime).AsVirtual().WithSQL(func(ctx context.Context) string {
-				return "MAX(logins.created_at)"
-			})
+			//columns.Field(&m.VirtualString).AsVirtual().
+			//	WithSQL(func(ctx context.Context) string {
+			//		return `convert(varchar(25), getdate(), 120)`
+			//	}) //Check that not appends to update sql query
+			//columns.Field(&m.LastLoginTime).AsVirtual().WithSQL(func(ctx context.Context) string {
+			//	return "MAX(logins.created_at)"
+			//})
 		}).
 		WithSoftDeletion(func(m *User, softDeletion *gerpo.SoftDeletionBuilder[User]) {
 			softDeletion.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -166,16 +169,16 @@ func BenchmarkGetFirst(b *testing.B) {
 			})
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
-			h.LeftJoin(func(ctx context.Context) string {
-				return `logins ON logins.user_id = users.id`
-			})
+			//h.LeftJoin(func(ctx context.Context) string {
+			//	return `logins ON logins.user_id = users.id`
+			//})
 			h.Where().Field(&m.DeletedAt).EQ(nil)
 		}).
 		Build()
 	if err != nil {
 		panic(err)
 	}
-	id := uuid.New()
+	//id := uuid.New()
 	//prepareElapsed := time.Since(dateAt)
 	//fmt.Printf("Prepare took %d\n", prepareElapsed.Milliseconds())
 	tests := []struct {
@@ -190,7 +193,7 @@ func BenchmarkGetFirst(b *testing.B) {
 			},
 			repoGetFirstFn: func(repo gerpo.Repository[User]) (*User, error) {
 				return repo.GetFirst(context.Background(), func(m *User, h query.GetFirstHelper[User]) {
-					h.Where().Field(&m.ID).EQ(id)
+					//h.Where().Field(&m.ID).EQ(id)
 					h.OrderBy().Field(&m.CreatedAt).ASC()
 				})
 			},
@@ -201,9 +204,39 @@ func BenchmarkGetFirst(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				_, err := test.repoGetFirstFn(repo)
 				if err != nil {
-					b.Errorf("an error '%s' was not expected when inserting", err)
+					b.Errorf("an error '%s' was not expected when get first", err)
 				}
 			}
 		})
+	}
+}
+
+func BenchmarkGetOneFromDb(b *testing.B) {
+	type User struct {
+		ID        uuid.UUID
+		CreatedAt time.Time
+		UpdatedAt *time.Time
+		Name      string
+		DeletedAt *time.Time
+		//VirtualString string
+		//LastLoginTime *time.Time
+	}
+	db, err := pgxpool.Connect(context.Background(), "postgresql://postgres:903632as@localhost:5432/gerpo_test?sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
+	adapter := pgx4.NewPoolAdapter(db)
+	for i := 0; i < b.N; i++ {
+		rows, err := adapter.QueryContext(context.Background(), "SELECT users.id, users.created_at, users.updated_at, users.name, users.deleted_at FROM users WHERE (users.deleted_at IS NULL) ORDER BY users.created_at ASC LIMIT 1")
+		if err != nil {
+			panic(err)
+		}
+		user := new(User)
+		rows.Next()
+		err = rows.Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt, &user.Name, &user.DeletedAt)
+		if err != nil {
+			panic(err)
+		}
+		rows.Close()
 	}
 }

@@ -25,9 +25,5 @@ func (b *JoinBuilder) SQL() string {
 	for _, j := range b.joins {
 		sb.WriteString(" " + j(b.ctx))
 	}
-	sql := sb.String()
-	if strings.TrimSpace(sql) == "" {
-		return ""
-	}
-	return sql
+	return sb.String()
 }

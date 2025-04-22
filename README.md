@@ -80,6 +80,48 @@ yes GERPO looks like ORM in some cases, but it's not an ORM.
     - Work with transactions.
     - Use already implemented pagination in your List queries.
 
+## Performance
+GERPO uses a minimal amount of reflection and is designed to have minimal allocations when used,
+most allocations are initialized during configuration.
+We work with unsafe pointers and offsets to determine the necessary fields in
+the repository configuration and when querying the database.
+
+I made 2 tests with absolutely identical conditions. Pure PGX V4 Pool vs GERPO over PGX V4 Pool.
+Yes, we do 2x more allocations in a heap.
+But I think our functionality is worth it.
+In terms of time per operation, we are behind pure PGX v4 Pool by 8%.
+
+Well, I didn't know what the results would be at the beginning of the design. But I have ideas for optimizations.
+#### Pure PGX v4 pool:
+```
+BenchmarkGetOneFromDb-32           18049             65033 ns/op            1554 B/op         21 allocs/op
+BenchmarkGetOneFromDb-32           18288             66617 ns/op            1555 B/op         21 allocs/op
+BenchmarkGetOneFromDb-32           17860             66640 ns/op            1555 B/op         21 allocs/op
+BenchmarkGetOneFromDb-32           18193             64665 ns/op            1555 B/op         21 allocs/op
+BenchmarkGetOneFromDb-32           18198             65171 ns/op            1559 B/op         21 allocs/op
+```
+#### GERPO:
+```
+BenchmarkGetFirst/GetFirst-32              16808             69738 ns/op            2961 B/op         51 allocs/op
+BenchmarkGetFirst/GetFirst-32              16614             70462 ns/op            2961 B/op         51 allocs/op
+BenchmarkGetFirst/GetFirst-32              16905             70796 ns/op            2961 B/op         51 allocs/op
+BenchmarkGetFirst/GetFirst-32              17059             70737 ns/op            2961 B/op         51 allocs/op
+BenchmarkGetFirst/GetFirst-32              17184             69587 ns/op            2961 B/op         51 allocs/op
+```
+
+```
++------------------------------------------------------------+
+|                  |              Get One/First              |
++------------------+---------------------+-------------------+
+|                  |  PURE GPX Pool v4   | GERPO PGX Pool v4 |
+|                  |                     | v4 Adapter        |
++------------------+---------------------+-------------------+
+| B/op             | 0%                  | +100%             |
+| allocs/op        | 0%                  | +120%             |
+| ns/op            | 0%                  | +7.75%            |
++------------------+---------------------+-------------------+
+```
+
 ## Installation
 Go minimal version is `1.21`.
 ```bash
