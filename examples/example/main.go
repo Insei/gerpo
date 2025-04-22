@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/insei/gerpo/executor/adapters/databasesql"
+	"github.com/insei/gerpo/executor/adapters/placeholder"
 	_ "github.com/lib/pq"
 
 	"github.com/insei/gerpo"
@@ -35,7 +36,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-	dbWrap := databasesql.NewAdapter(db)
+	dbWrap := databasesql.NewAdapter(db, databasesql.WithPlaceholder(placeholder.Dollar))
 	b := gerpo.NewBuilder[test]().
 		DB(dbWrap).
 		Table("tests").
@@ -45,7 +46,7 @@ func main() {
 			columns.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
 			columns.Field(&m.Name).AsColumn()
 			columns.Field(&m.Age).AsColumn()
-			columns.Field(&m.DeletedAt).AsColumn().WithUpdateProtection().WithInsertProtection()
+			columns.Field(m.DeletedAt).AsColumn().WithUpdateProtection().WithInsertProtection()
 
 			columns.Field(&m.Bool).AsVirtual().
 				WithSQL(func(ctx context.Context) string {
@@ -65,7 +66,7 @@ func main() {
 		}).
 		WithQuery(func(m *test, h query.PersistentHelper[test]) {
 			h.Where().Field(&m.ID).LT(7)
-			h.Exclude(&m.UpdatedAt, &m.ID)
+			h.Exclude(m.UpdatedAt, m.ID)
 			h.LeftJoin(func(ctx context.Context) string {
 				return ``
 			})
@@ -76,6 +77,7 @@ func main() {
 	_ = []int{1, 2, 3, 4, 5, 6}
 	list, err := repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
 		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)
+		h.Exclude(&m.UpdatedAt, &m.ID)
 	})
 
 	tx, err := dbWrap.BeginTx(ctxCache)
@@ -98,7 +100,8 @@ func main() {
 	model, err = repoTx.GetFirst(ctxCache, func(m *test, b query.GetFirstHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
-		b.OrderBy().Field(&m.Name).DESC()
+		b.OrderBy().Field(m.Name).DESC()
+		b.Exclude(&m.UpdatedAt, m.ID)
 	})
 	err = repoTx.Insert(ctxCache, model)
 	if err != nil {
@@ -114,7 +117,7 @@ func main() {
 	start = time.Now()
 	model, err = repo.GetFirst(ctxCache, func(m *test, b query.GetFirstHelper[test]) {
 		b.Where().
-			Field(&m.ID).EQ(2)
+			Field(m.ID).EQ(2)
 		b.OrderBy().Field(&m.Name).DESC()
 	})
 	elapsed = time.Since(start)
