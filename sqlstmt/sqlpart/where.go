@@ -192,6 +192,8 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		case reflect.TypeOf(time.Time{}):
 			filters[types.OperationLT] = genLTFn(sqlColumnString)
 			filters[types.OperationGT] = genGTFn(sqlColumnString)
+			filters[types.OperationLTE] = genLTEFn(sqlColumnString)
+			filters[types.OperationGTE] = genGTEFn(sqlColumnString)
 		case reflect.TypeOf(uuid.UUID{}):
 			filters[types.OperationEQ] = genEQFn(sqlColumnString)
 			filters[types.OperationNEQ] = genNEQFn(sqlColumnString)

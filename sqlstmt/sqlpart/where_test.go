@@ -1050,6 +1050,8 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			expectedOps: []types.Operation{
 				types.OperationLT,
 				types.OperationGT,
+				types.OperationLTE,
+				types.OperationGTE,
 			},
 		},
 		{
@@ -1070,6 +1072,8 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationNEQ,
 				types.OperationLT,
 				types.OperationGT,
+				types.OperationLTE,
+				types.OperationGTE,
 			},
 		},
 	}
