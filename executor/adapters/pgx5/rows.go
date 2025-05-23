@@ -1,4 +1,4 @@
-package pgx4
+package pgx5
 
 import (
 	"github.com/jackc/pgx/v5"
