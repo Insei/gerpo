@@ -1,13 +1,14 @@
-package pgx4
+package pgx5
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/insei/gerpo/executor/adapters/placeholder"
-	"github.com/insei/gerpo/executor/types"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/insei/gerpo/executor/adapters/placeholder"
+	"github.com/insei/gerpo/executor/types"
 )
 
 type poolWrap struct {
