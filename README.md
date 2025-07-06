@@ -14,7 +14,7 @@ This project under active development.
 
 Release 1.0.0 Road Map:
  * Repository builder changes:
-   ~~* Add Caching engine configuration in repository builder.~~
+   * ~~Add Caching engine configuration in repository builder.~~ [#46](https://github.com/Insei/gerpo/pull/46)
    * Column builder changes:
      * New API for configuring virtual (calculated fields). Current Virtual fields configuration API marked as deprecated.
  * **All other API is stable and not planned to change in 1.0.0 release.**
