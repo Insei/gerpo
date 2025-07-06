@@ -4,19 +4,19 @@ import (
 	"context"
 )
 
-type sourceBundle struct {
-	sources []Source
+type storagesBundle struct {
+	storages []Storage
 }
 
-func (m *sourceBundle) Clean(ctx context.Context) {
-	for _, source := range m.sources {
+func (m *storagesBundle) Clean(ctx context.Context) {
+	for _, source := range m.storages {
 		source.Clean(ctx)
 	}
 }
 
-func (m *sourceBundle) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
-	for _, source := range m.sources {
-		val, err := source.Get(ctx, statement, statementArgs...)
+func (m *storagesBundle) Get(ctx context.Context, statement string, statementArgs ...any) (any, error) {
+	for _, storage := range m.storages {
+		val, err := storage.Get(ctx, statement, statementArgs...)
 		if err == nil {
 			return val, nil
 		}
@@ -24,14 +24,14 @@ func (m *sourceBundle) Get(ctx context.Context, statement string, statementArgs 
 	return nil, ErrNotFound
 }
 
-func (m *sourceBundle) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
-	for _, source := range m.sources {
-		source.Set(ctx, cache, statement, statementArgs...)
+func (m *storagesBundle) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
+	for _, storage := range m.storages {
+		storage.Set(ctx, cache, statement, statementArgs...)
 	}
 }
 
-func NewModelBundle(opts ...Option) Source {
-	b := &sourceBundle{}
+func NewModelBundle(opts ...Option) Storage {
+	b := &storagesBundle{}
 	for _, opt := range opts {
 		opt.apply(b)
 	}

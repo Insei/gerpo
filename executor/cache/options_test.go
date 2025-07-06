@@ -9,33 +9,33 @@ import (
 func TestWithSource(t *testing.T) {
 	testCases := []struct {
 		name                 string
-		sources              []Source
+		sources              []Storage
 		expectedSourcesCount int
 	}{
 		{
 			name:                 "With no source options",
-			sources:              []Source{},
+			sources:              []Storage{},
 			expectedSourcesCount: 0,
 		},
 		{
 			name:                 "With 1 source options",
-			sources:              []Source{mockSource{}},
+			sources:              []Storage{mockSource{}},
 			expectedSourcesCount: 1,
 		},
 		{
 			name:                 "With Multiple source options",
-			sources:              []Source{mockSource{}},
+			sources:              []Storage{mockSource{}},
 			expectedSourcesCount: 1,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			b := &sourceBundle{}
+			b := &storagesBundle{}
 			for _, source := range tc.sources {
-				WithSource(source).apply(b)
+				WithStorage(source).apply(b)
 			}
-			assert.Equal(t, len(b.sources), tc.expectedSourcesCount)
+			assert.Equal(t, len(b.storages), tc.expectedSourcesCount)
 		})
 	}
 }

@@ -1,21 +1,21 @@
 package cache
 
-type option func(c *sourceBundle)
+type option func(c *storagesBundle)
 
 // apply implements the Option interface for option.
-// It calls the underlying function with the given sourceBundle.
-func (f option) apply(c *sourceBundle) {
+// It calls the underlying function with the given storagesBundle.
+func (f option) apply(c *storagesBundle) {
 	f(c)
 }
 
 type Option interface {
-	apply(c *sourceBundle)
+	apply(c *storagesBundle)
 }
 
-func WithSource(s Source) Option {
-	return option(func(m *sourceBundle) {
+func WithStorage(s Storage) Option {
+	return option(func(m *storagesBundle) {
 		if s != nil {
-			m.sources = append(m.sources, s)
+			m.storages = append(m.storages, s)
 		}
 	})
 }

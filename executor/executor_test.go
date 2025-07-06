@@ -59,7 +59,7 @@ func TestGetOne(t *testing.T) {
 		ctx         context.Context
 		withStmt    *mockStmt
 		setupDb     func(sqlmock.Sqlmock)
-		cacheBundle func() cache.Source
+		cacheBundle func() cache.Storage
 		expectedErr error
 	}{
 		{
@@ -156,7 +156,7 @@ func TestGetOne(t *testing.T) {
 					Return("query", []interface{}{}, nil)
 				return stmt
 			}(),
-			cacheBundle: func() cache.Source {
+			cacheBundle: func() cache.Storage {
 				b := &MockCacheSource{}
 				b.On("Get", mock.Anything, mock.Anything, mock.Anything).
 					Return(testModel{ID: 1, Age: 2, Name: "test"}, nil)
@@ -204,7 +204,7 @@ func TestGetMultiple(t *testing.T) {
 		ctx         context.Context
 		withStmt    Stmt
 		setupDb     func(sqlmock.Sqlmock)
-		cacheBundle func() cache.Source
+		cacheBundle func() cache.Storage
 		expectedErr error
 	}{
 		{
@@ -277,7 +277,7 @@ func TestGetMultiple(t *testing.T) {
 				stmt.On("SQL").Return("query", []interface{}{}, nil)
 				return stmt
 			}(),
-			cacheBundle: func() cache.Source {
+			cacheBundle: func() cache.Storage {
 				b := &MockCacheSource{}
 				b.On("Get", mock.Anything, mock.Anything, mock.Anything).
 					Return([]*testModel{{ID: 1, Age: 2, Name: "test"}, {ID: 3, Age: 4, Name: "test2"}}, nil)
@@ -346,7 +346,7 @@ func TestInsertOne(t *testing.T) {
 		withModel   func() *testModel
 		withStmt    func() Stmt
 		setupDb     func(sqlmock.Sqlmock)
-		cacheBundle func() cache.Source
+		cacheBundle func() cache.Storage
 		expectedErr error
 	}{
 		{
@@ -460,7 +460,7 @@ func TestInsertOne(t *testing.T) {
 			setupDb: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec(`INSERT INTO users \(id, age, name\) VALUES \(\$1, \$2, \$3\)`).WithArgs(1, 28, "John Doe").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
-			cacheBundle: func() cache.Source {
+			cacheBundle: func() cache.Storage {
 				b := &MockCacheSource{}
 				b.On("Clean", mock.Anything)
 				return b
@@ -506,7 +506,7 @@ func TestUpdate(t *testing.T) {
 		withModel           func() *testModel
 		withStmt            func() Stmt
 		setupDb             func(sqlmock.Sqlmock)
-		cacheBundle         func() cache.Source
+		cacheBundle         func() cache.Storage
 		expectedErr         error
 		expectedUpdatedRows int64
 	}{
@@ -587,7 +587,7 @@ func TestUpdate(t *testing.T) {
 				mock.ExpectExec(`UPDATE users SET age = \$1, name = \$2 WHERE id = \$3`).
 					WithArgs(28, "John Doe", 1).WillReturnResult(sqlmock.NewResult(1, 1))
 			},
-			cacheBundle: func() cache.Source {
+			cacheBundle: func() cache.Storage {
 				b := &MockCacheSource{}
 				b.On("Clean", mock.Anything)
 				return b
@@ -634,7 +634,7 @@ func TestCount(t *testing.T) {
 		ctx         context.Context
 		withStmt    Stmt
 		setupDb     func(sqlmock.Sqlmock)
-		cacheBundle func() cache.Source
+		cacheBundle func() cache.Storage
 		expectedErr error
 		expectedRes uint64
 	}{
@@ -684,7 +684,7 @@ func TestCount(t *testing.T) {
 				stmt.On("SQL").Return(`SELECT COUNT(*) FROM users`, []interface{}{}, nil)
 				return stmt
 			}(),
-			cacheBundle: func() cache.Source {
+			cacheBundle: func() cache.Storage {
 				b := &MockCacheSource{}
 				b.On("Get", mock.Anything, mock.Anything, mock.Anything).
 					Return(uint64(20), nil)

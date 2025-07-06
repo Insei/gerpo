@@ -6,7 +6,7 @@ import (
 	"github.com/insei/gerpo/executor/cache"
 )
 
-func get[TCached any](ctx context.Context, b cache.Source, stmt string, stmtArgs ...any) (*TCached, bool) {
+func get[TCached any](ctx context.Context, b cache.Storage, stmt string, stmtArgs ...any) (*TCached, bool) {
 	if b == nil {
 		return nil, false
 	}
@@ -21,14 +21,14 @@ func get[TCached any](ctx context.Context, b cache.Source, stmt string, stmtArgs
 	return nil, false
 }
 
-func set(ctx context.Context, b cache.Source, cache any, statement string, statementArgs ...any) {
+func set(ctx context.Context, b cache.Storage, cache any, statement string, statementArgs ...any) {
 	if b == nil {
 		return
 	}
 	b.Set(ctx, cache, statement, statementArgs...)
 }
 
-func clean(ctx context.Context, b cache.Source) {
+func clean(ctx context.Context, b cache.Storage) {
 	if b == nil {
 		return
 	}

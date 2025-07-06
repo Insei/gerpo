@@ -22,13 +22,13 @@ type cacheStorage struct {
 	disabled []string
 }
 
-func (s *cacheStorage) Get(sourceKey string, key string) (any, error) {
+func (s *cacheStorage) Get(modelKey string, key string) (any, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if slices.Contains(s.disabled, key) {
 		return nil, types.ErrNotFound
 	}
-	modelCache, ok := s.c[sourceKey]
+	modelCache, ok := s.c[modelKey]
 	if !ok {
 		return nil, types.ErrNotFound
 	}
@@ -39,21 +39,21 @@ func (s *cacheStorage) Get(sourceKey string, key string) (any, error) {
 	return cached, nil
 }
 
-func (s *cacheStorage) Set(sourceKey string, key string, value any) {
+func (s *cacheStorage) Set(modelKey string, key string, value any) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	modelCache, ok := s.c[sourceKey]
+	modelCache, ok := s.c[modelKey]
 	if !ok {
 		modelCache = make(map[string]any)
-		s.c[sourceKey] = modelCache
+		s.c[modelKey] = modelCache
 	}
 	modelCache[key] = value
 }
 
-func (s *cacheStorage) Clean(sourceKey string) {
+func (s *cacheStorage) Clean(modelKey string) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	s.c[sourceKey] = make(map[string]any)
+	s.c[modelKey] = make(map[string]any)
 }
 
 func NewCtxCache(ctx context.Context) context.Context {

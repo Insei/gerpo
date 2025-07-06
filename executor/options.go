@@ -5,7 +5,7 @@ import (
 )
 
 type options struct {
-	cacheSource cache.Source
+	cacheSource cache.Storage
 }
 
 type Option interface {
@@ -21,7 +21,7 @@ func (f optionFn) apply(c *options) {
 	f(c)
 }
 
-func WithCacheSource(source cache.Source) Option {
+func WithCacheStorage(source cache.Storage) Option {
 	return optionFn(func(o *options) {
 		if source != nil {
 			o.cacheSource = source
