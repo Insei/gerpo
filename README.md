@@ -14,10 +14,14 @@ This project under active development.
 
 Release 1.0.0 Road Map:
  * Repository builder changes:
-   * Add Caching engine configuration in repository builder.
+   ~~* Add Caching engine configuration in repository builder.~~
    * Column builder changes:
      * New API for configuring virtual (calculated fields). Current Virtual fields configuration API marked as deprecated.
  * **All other API is stable and not planned to change in 1.0.0 release.**
+
+Release 1.1.0 Road Map:
+ * Add support to retrieve inserted ID, Time/Timestamps and some other returning values from db.
+ * Add multiple insert support.
 
 ### Why GERPO?
 1. Support any database drivers via simple [db adapters wrappers](https://github.com/Insei/gerpo/tree/main/executor/adapters#executor-db-adapters).

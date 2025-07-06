@@ -33,26 +33,26 @@ type repository[TModel any] struct {
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	if repo.beforeInsert == nil {
-		repo.beforeInsert = func(_ context.Context, model *TModel) {}
+		repo.beforeInsert = func(_ context.Context, _ *TModel) {}
 	}
 	if repo.beforeUpdate == nil {
-		repo.beforeUpdate = func(_ context.Context, model *TModel) {}
+		repo.beforeUpdate = func(_ context.Context, _ *TModel) {}
 	}
 	if repo.afterInsert == nil {
-		repo.afterInsert = func(_ context.Context, model *TModel) {}
+		repo.afterInsert = func(_ context.Context, _ *TModel) {}
 	}
 	if repo.afterUpdate == nil {
-		repo.afterUpdate = func(_ context.Context, model *TModel) {}
+		repo.afterUpdate = func(_ context.Context, _ *TModel) {}
 	}
 	if repo.afterSelect == nil {
-		repo.afterSelect = func(_ context.Context, models []*TModel) {}
+		repo.afterSelect = func(_ context.Context, _ []*TModel) {}
 	}
 	if repo.errorTransformer == nil {
 		repo.errorTransformer = func(err error) error { return err }
 	}
 }
 
-func New[TModel any](db executor.DBAdapter, table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
+func New[TModel any](exec executor.Executor[TModel], table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
 	model, fields, err := getModelAndFields[TModel]()
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func New[TModel any](db executor.DBAdapter, table string, columnsFn func(m *TMod
 	}
 	repo := &repository[TModel]{
 		columns:         columns,
-		executor:        executor.New[TModel](db),
+		executor:        exec,
 		table:           table,
 		baseModel:       model,
 		persistentQuery: query.NewPersistent(model),

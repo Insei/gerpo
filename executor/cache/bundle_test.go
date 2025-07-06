@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var _ Source = &mockSource{}
+var _ Storage = &mockSource{}
 
 type mockSource struct {
 	result any
@@ -24,14 +24,14 @@ func (m mockSource) Set(ctx context.Context, cache any, statement string, statem
 func TestModelBundle_Get(t *testing.T) {
 	tests := []struct {
 		name          string
-		modelBundle   *sourceBundle
+		modelBundle   *storagesBundle
 		expectedValue any
 		expectedError error
 	}{
 		{
 			name: "GetSuccess",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{
 						result: "value1",
 						err:    nil,
@@ -43,8 +43,8 @@ func TestModelBundle_Get(t *testing.T) {
 		},
 		{
 			name: "GetError",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{
 						err: errors.New("error occurred"),
 					},
@@ -55,8 +55,8 @@ func TestModelBundle_Get(t *testing.T) {
 		},
 		{
 			name: "MultipleSources",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{
 						err: errors.New("source 1 error"),
 					},
@@ -91,14 +91,14 @@ func TestModelBundle_Get(t *testing.T) {
 func TestModelBundle_Set(t *testing.T) {
 	tests := []struct {
 		name          string
-		modelBundle   *sourceBundle
+		modelBundle   *storagesBundle
 		setValue      any
 		expectedError error
 	}{
 		{
 			name: "SetSuccess",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{
 						err: nil,
 					},
@@ -109,8 +109,8 @@ func TestModelBundle_Set(t *testing.T) {
 		},
 		{
 			name: "SetError",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{
 						err: errors.New("set error"),
 					},
@@ -121,8 +121,8 @@ func TestModelBundle_Set(t *testing.T) {
 		},
 		{
 			name: "MultipleSources",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{
 						err: errors.New("source 1 error"),
 					},
@@ -149,20 +149,20 @@ func TestModelBundle_Set(t *testing.T) {
 func TestModelBundle_Clean(t *testing.T) {
 	tests := []struct {
 		name        string
-		modelBundle *sourceBundle
+		modelBundle *storagesBundle
 	}{
 		{
 			name: "SingleSource",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{},
 				},
 			},
 		},
 		{
 			name: "MultipleSources",
-			modelBundle: &sourceBundle{
-				sources: []Source{
+			modelBundle: &storagesBundle{
+				storages: []Storage{
 					&mockSource{},
 					&mockSource{},
 				},
@@ -170,7 +170,7 @@ func TestModelBundle_Clean(t *testing.T) {
 		},
 		{
 			name:        "NoSources",
-			modelBundle: &sourceBundle{},
+			modelBundle: &storagesBundle{},
 		},
 	}
 
@@ -195,22 +195,22 @@ func TestNewModelBundle(t *testing.T) {
 		{
 			name: "WithOneSource",
 			options: []Option{
-				WithSource(&mockSource{}),
+				WithStorage(&mockSource{}),
 			},
 		},
 		{
 			name: "WithMultipleSources",
 			options: []Option{
-				WithSource(&mockSource{}),
-				WithSource(&mockSource{}),
+				WithStorage(&mockSource{}),
+				WithStorage(&mockSource{}),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewModelBundle(tt.options...).(*sourceBundle)
-			if len(b.sources) != len(tt.options) {
-				t.Errorf("expected number of sources %v but got %v", len(tt.options), len(b.sources))
+			b := NewModelBundle(tt.options...).(*storagesBundle)
+			if len(b.storages) != len(tt.options) {
+				t.Errorf("expected number of storages %v but got %v", len(tt.options), len(b.storages))
 			}
 		})
 	}

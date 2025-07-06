@@ -1,10 +1,10 @@
 # Cache
-The Cache package allows you to retrieve a cached value by using an SQL query and its arguments.
+The Cache package allows you to store/retrieve a cached value by using an SQL query and its arguments.
 
 ## Architecture
-Each cache store must implement the Source interface:
+Each cache storage must implement the Storage interface:
 ```go
-type Source interface {
+type Storage interface {
     Clean(ctx context.Context)
     Get(ctx context.Context, statement string, statementArgs ...any) (any, error)
     Set(ctx context.Context, cache any, statement string, statementArgs ...any) error
@@ -13,6 +13,7 @@ type Source interface {
 - Each cache source and cache bundle must be unique to a specific model.
 - The Clean method is called whenever an update or insert SQL query is executed on a model.
 - Cache Get/Set operations occur only when executing SELECT queries.
+- Each Cache storage should be thread safe.
 
 ## Supported caches
 - Context-based cache (stores cache data in context; for example, it can be used with HTTP middleware). Refer to the "ctx" package.

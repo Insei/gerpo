@@ -11,6 +11,7 @@ import (
 
 type builder[TModel any] struct {
 	db              executor.DBAdapter
+	executorOptions []executor.Option
 	table           string
 	opts            []Option[TModel]
 	columns         *types.ColumnsStorage
@@ -21,8 +22,8 @@ type TableChooser[TModel any] interface {
 	Table(table string) ColumnsAppender[TModel]
 }
 
-type DbChooser[TModel any] interface {
-	DB(db executor.DBAdapter) TableChooser[TModel]
+type ExecutorChooser[TModel any] interface {
+	DB(db executor.DBAdapter, opts ...executor.Option) TableChooser[TModel]
 }
 
 type ColumnsAppender[TModel any] interface {
@@ -30,7 +31,7 @@ type ColumnsAppender[TModel any] interface {
 }
 
 // NewBuilder creates a new instance of the repository builder using the specified generic type for model TModel.
-func NewBuilder[TModel any]() DbChooser[TModel] {
+func NewBuilder[TModel any]() ExecutorChooser[TModel] {
 	return &builder[TModel]{}
 }
 
@@ -41,8 +42,9 @@ func (b *builder[TModel]) Table(table string) ColumnsAppender[TModel] {
 }
 
 // DB sets the database connection to be used for the builder and returns a TableChooser for further configuration.
-func (b *builder[TModel]) DB(db executor.DBAdapter) TableChooser[TModel] {
+func (b *builder[TModel]) DB(db executor.DBAdapter, opts ...executor.Option) TableChooser[TModel] {
 	b.db = db
+	b.executorOptions = opts
 	return b
 }
 
@@ -107,5 +109,6 @@ func (b *builder[TModel]) Build() (Repository[TModel], error) {
 	if b.table == "" {
 		return nil, errors.New("no table found")
 	}
-	return New(b.db, b.table, b.columnBuilderFn, b.opts...)
+	exec := executor.New[TModel](b.db, b.executorOptions...)
+	return New(exec, b.table, b.columnBuilderFn, b.opts...)
 }
