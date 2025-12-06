@@ -91,14 +91,11 @@ func (r *repository[TModel]) GetColumns() types.ColumnsStorage {
 	return r.columns
 }
 
-func (r *repository[TModel]) Tx(tx executor.Tx) (Repository[TModel], error) {
-	txExecutor, err := r.executor.Tx(tx)
-	if err != nil {
-		return nil, err
-	}
+func (r *repository[TModel]) Tx(tx executor.Tx) Repository[TModel] {
+	txExecutor := r.executor.Tx(tx)
 	repocp := *r
 	repocp.executor = txExecutor
-	return &repocp, nil
+	return &repocp
 }
 
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error) {

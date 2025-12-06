@@ -26,12 +26,12 @@ func New[TModel any](db DBAdapter, opts ...Option) Executor[TModel] {
 	return e
 }
 
-func (e *executor[TModel]) Tx(tx Tx) (Executor[TModel], error) {
+func (e *executor[TModel]) Tx(tx Tx) Executor[TModel] {
 	ecp := *e
 	ecp.getExecQueryReplaced = func(ctx context.Context) ExecQuery {
 		return tx
 	}
-	return &ecp, nil
+	return &ecp
 }
 
 func (e *executor[TModel]) getExecQuery(ctx context.Context) ExecQuery {
