@@ -1,0 +1,96 @@
+site_name: gerpo
+site_description: Generic repository pattern for Go with pluggable adapters
+site_url: https://insei.github.io/gerpo/
+repo_url: https://github.com/Insei/gerpo
+repo_name: Insei/gerpo
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Insei/gerpo
+    - icon: fontawesome/brands/go
+      link: https://pkg.go.dev/github.com/insei/gerpo
+
+nav:
+  - Get started: index.md
+  - Features:
+      - features/index.md
+      - Repository builder: features/repository.md
+      - Columns: features/columns.md
+      - CRUD operations: features/crud.md
+      - WHERE operators: features/where.md
+      - Ordering & pagination: features/order-pagination.md
+      - Exclude & Only: features/exclude-only.md
+      - Persistent queries: features/persistent-queries.md
+      - Soft delete: features/soft-delete.md
+      - Virtual columns: features/virtual-columns.md
+      - Hooks: features/hooks.md
+      - Transactions: features/transactions.md
+      - Cache: features/cache.md
+      - Error transformer: features/error-transformer.md
+      - Adapters: features/adapters.md
+  - Architecture:
+      - architecture/index.md
+      - Ideology: architecture/ideology.md
+      - Layers: architecture/layers.md
+      - SQL generation: architecture/sql-generation.md
+      - Field mapping: architecture/field-mapping.md
+      - Caching internals: architecture/caching.md
+      - Adapter internals: architecture/adapters-internals.md
+      - Contributing: architecture/contributing.md
