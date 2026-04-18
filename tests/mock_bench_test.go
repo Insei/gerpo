@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -312,12 +313,12 @@ func BenchmarkDelete_Gerpo(b *testing.B) {
 // поэтому IO = 0; то, что здесь выглядит как «×7 CPU», в реальной БД
 // растворяется в сетевом IO запроса.
 //
-// Запуск:
+// По умолчанию скипается (бенчи занимают ~20 секунд). Явный запуск:
 //
-//	go test -run=TestCompareDirectVsGerpo -v ./tests/
+//	GERPO_BENCH_REPORT=1 go test -run=TestCompareDirectVsGerpo -v ./tests/
 func TestCompareDirectVsGerpo(t *testing.T) {
-	if testing.Short() {
-		t.Skip("report is slow, skipped in -short mode")
+	if os.Getenv("GERPO_BENCH_REPORT") == "" {
+		t.Skip("set GERPO_BENCH_REPORT=1 to run (~20s)")
 	}
 
 	suites := []struct {
