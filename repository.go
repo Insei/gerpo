@@ -100,6 +100,7 @@ func (r *repository[TModel]) Tx(tx executor.Tx) Repository[TModel] {
 
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error) {
 	stmt := sqlstmt.NewGetFirst(ctx, r.table, r.columns)
+	defer stmt.Release()
 	err = r.persistentQuery.Apply(stmt)
 	if err != nil {
 		return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
@@ -123,6 +124,7 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 
 func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListHelper[TModel])) (models []*TModel, err error) {
 	stmt := sqlstmt.NewGetList(ctx, r.table, r.columns)
+	defer stmt.Release()
 	err = r.persistentQuery.Apply(stmt)
 	if err != nil {
 		return nil, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))
@@ -146,6 +148,7 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 
 func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountHelper[TModel])) (count uint64, err error) {
 	stmt := sqlstmt.NewCount(ctx, r.table, r.columns)
+	defer stmt.Release()
 	err = r.persistentQuery.Apply(stmt)
 	if err != nil {
 		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyPersistentQuery, err))

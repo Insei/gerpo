@@ -77,7 +77,10 @@ func (u *Update) SQL(opts ...Option) (string, []any, error) {
 		return "", nil, ErrEmptyColumnsInExecutionSet
 	}
 	sb := strings.Builder{}
-	sb.WriteString("UPDATE " + u.table + " SET ")
+	sb.Grow(128)
+	sb.WriteString("UPDATE ")
+	sb.WriteString(u.table)
+	sb.WriteString(" SET ")
 	lenAtStart := sb.Len()
 	for _, col := range cols {
 		colName, ok := col.Name()

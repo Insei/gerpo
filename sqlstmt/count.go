@@ -3,8 +3,8 @@ package sqlstmt
 import (
 	"context"
 	"strings"
+	"sync"
 
-	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
 )
 
@@ -14,12 +14,24 @@ type Count struct {
 	table string
 }
 
+var countPool = sync.Pool{
+	New: func() any {
+		return &Count{sqlselect: newSelectEmpty()}
+	},
+}
+
 func NewCount(ctx context.Context, table string, storage types.ColumnsStorage) *Count {
-	f := &Count{
-		sqlselect: newSelect(ctx, storage),
-		table:     table,
-	}
+	f := countPool.Get().(*Count)
+	f.table = table
+	f.sqlselect.reset(ctx, storage)
 	return f
+}
+
+// Release returns the statement to the pool. Must not be used after Release.
+func (c *Count) Release() {
+	c.table = ""
+	c.sqlselect.columnsStorage = nil
+	countPool.Put(c)
 }
 
 func (c *Count) SQL(_ ...Option) (string, []any, error) {
@@ -27,12 +39,12 @@ func (c *Count) SQL(_ ...Option) (string, []any, error) {
 		return "", nil, ErrTableIsNoSet
 	}
 	sb := strings.Builder{}
-	sb.WriteString("SELECT count(*) over() AS count FROM " + c.table)
+	sb.Grow(96)
+	sb.WriteString("SELECT count(*) over() AS count FROM ")
+	sb.WriteString(c.table)
 	sb.WriteString(c.join.SQL())
 	sb.WriteString(c.where.SQL())
 	sb.WriteString(c.group.SQL())
-	limitOffset := sqlpart.NewLimitOffsetBuilder()
-	limitOffset.SetLimit(1)
-	sb.WriteString(limitOffset.SQL())
+	sb.WriteString(" LIMIT 1")
 	return sb.String(), c.where.Values(), nil
 }

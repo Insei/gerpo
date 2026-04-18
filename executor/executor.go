@@ -53,7 +53,7 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close() //nolint:errcheck
 	var model *TModel
 	if rows.Next() {
 		model = new(TModel)
@@ -81,7 +81,7 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close() //nolint:errcheck
 	var models []*TModel
 	for rows.Next() {
 		model := new(TModel)
@@ -146,7 +146,7 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 	if err != nil {
 		return 0, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close() //nolint:errcheck
 	if rows.Next() {
 		if err = rows.Scan(&count); err != nil {
 			return 0, err

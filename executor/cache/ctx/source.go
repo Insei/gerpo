@@ -3,6 +3,8 @@ package ctx
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/insei/gerpo/executor/cache/types"
@@ -44,7 +46,7 @@ func (s *CtxCache) Get(ctx context.Context, statement string, statementArgs ...a
 	if err != nil {
 		return nil, err
 	}
-	return storage.Get(s.key, fmt.Sprintf("%s%v", statement, statementArgs))
+	return storage.Get(s.key, buildKey(statement, statementArgs))
 }
 
 func (s *CtxCache) Set(ctx context.Context, cache any, statement string, statementArgs ...any) {
@@ -52,7 +54,58 @@ func (s *CtxCache) Set(ctx context.Context, cache any, statement string, stateme
 	if err != nil {
 		return
 	}
-	storage.Set(s.key, fmt.Sprintf("%s%v", statement, statementArgs), cache)
+	storage.Set(s.key, buildKey(statement, statementArgs), cache)
+}
+
+// buildKey assembles a cache key from a SQL statement and its arguments without going
+// through fmt.Sprintf. It mirrors the original "%s%v" encoding closely enough for
+// equality comparison while avoiding the allocations fmt incurs for each argument.
+func buildKey(statement string, args []any) string {
+	var sb strings.Builder
+	sb.Grow(len(statement) + 2 + len(args)*8)
+	sb.WriteString(statement)
+	sb.WriteByte('[')
+	for i, a := range args {
+		if i > 0 {
+			sb.WriteByte(' ')
+		}
+		writeArg(&sb, a)
+	}
+	sb.WriteByte(']')
+	return sb.String()
+}
+
+func writeArg(sb *strings.Builder, a any) {
+	switch v := a.(type) {
+	case nil:
+		sb.WriteString("<nil>")
+	case string:
+		sb.WriteString(v)
+	case int:
+		sb.WriteString(strconv.Itoa(v))
+	case int64:
+		sb.WriteString(strconv.FormatInt(v, 10))
+	case int32:
+		sb.WriteString(strconv.FormatInt(int64(v), 10))
+	case uint:
+		sb.WriteString(strconv.FormatUint(uint64(v), 10))
+	case uint64:
+		sb.WriteString(strconv.FormatUint(v, 10))
+	case uint32:
+		sb.WriteString(strconv.FormatUint(uint64(v), 10))
+	case bool:
+		if v {
+			sb.WriteString("true")
+		} else {
+			sb.WriteString("false")
+		}
+	case []byte:
+		sb.Write(v)
+	case uuid.UUID:
+		sb.WriteString(v.String())
+	default:
+		fmt.Fprint(sb, a)
+	}
 }
 
 func (s *CtxCache) Clean(ctx context.Context) {

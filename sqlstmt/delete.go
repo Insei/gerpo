@@ -45,7 +45,9 @@ func (d *Delete) SQL(_ ...Option) (string, []any, error) {
 		return "", nil, ErrTableIsNoSet
 	}
 	sb := strings.Builder{}
-	sb.WriteString("DELETE FROM " + d.table)
+	sb.Grow(96)
+	sb.WriteString("DELETE FROM ")
+	sb.WriteString(d.table)
 	sb.WriteString(d.join.SQL())
 	sb.WriteString(d.where.SQL())
 	return sb.String(), d.where.Values(), nil
