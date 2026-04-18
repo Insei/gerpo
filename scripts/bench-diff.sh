@@ -1,20 +1,16 @@
 #!/usr/bin/env bash
 #
-# Прогоняет mock-бенчмарки на текущей ревизии (head MR) и на целевой ветке
-# MR (обычно main), делает статистическое сравнение через benchstat и постит
-# сводку комментарием в сам Merge Request.
+# Прогоняет mock-бенчмарки на head PR и на target-ветке, делает статистическое
+# сравнение через benchstat и постит сводку комментарием в сам Pull Request.
 #
-# Используется только из .gitlab-ci.yml в merge_request_event пайплайнах.
-# Требует переменных окружения, выставляемых GitLab:
-#   CI_MERGE_REQUEST_TARGET_BRANCH_NAME — имя target ветки
-#   CI_MERGE_REQUEST_IID                — номер MR
-#   CI_PROJECT_ID                       — числовой id проекта
-#   CI_API_V4_URL                       — base URL API
-# И одной проектной переменной (Settings → CI/CD → Variables):
-#   BENCH_BOT_TOKEN                     — personal/project access token c
-#                                         правом писать комментарии в MR
-# Если токен не задан, скрипт отработает, но комментарий не отправит —
-# отчёт останется только в логах job.
+# Используется из .github/workflows/bench-diff.yml в событиях pull_request.
+# Ожидает стандартные переменные GitHub Actions:
+#   GITHUB_BASE_REF     — имя target-ветки (например, main)
+#   GITHUB_REPOSITORY   — owner/repo
+#   GITHUB_EVENT_PATH   — путь к JSON-пейлоаду события (для номера PR)
+#   GITHUB_API_URL      — обычно https://api.github.com
+#   GITHUB_TOKEN        — auto-inject, нужны permissions: pull-requests: write
+# Если GITHUB_TOKEN пустой — отчёт остаётся только в логах и артефактах.
 
 set -euo pipefail
 
@@ -22,13 +18,23 @@ COUNT="${BENCH_COUNT:-10}"
 BENCH_PATTERN='^Benchmark(GetFirst|GetList|Count|Insert|Update|Delete)_(Direct|Gerpo)$'
 BENCH_PKG='./tests/...'
 
-: "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:?must run from merge_request_event pipeline}"
+: "${GITHUB_BASE_REF:?must run from pull_request event}"
+: "${GITHUB_REPOSITORY:?}"
+: "${GITHUB_EVENT_PATH:?}"
 
 need() { command -v "$1" >/dev/null 2>&1 || { echo "missing tool: $1" >&2; exit 1; }; }
 need go
 need git
 need jq
 need curl
+
+PR_NUMBER="$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")"
+if [[ -z "$PR_NUMBER" ]]; then
+  echo "could not read pull_request.number from $GITHUB_EVENT_PATH" >&2
+  exit 1
+fi
+
+API_URL="${GITHUB_API_URL:-https://api.github.com}"
 
 HEAD_SHA="$(git rev-parse HEAD)"
 HEAD_SHORT="$(git rev-parse --short HEAD)"
@@ -37,9 +43,9 @@ echo "=== Benchmarking head ($HEAD_SHORT) ==="
 go test -run='^$' -bench="$BENCH_PATTERN" -benchmem -count="$COUNT" "$BENCH_PKG" | tee head.txt
 
 echo
-echo "=== Fetching base: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME ==="
-git fetch --depth=50 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-BASE_REF="origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+echo "=== Fetching base: $GITHUB_BASE_REF ==="
+git fetch --depth=50 origin "$GITHUB_BASE_REF"
+BASE_REF="origin/$GITHUB_BASE_REF"
 BASE_SHORT="$(git rev-parse --short "$BASE_REF")"
 
 git checkout --detach "$BASE_REF"
@@ -51,7 +57,6 @@ if ! go test -run='^$' -bench="$BENCH_PATTERN" -benchmem -count="$COUNT" "$BENCH
   BASE_OK=0
 fi
 
-# Возвращаемся на исходную ревизию, чтобы артефакты / последующие джобы не путались.
 git checkout --detach "$HEAD_SHA"
 
 echo
@@ -69,8 +74,8 @@ fi
 
 echo "$SUMMARY"
 
-if [[ -z "${BENCH_BOT_TOKEN:-}" ]]; then
-  echo "BENCH_BOT_TOKEN is not set — skipping MR comment (report is in job logs)." >&2
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  echo "GITHUB_TOKEN is not set — skipping PR comment (report is in job logs)." >&2
   exit 0
 fi
 
@@ -79,10 +84,11 @@ PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
 
 curl --fail-with-body -sS \
   -X POST \
-  -H "PRIVATE-TOKEN: $BENCH_BOT_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
   --data "$PAYLOAD" \
-  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes" \
+  "$API_URL/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
   >/dev/null
 
-echo "Posted benchmark diff to MR !$CI_MERGE_REQUEST_IID"
+echo "Posted benchmark diff to PR #$PR_NUMBER"
