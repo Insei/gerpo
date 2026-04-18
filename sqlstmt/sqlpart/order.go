@@ -23,6 +23,12 @@ func NewOrderBuilder(ctx context.Context) *OrderBuilder {
 	}
 }
 
+// Reset prepares the builder for reuse by a new query without dropping the underlying buffer.
+func (b *OrderBuilder) Reset(ctx context.Context) {
+	b.ctx = ctx
+	b.orderBy.Reset()
+}
+
 func (b *OrderBuilder) OrderBy(columnAndDirection string) {
 	if b.orderBy.Len() > 0 {
 		b.orderBy.WriteString(", ")

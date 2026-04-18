@@ -225,6 +225,13 @@ func NewWhereBuilder(ctx context.Context) *WhereBuilder {
 	}
 }
 
+// Reset prepares the builder for reuse by a new query without dropping underlying buffers.
+func (b *WhereBuilder) Reset(ctx context.Context) {
+	b.ctx = ctx
+	b.sql = b.sql[:0]
+	b.values = b.values[:0]
+}
+
 func (b *WhereBuilder) SQL() string {
 	if len(b.sql) < 1 {
 		return ""
@@ -240,18 +247,18 @@ func (b *WhereBuilder) StartGroup() {
 	if b.needANDBeforeCondition() {
 		b.AND()
 	}
-	b.sql = append(b.sql, []byte("(")...)
+	b.sql = append(b.sql, '(')
 }
 func (b *WhereBuilder) EndGroup() {
-	b.sql = append(b.sql, []byte(")")...)
+	b.sql = append(b.sql, ')')
 }
 
 func (b *WhereBuilder) AND() {
-	b.sql = append(b.sql, []byte(" AND ")...)
+	b.sql = append(b.sql, " AND "...)
 }
 
 func (b *WhereBuilder) OR() {
-	b.sql = append(b.sql, []byte(" OR ")...)
+	b.sql = append(b.sql, " OR "...)
 }
 
 func (b *WhereBuilder) appendValue(val any) {
@@ -273,7 +280,7 @@ func (b *WhereBuilder) appendValue(val any) {
 }
 
 func (b *WhereBuilder) AppendSQLWithValues(sql string, appendValue bool, value any) {
-	b.sql = append(b.sql, []byte(sql)...)
+	b.sql = append(b.sql, sql...)
 	if appendValue {
 		b.appendValue(value)
 	}
@@ -308,7 +315,7 @@ func (b *WhereBuilder) AppendCondition(cl types.Column, operation types.Operatio
 	if b.needANDBeforeCondition() {
 		b.AND()
 	}
-	b.sql = append(b.sql, []byte(sql)...)
+	b.sql = append(b.sql, sql...)
 	if !appendValue {
 		return nil
 	}

@@ -76,6 +76,7 @@ func (i *Insert) SQL(opts ...Option) (string, []any, error) {
 		return "", nil, ErrEmptyColumnsInExecutionSet
 	}
 	sb := strings.Builder{}
+	sb.Grow(128)
 	sb.WriteString("INSERT INTO ")
 	sb.WriteString(i.table)
 	sb.WriteString(" (")

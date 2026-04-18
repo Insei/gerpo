@@ -20,6 +20,12 @@ func NewGroupBuilder(ctx context.Context) *GroupBuilder {
 	return &GroupBuilder{ctx: ctx}
 }
 
+// Reset prepares the builder for reuse by a new query without dropping the underlying buffer.
+func (b *GroupBuilder) Reset(ctx context.Context) {
+	b.ctx = ctx
+	b.sql.Reset()
+}
+
 func (b *GroupBuilder) SQL() string {
 	if b.sql.Len() < 1 {
 		return ""

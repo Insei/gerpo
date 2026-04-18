@@ -3,6 +3,7 @@ package sqlstmt
 import (
 	"context"
 	"strings"
+	"sync"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/insei/gerpo/types"
@@ -17,15 +18,33 @@ type GetList struct {
 	limitOffset *sqlpart.LimitOffsetBuilder
 }
 
+var getListPool = sync.Pool{
+	New: func() any {
+		return &GetList{
+			sqlselect:   newSelectEmpty(),
+			limitOffset: sqlpart.NewLimitOffsetBuilder(),
+		}
+	},
+}
+
 func NewGetList(ctx context.Context, table string, colStorage types.ColumnsStorage) *GetList {
-	executionColumns := colStorage.NewExecutionColumns(ctx, types.SQLActionSelect)
-	f := &GetList{
-		sqlselect:   newSelect(ctx, colStorage),
-		limitOffset: sqlpart.NewLimitOffsetBuilder(),
-		columns:     executionColumns,
-		table:       table,
-	}
+	f := getListPool.Get().(*GetList)
+	f.ctx = ctx
+	f.table = table
+	f.columns = colStorage.NewExecutionColumns(ctx, types.SQLActionSelect)
+	f.limitOffset.SetLimit(0)
+	f.limitOffset.SetOffset(0)
+	f.sqlselect.reset(ctx, colStorage)
 	return f
+}
+
+// Release returns the statement to the pool. Must not be used after Release.
+func (f *GetList) Release() {
+	f.ctx = nil
+	f.table = ""
+	f.columns = nil
+	f.sqlselect.columnsStorage = nil
+	getListPool.Put(f)
 }
 
 func (f *GetList) Columns() types.ExecutionColumns {
@@ -45,6 +64,7 @@ func (f *GetList) SQL(_ ...Option) (string, []any, error) {
 		return "", nil, ErrEmptyColumnsInExecutionSet
 	}
 	sb := strings.Builder{}
+	sb.Grow(160)
 	sb.WriteString("SELECT ")
 	for _, col := range columns {
 		if sb.Len() > 8 {
@@ -52,7 +72,8 @@ func (f *GetList) SQL(_ ...Option) (string, []any, error) {
 		}
 		sb.WriteString(col.ToSQL(f.ctx))
 	}
-	sb.WriteString(" FROM " + f.table)
+	sb.WriteString(" FROM ")
+	sb.WriteString(f.table)
 	sb.WriteString(f.join.SQL())
 	sb.WriteString(f.where.SQL())
 	sb.WriteString(f.order.SQL())
