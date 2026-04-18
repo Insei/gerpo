@@ -9,12 +9,33 @@ import (
 
 type WhereBuilder struct {
 	model any
-	opts  []func(applier WhereApplier) error
+	ops   []whereOpEntry
 }
 
 type WhereApplier interface {
 	Where() sqlpart.Where
 	ColumnsStorage() types.ColumnsStorage
+}
+
+type whereOpKind uint8
+
+const (
+	opStartGroup whereOpKind = iota
+	opEndGroup
+	opAND
+	opOR
+	opFieldCondition
+	opColumnCondition
+)
+
+// whereOpEntry stores one structural operation of a WHERE clause without using closures.
+// Only a subset of fields is relevant per kind; see Apply for the dispatch.
+type whereOpEntry struct {
+	kind      whereOpKind
+	column    types.Column
+	fieldPtr  any
+	operation types.Operation
+	val       any
 }
 
 func NewWhereBuilder(baseModel any) *WhereBuilder {
@@ -24,33 +45,51 @@ func NewWhereBuilder(baseModel any) *WhereBuilder {
 }
 
 func (q *WhereBuilder) Apply(applier WhereApplier) error {
-	if len(q.opts) > 0 {
-		applier.Where().StartGroup()
-		for _, opt := range q.opts {
-			err := opt(applier)
+	if len(q.ops) == 0 {
+		return nil
+	}
+	w := applier.Where()
+	w.StartGroup()
+	for i := range q.ops {
+		op := &q.ops[i]
+		switch op.kind {
+		case opStartGroup:
+			w.StartGroup()
+		case opEndGroup:
+			w.EndGroup()
+		case opAND:
+			w.AND()
+		case opOR:
+			w.OR()
+		case opFieldCondition:
+			column, err := applier.ColumnsStorage().GetByFieldPtr(q.model, op.fieldPtr)
 			if err != nil {
 				return err
 			}
+			if err := w.AppendCondition(column, op.operation, op.val); err != nil {
+				return err
+			}
+		case opColumnCondition:
+			if op.column == nil {
+				return fmt.Errorf("column is nil")
+			}
+			if err := w.AppendCondition(op.column, op.operation, op.val); err != nil {
+				return err
+			}
 		}
-		applier.Where().EndGroup()
 	}
+	w.EndGroup()
 	return nil
 }
 
 func (q *WhereBuilder) IsEmpty() bool {
-	return len(q.opts) == 0
+	return len(q.ops) == 0
 }
 
 func (q *WhereBuilder) Group(f func(t types.WhereTarget)) types.ANDOR {
-	q.opts = append(q.opts, func(applier WhereApplier) error {
-		applier.Where().StartGroup()
-		return nil
-	})
+	q.ops = append(q.ops, whereOpEntry{kind: opStartGroup})
 	f(q)
-	q.opts = append(q.opts, func(applier WhereApplier) error {
-		applier.Where().EndGroup()
-		return nil
-	})
+	q.ops = append(q.ops, whereOpEntry{kind: opEndGroup})
 	return q
 }
 
@@ -64,135 +103,89 @@ func withIgnoreCase(op types.Operation) types.Operation {
 	}
 }
 
-type OperationFn func(operation types.Operation, val any) types.ANDOR
+// whereOperation binds either a types.Column or a fieldPtr to its parent WhereBuilder
+// so that the subsequent EQ/NEQ/… call can append a structured operation without a closure.
+type whereOperation struct {
+	parent   *WhereBuilder
+	column   types.Column
+	fieldPtr any
+	isField  bool
+}
 
-func (o OperationFn) EQ(val any) types.ANDOR {
-	return o(types.OperationEQ, val)
+func (o *whereOperation) push(operation types.Operation, val any) types.ANDOR {
+	entry := whereOpEntry{
+		operation: operation,
+		val:       val,
+	}
+	if o.isField {
+		entry.kind = opFieldCondition
+		entry.fieldPtr = o.fieldPtr
+	} else {
+		entry.kind = opColumnCondition
+		entry.column = o.column
+	}
+	o.parent.ops = append(o.parent.ops, entry)
+	return o.parent
 }
-func (o OperationFn) NEQ(val any) types.ANDOR {
-	return o(types.OperationNEQ, val)
+
+func (o *whereOperation) EQ(val any) types.ANDOR  { return o.push(types.OperationEQ, val) }
+func (o *whereOperation) NEQ(val any) types.ANDOR { return o.push(types.OperationNEQ, val) }
+func (o *whereOperation) GT(val any) types.ANDOR  { return o.push(types.OperationGT, val) }
+func (o *whereOperation) GTE(val any) types.ANDOR { return o.push(types.OperationGTE, val) }
+func (o *whereOperation) LT(val any) types.ANDOR  { return o.push(types.OperationLT, val) }
+func (o *whereOperation) LTE(val any) types.ANDOR { return o.push(types.OperationLTE, val) }
+func (o *whereOperation) IN(vals ...any) types.ANDOR {
+	return o.push(types.OperationIN, vals)
 }
-func (o OperationFn) GT(val any) types.ANDOR {
-	return o(types.OperationGT, val)
+func (o *whereOperation) NIN(vals ...any) types.ANDOR {
+	return o.push(types.OperationNIN, vals)
 }
-func (o OperationFn) GTE(val any) types.ANDOR {
-	return o(types.OperationGTE, val)
-}
-func (o OperationFn) LT(val any) types.ANDOR {
-	return o(types.OperationLT, val)
-}
-func (o OperationFn) LTE(val any) types.ANDOR {
-	return o(types.OperationLTE, val)
-}
-func (o OperationFn) IN(vals ...any) types.ANDOR {
-	return o(types.OperationIN, vals)
-}
-func (o OperationFn) NIN(vals ...any) types.ANDOR {
-	return o(types.OperationNIN, vals)
-}
-func (o OperationFn) BW(val any, ignoreCase ...bool) types.ANDOR {
-	op := types.OperationBW
-	for _, opt := range ignoreCase {
-		if opt {
-			op = withIgnoreCase(op)
+
+func resolveIgnoreCase(base types.Operation, ignoreCase []bool) types.Operation {
+	for _, v := range ignoreCase {
+		if v {
+			return withIgnoreCase(base)
 		}
 	}
-	return o(op, val)
+	return base
 }
-func (o OperationFn) NBW(val any, ignoreCase ...bool) types.ANDOR {
-	op := types.OperationNBW
-	for _, opt := range ignoreCase {
-		if opt {
-			op = withIgnoreCase(op)
-		}
-	}
-	return o(op, val)
+
+func (o *whereOperation) BW(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationBW, ignoreCase), val)
 }
-func (o OperationFn) EW(val any, ignoreCase ...bool) types.ANDOR {
-	op := types.OperationEW
-	for _, opt := range ignoreCase {
-		if opt {
-			op = withIgnoreCase(op)
-		}
-	}
-	return o(op, val)
+func (o *whereOperation) NBW(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationNBW, ignoreCase), val)
 }
-func (o OperationFn) NEW(val any, ignoreCase ...bool) types.ANDOR {
-	op := types.OperationNEW
-	for _, opt := range ignoreCase {
-		if opt {
-			op = withIgnoreCase(op)
-		}
-	}
-	return o(op, val)
+func (o *whereOperation) EW(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationEW, ignoreCase), val)
 }
-func (o OperationFn) CT(val any, ignoreCase ...bool) types.ANDOR {
-	op := types.OperationCT
-	for _, opt := range ignoreCase {
-		if opt {
-			op = withIgnoreCase(op)
-		}
-	}
-	return o(op, val)
+func (o *whereOperation) NEW(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationNEW, ignoreCase), val)
 }
-func (o OperationFn) NCT(val any, ignoreCase ...bool) types.ANDOR {
-	op := types.OperationNCT
-	for _, opt := range ignoreCase {
-		if opt {
-			op = withIgnoreCase(op)
-		}
-	}
-	return o(op, val)
+func (o *whereOperation) CT(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationCT, ignoreCase), val)
 }
-func (o OperationFn) OP(operation types.Operation, val any) types.ANDOR {
-	return o(operation, val)
+func (o *whereOperation) NCT(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationNCT, ignoreCase), val)
+}
+func (o *whereOperation) OP(operation types.Operation, val any) types.ANDOR {
+	return o.push(operation, val)
 }
 
 func (q *WhereBuilder) AND() types.WhereTarget {
-	q.opts = append(q.opts, func(applier WhereApplier) error {
-		applier.Where().AND()
-		return nil
-	})
+	q.ops = append(q.ops, whereOpEntry{kind: opAND})
 	return q
 }
 
 func (q *WhereBuilder) OR() types.WhereTarget {
-	q.opts = append(q.opts, func(applier WhereApplier) error {
-		applier.Where().OR()
-		return nil
-	})
+	q.ops = append(q.ops, whereOpEntry{kind: opOR})
 	return q
 }
 
 func (q *WhereBuilder) Column(column types.Column) types.WhereOperation {
-	return OperationFn(func(operation types.Operation, val any) types.ANDOR {
-		q.opts = append(q.opts, func(applier WhereApplier) error {
-			if column == nil {
-				return fmt.Errorf("column is nil")
-			}
-			err := applier.Where().AppendCondition(column, operation, val)
-			if err != nil {
-				return err
-			}
-			return err
-		})
-		return q
-	})
+	return &whereOperation{parent: q, column: column}
 }
 
 func (q *WhereBuilder) Field(fieldPtr any) types.WhereOperation {
-	return OperationFn(func(operation types.Operation, val any) types.ANDOR {
-		q.opts = append(q.opts, func(applier WhereApplier) error {
-			column, err := applier.ColumnsStorage().GetByFieldPtr(q.model, fieldPtr)
-			if err != nil {
-				return err
-			}
-			err = applier.Where().AppendCondition(column, operation, val)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-		return q
-	})
+	return &whereOperation{parent: q, fieldPtr: fieldPtr, isField: true}
 }
