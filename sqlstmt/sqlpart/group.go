@@ -44,6 +44,9 @@ func (b *GroupBuilder) GroupBy(cols ...types.Column) {
 			continue
 			//TODO: error
 		}
+		if b.sql.Len() > 0 {
+			b.sql.WriteString(", ")
+		}
 		b.sql.WriteString(sql)
 	}
 }

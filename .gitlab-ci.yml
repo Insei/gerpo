@@ -1,0 +1,30 @@
+stages:
+  - test
+
+variables:
+  POSTGRES_USER: gerpo
+  POSTGRES_PASSWORD: gerpo
+  POSTGRES_DB: gerpo
+  GERPO_INTEGRATION_DB_URL: "postgres://gerpo:gerpo@postgres:5432/gerpo?sslmode=disable"
+
+.go-base:
+  image: golang:1.23
+  before_script:
+    - go version
+    - go mod download
+
+unit:
+  extends: .go-base
+  stage: test
+  script:
+    - go build -v ./...
+    - go test -v -race ./...
+
+integration:
+  extends: .go-base
+  stage: test
+  services:
+    - name: postgres:16
+      alias: postgres
+  script:
+    - go test -v -tags=integration ./tests/integration/...
