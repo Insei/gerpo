@@ -35,6 +35,9 @@ func (q *PaginationBuilder) Apply(applier PaginationApplier) error {
 	if q.page != 0 && q.size == 0 {
 		return fmt.Errorf("incorrect pagination: size is required then page is set")
 	}
+	if q.page == 0 {
+		return nil
+	}
 	applier.LimitOffset().SetOffset((q.page - 1) * q.size)
 	return nil
 }

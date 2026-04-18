@@ -76,8 +76,8 @@ func (f *GetList) SQL(_ ...Option) (string, []any, error) {
 	sb.WriteString(f.table)
 	sb.WriteString(f.join.SQL())
 	sb.WriteString(f.where.SQL())
-	sb.WriteString(f.order.SQL())
 	sb.WriteString(f.group.SQL())
+	sb.WriteString(f.order.SQL())
 	sb.WriteString(f.limitOffset.SQL())
 	return sb.String(), f.where.Values(), nil
 }

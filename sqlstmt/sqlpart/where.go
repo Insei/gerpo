@@ -78,72 +78,76 @@ func genNINFn(query string) func(ctx context.Context, value any) (string, bool) 
 	}
 }
 
+// В LIKE-операторах параметр обёрнут в CAST(? AS text), чтобы PostgreSQL мог
+// вывести тип параметра в CONCAT-контексте. CAST(? AS text) работает одинаково
+// в PostgreSQL и MySQL, поэтому переносимость сохраняется.
+
 func genCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return query + " LIKE CONCAT('%', ?, '%')", true
+		return query + " LIKE CONCAT('%', CAST(? AS text), '%')", true
 	}
 }
 func genNCTFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return query + " NOT LIKE CONCAT('%', ?, '%')", true
+		return query + " NOT LIKE CONCAT('%', CAST(? AS text), '%')", true
 	}
 }
 
 func genBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return query + " LIKE CONCAT(?, '%')", true
+		return query + " LIKE CONCAT(CAST(? AS text), '%')", true
 	}
 }
 
 func genNBWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return query + " NOT LIKE CONCAT(?, '%')", true
+		return query + " NOT LIKE CONCAT(CAST(? AS text), '%')", true
 	}
 }
 
 func genEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return query + " LIKE CONCAT('%', ?)", true
+		return query + " LIKE CONCAT('%', CAST(? AS text))", true
 	}
 }
 
 func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return query + " NOT LIKE CONCAT('%', ?)", true
+		return query + " NOT LIKE CONCAT('%', CAST(? AS text))", true
 	}
 }
 
 func genCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', ?, '%'))", true
+		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
 	}
 }
 func genNCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', ?, '%'))", true
+		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
 	}
 }
 
 func genBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") LIKE LOWER(CONCAT(?, '%'))", true
+		return "LOWER(" + query + ") LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
 	}
 }
 func genNBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT(?, '%'))", true
+		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
 	}
 }
 
 func genEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', ?))", true
+		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
 	}
 }
 
 func genNEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', ?))", true
+		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
 	}
 }
 
