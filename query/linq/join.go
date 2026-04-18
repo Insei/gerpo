@@ -15,42 +15,52 @@ func NewJoinBuilder() *JoinBuilder {
 	return &JoinBuilder{}
 }
 
+type joinKind uint8
+
+const (
+	joinLeft joinKind = iota
+	joinInner
+)
+
+type joinEntry struct {
+	kind joinKind
+	fn   func(ctx context.Context) string
+}
+
 type JoinBuilder struct {
-	opts []func(JoinApplier) error
+	entries []joinEntry
 }
 
 func (q *JoinBuilder) Apply(applier JoinApplier) error {
-	for _, opt := range q.opts {
-		err := opt(applier)
-		if err != nil {
-			return err
-		}
+	if len(q.entries) == 0 {
+		return nil
+	}
+	j := applier.Join()
+	for i := range q.entries {
+		e := &q.entries[i]
+		kind := e.kind
+		fn := e.fn
+		j.JOIN(func(ctx context.Context) string {
+			body := strings.TrimSpace(fn(ctx))
+			if body == "" {
+				return ""
+			}
+			switch kind {
+			case joinLeft:
+				return "LEFT JOIN " + body
+			case joinInner:
+				return "INNER JOIN " + body
+			}
+			return ""
+		})
 	}
 	return nil
 }
 
 func (q *JoinBuilder) LeftJoin(leftJoinFn func(ctx context.Context) string) {
-	q.opts = append(q.opts, func(applier JoinApplier) error {
-		applier.Join().JOIN(func(ctx context.Context) string {
-			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
-			if leftLoinStr != "" {
-				return "LEFT JOIN " + leftLoinStr
-			}
-			return ""
-		})
-		return nil
-	})
+	q.entries = append(q.entries, joinEntry{kind: joinLeft, fn: leftJoinFn})
 }
 
-func (q *JoinBuilder) InnerJoin(leftJoinFn func(ctx context.Context) string) {
-	q.opts = append(q.opts, func(applier JoinApplier) error {
-		applier.Join().JOIN(func(ctx context.Context) string {
-			leftLoinStr := strings.TrimSpace(leftJoinFn(ctx))
-			if leftLoinStr != "" {
-				return "INNER JOIN " + leftLoinStr
-			}
-			return ""
-		})
-		return nil
-	})
+func (q *JoinBuilder) InnerJoin(innerJoinFn func(ctx context.Context) string) {
+	q.entries = append(q.entries, joinEntry{kind: joinInner, fn: innerJoinFn})
 }

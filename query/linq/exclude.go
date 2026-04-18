@@ -12,8 +12,10 @@ type ExcludeApplier interface {
 }
 
 type ExcludeBuilder struct {
-	baseModel any
-	opts      []func(applier ExcludeApplier) error
+	baseModel     any
+	excluded      []any
+	onlyFieldPtrs []any
+	hasOnly       bool
 }
 
 func NewExcludeBuilder(baseModel any) *ExcludeBuilder {
@@ -23,54 +25,48 @@ func NewExcludeBuilder(baseModel any) *ExcludeBuilder {
 }
 
 func (b *ExcludeBuilder) Exclude(fieldPtrs ...any) {
-	for _, fieldPtr := range fieldPtrs {
-		fieldSavePtr := fieldPtr
-		b.opts = append(b.opts, func(applier ExcludeApplier) error {
-			col, err := applier.ColumnsStorage().GetByFieldPtr(b.baseModel, fieldSavePtr)
-			if err != nil {
-				return err
-			}
-			applier.Columns().Exclude(col)
-			return nil
-		})
-	}
+	b.excluded = append(b.excluded, fieldPtrs...)
 }
 
 func (b *ExcludeBuilder) Only(fieldPtrs ...any) {
-	b.opts = append(b.opts, func(applier ExcludeApplier) error {
-		userSpecifiedCols := make([]types.Column, 0, len(fieldPtrs))
-		for _, fieldPtr := range fieldPtrs {
-			col, err := applier.ColumnsStorage().GetByFieldPtr(b.baseModel, fieldPtr)
-			if err != nil {
-				return err
-			}
-			userSpecifiedCols = append(userSpecifiedCols, col)
-		}
-		executionAllowedCols := applier.Columns().GetAll()
-		// check that specified user fields can be used in current operation
-		for _, userCol := range userSpecifiedCols {
-			allowed := false
-			for _, execCol := range executionAllowedCols {
-				if userCol == execCol {
-					allowed = true
-					break
-				}
-			}
-			if !allowed {
-				return fmt.Errorf("only: specified field %s is not allowed in current operation", userCol.GetField().GetStructPath())
-			}
-		}
-		applier.Columns().Only(userSpecifiedCols...)
-		return nil
-	})
+	b.hasOnly = true
+	b.onlyFieldPtrs = append(b.onlyFieldPtrs[:0], fieldPtrs...)
 }
 
 func (b *ExcludeBuilder) Apply(applier ExcludeApplier) error {
-	for _, opt := range b.opts {
-		err := opt(applier)
+	storage := applier.ColumnsStorage()
+	cols := applier.Columns()
+	for _, fieldPtr := range b.excluded {
+		col, err := storage.GetByFieldPtr(b.baseModel, fieldPtr)
 		if err != nil {
 			return err
 		}
+		cols.Exclude(col)
 	}
+	if !b.hasOnly {
+		return nil
+	}
+	userSpecifiedCols := make([]types.Column, 0, len(b.onlyFieldPtrs))
+	for _, fieldPtr := range b.onlyFieldPtrs {
+		col, err := storage.GetByFieldPtr(b.baseModel, fieldPtr)
+		if err != nil {
+			return err
+		}
+		userSpecifiedCols = append(userSpecifiedCols, col)
+	}
+	executionAllowedCols := cols.GetAll()
+	for _, userCol := range userSpecifiedCols {
+		allowed := false
+		for _, execCol := range executionAllowedCols {
+			if userCol == execCol {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return fmt.Errorf("only: specified field %s is not allowed in current operation", userCol.GetField().GetStructPath())
+		}
+	}
+	cols.Only(userSpecifiedCols...)
 	return nil
 }

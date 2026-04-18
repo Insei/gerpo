@@ -12,8 +12,8 @@ func NewGroupBuilder(baseModel any) *GroupBuilder {
 }
 
 type GroupBuilder struct {
-	model any
-	opts  []func(GroupApplier) error
+	model     any
+	fieldPtrs []any
 }
 
 type GroupApplier interface {
@@ -22,25 +22,21 @@ type GroupApplier interface {
 }
 
 func (q *GroupBuilder) Apply(applier GroupApplier) error {
-	for _, opt := range q.opts {
-		err := opt(applier)
+	if len(q.fieldPtrs) == 0 {
+		return nil
+	}
+	storage := applier.ColumnsStorage()
+	group := applier.Group()
+	for _, fieldPtr := range q.fieldPtrs {
+		col, err := storage.GetByFieldPtr(q.model, fieldPtr)
 		if err != nil {
 			return err
 		}
+		group.GroupBy(col)
 	}
 	return nil
 }
 
 func (q *GroupBuilder) GroupBy(fieldsPtr ...any) {
-	for _, fieldPtr := range fieldsPtr {
-		savedPtr := fieldPtr
-		q.opts = append(q.opts, func(applier GroupApplier) error {
-			col, err := applier.ColumnsStorage().GetByFieldPtr(q.model, savedPtr)
-			if err != nil {
-				return err
-			}
-			applier.Group().GroupBy(col)
-			return nil
-		})
-	}
+	q.fieldPtrs = append(q.fieldPtrs, fieldsPtr...)
 }
