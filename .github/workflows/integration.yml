@@ -1,0 +1,33 @@
+name: Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gerpo
+          POSTGRES_PASSWORD: gerpo
+          POSTGRES_DB: gerpo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd=pg_isready
+          --health-interval=2s
+          --health-timeout=5s
+          --health-retries=15
+    env:
+      GERPO_INTEGRATION_DB_URL: postgres://gerpo:gerpo@localhost:5432/gerpo?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - run: go test -v -tags=integration ./tests/integration/...
