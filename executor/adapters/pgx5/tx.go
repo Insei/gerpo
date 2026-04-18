@@ -15,15 +15,21 @@ type txWrap struct {
 	tx                            pgx.Tx
 }
 
-func (t txWrap) Rollback() error {
+func (t *txWrap) Rollback() error {
+	t.rollbackUnlessCommittedNeeded = false
 	return t.tx.Rollback(context.Background())
 }
 
-func (t txWrap) Commit() error {
-	return t.tx.Commit(context.Background())
+func (t *txWrap) Commit() error {
+	err := t.tx.Commit(context.Background())
+	if err != nil {
+		return err
+	}
+	t.commited = true
+	return nil
 }
 
-func (t txWrap) RollbackUnlessCommitted() error {
+func (t *txWrap) RollbackUnlessCommitted() error {
 	if !t.commited && t.rollbackUnlessCommittedNeeded {
 		err := t.Rollback()
 		if err != nil {
@@ -33,7 +39,7 @@ func (t txWrap) RollbackUnlessCommitted() error {
 	return nil
 }
 
-func (t txWrap) ExecContext(ctx context.Context, query string, args ...any) (extypes.Result, error) {
+func (t *txWrap) ExecContext(ctx context.Context, query string, args ...any) (extypes.Result, error) {
 	sql, err := placeholder.Dollar.ReplacePlaceholders(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
@@ -45,7 +51,7 @@ func (t txWrap) ExecContext(ctx context.Context, query string, args ...any) (ext
 	return &resultWrap{res: res}, nil
 }
 
-func (t txWrap) QueryContext(ctx context.Context, query string, args ...any) (extypes.Rows, error) {
+func (t *txWrap) QueryContext(ctx context.Context, query string, args ...any) (extypes.Rows, error) {
 	sql, err := placeholder.Dollar.ReplacePlaceholders(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to replace placeholders: %w", err)

@@ -39,7 +39,8 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 		}).
 		WithSoftDeletion(func(m *User, b *gerpo.SoftDeletionBuilder[User]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
-				return nowUTC()
+				t := nowUTC()
+				return &t
 			})
 		}).
 		Build()
