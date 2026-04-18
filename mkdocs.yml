@@ -64,7 +64,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/Insei/gerpo
-    - icon: fontawesome/brands/go
+    - icon: simple/go
       link: https://pkg.go.dev/github.com/insei/gerpo
 
 nav:
