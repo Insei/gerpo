@@ -52,6 +52,12 @@ func (m *mockRows) Close() error {
 	return nil
 }
 
+type mockResult struct {
+	rowsAffected int64
+}
+
+func (r *mockResult) RowsAffected() (int64, error) { return r.rowsAffected, nil }
+
 func (m *mockDB) BeginTx(ctx context.Context) (extypes.Tx, error) {
 	if m.BeginTxFn != nil {
 		return m.BeginTxFn(ctx)
