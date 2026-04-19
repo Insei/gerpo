@@ -46,5 +46,5 @@ func (c *Count) SQL(_ ...Option) (string, []any, error) {
 	sb.WriteString(c.where.SQL())
 	sb.WriteString(c.group.SQL())
 	sb.WriteString(" LIMIT 1")
-	return sb.String(), c.where.Values(), nil
+	return sb.String(), mergeArgs(c.join.Values(), c.where.Values()), nil
 }

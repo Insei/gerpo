@@ -50,5 +50,5 @@ func (d *Delete) SQL(_ ...Option) (string, []any, error) {
 	sb.WriteString(d.table)
 	sb.WriteString(d.join.SQL())
 	sb.WriteString(d.where.SQL())
-	return sb.String(), d.where.Values(), nil
+	return sb.String(), mergeArgs(d.join.Values(), d.where.Values()), nil
 }
