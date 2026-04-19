@@ -2,19 +2,19 @@ package databasesql
 
 import "github.com/insei/gerpo/executor/adapters/placeholder"
 
+// Option tunes how NewAdapter wires the underlying *sql.DB.
 type Option interface {
-	apply(*dbWrap)
+	apply(*adapterConfig)
 }
 
-type optionFn func(*dbWrap)
+type optionFn func(*adapterConfig)
 
-func (o optionFn) apply(db *dbWrap) {
-	o(db)
-}
+func (o optionFn) apply(cfg *adapterConfig) { o(cfg) }
 
-// WithPlaceholder sets a custom placeholder format for the database.
+// WithPlaceholder sets a custom placeholder format. The default is
+// placeholder.Question (`?`); use placeholder.Dollar for PostgreSQL.
 func WithPlaceholder(format placeholder.PlaceholderFormat) Option {
-	return optionFn(func(db *dbWrap) {
-		db.placeholder = format
+	return optionFn(func(cfg *adapterConfig) {
+		cfg.placeholder = format
 	})
 }

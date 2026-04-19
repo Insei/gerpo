@@ -3,52 +3,63 @@ package databasesql
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
+	"github.com/insei/gerpo/executor/adapters/internal"
 	"github.com/insei/gerpo/executor/adapters/placeholder"
-	"github.com/insei/gerpo/executor/types"
+	extypes "github.com/insei/gerpo/executor/types"
 )
 
-type dbWrap struct {
-	db          *sql.DB
-	placeholder placeholder.PlaceholderFormat
+// dbBackend implements internal.Backend on top of a standard *sql.DB.
+// *sql.Result and *sql.Rows already satisfy executor/types.Result and
+// executor/types.Rows respectively, so no extra wrapper types are needed.
+type dbBackend struct {
+	db *sql.DB
 }
 
-func (w *dbWrap) BeginTx(ctx context.Context) (types.Tx, error) {
-	tx, err := w.db.BeginTx(ctx, nil)
+func (b *dbBackend) Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error) {
+	return b.db.ExecContext(ctx, sql, args...)
+}
+
+func (b *dbBackend) Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error) {
+	return b.db.QueryContext(ctx, sql, args...)
+}
+
+func (b *dbBackend) BeginTx(ctx context.Context) (internal.TxBackend, error) {
+	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &txWrap{
-		tx:                            tx,
-		rollbackUnlessCommittedNeeded: true,
-		placeholder:                   w.placeholder,
-	}, nil
+	return &txBackend{tx: tx}, nil
 }
 
-func (w *dbWrap) ExecContext(ctx context.Context, query string, args ...any) (types.Result, error) {
-	sql, err := w.placeholder.ReplacePlaceholders(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
-	}
-	return w.db.ExecContext(ctx, sql, args...)
+// txBackend implements internal.TxBackend on top of *sql.Tx.
+type txBackend struct {
+	tx *sql.Tx
 }
 
-func (w *dbWrap) QueryContext(ctx context.Context, query string, args ...any) (types.Rows, error) {
-	sql, err := w.placeholder.ReplacePlaceholders(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
-	}
-	return w.db.QueryContext(ctx, sql, args...)
+func (t *txBackend) Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error) {
+	return t.tx.ExecContext(ctx, sql, args...)
 }
 
-func NewAdapter(db *sql.DB, opts ...Option) types.DBAdapter {
-	wrappedDb := &dbWrap{
-		db:          db,
-		placeholder: placeholder.Question,
-	}
+func (t *txBackend) Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error) {
+	return t.tx.QueryContext(ctx, sql, args...)
+}
+
+func (t *txBackend) Commit() error   { return t.tx.Commit() }
+func (t *txBackend) Rollback() error { return t.tx.Rollback() }
+
+// adapterConfig collects the optional knobs for NewAdapter.
+type adapterConfig struct {
+	placeholder placeholder.PlaceholderFormat
+}
+
+// NewAdapter wraps a database/sql DB with the gerpo DB adapter contract.
+// The placeholder format defaults to `?` (MySQL); use WithPlaceholder to
+// switch to `$1, $2, …` for PostgreSQL.
+func NewAdapter(db *sql.DB, opts ...Option) extypes.DBAdapter {
+	cfg := adapterConfig{placeholder: placeholder.Question}
 	for _, opt := range opts {
-		opt.apply(wrappedDb)
+		opt.apply(&cfg)
 	}
-	return wrappedDb
+	return internal.New(&dbBackend{db: db}, cfg.placeholder)
 }
