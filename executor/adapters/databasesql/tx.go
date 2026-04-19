@@ -10,7 +10,7 @@ import (
 )
 
 type txWrap struct {
-	commited                      bool
+	committed                      bool
 	rollbackUnlessCommittedNeeded bool
 	tx                            *sql.Tx
 	placeholder                   placeholder.PlaceholderFormat
@@ -37,7 +37,7 @@ func (t *txWrap) Commit() error {
 	if err != nil {
 		return err
 	}
-	t.commited = true
+	t.committed = true
 	return nil
 }
 
@@ -47,7 +47,7 @@ func (t *txWrap) Rollback() error {
 }
 
 func (t *txWrap) RollbackUnlessCommitted() error {
-	if !t.commited && t.rollbackUnlessCommittedNeeded {
+	if !t.committed && t.rollbackUnlessCommittedNeeded {
 		err := t.Rollback()
 		if err != nil {
 			return err
