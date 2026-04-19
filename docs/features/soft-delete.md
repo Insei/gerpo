@@ -26,8 +26,8 @@ Three required pieces:
 2. **`WithSoftDeletion`** — describes the value to write on "delete". The function runs on every `Delete` call and receives the context (useful for user/clock/tenant).
 3. **`WithQuery` with a filter** — so soft-deleted records don't leak into SELECTs. Without it they show up in listings.
 
-!!! warning "SetValueFn return type"
-    The returned value must match the field type. For `*time.Time` return `*time.Time`, not `time.Time`, or fmap will panic when assigning.
+!!! note "SetValueFn return type"
+    The returned value must match the field type — for `*time.Time` return `*time.Time`, not `time.Time`. `Build()` runs every `SetValueFn` once with `context.Background()` and verifies the returned value is assignable to the field; a mismatch (or a panic from inside the callback) is reported as a build-time error rather than a runtime panic.
 
 ## How it works
 

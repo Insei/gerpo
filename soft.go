@@ -3,11 +3,40 @@ package gerpo
 import (
 	"context"
 	"fmt"
+	"reflect"
+
+	"github.com/insei/fmap/v3"
 
 	"github.com/insei/gerpo/query"
 	"github.com/insei/gerpo/sqlstmt"
 	"github.com/insei/gerpo/types"
 )
+
+// probeSoftDeletionValue runs SetValueFn once with a background context and
+// reports whether the produced value is assignable to the destination field.
+// It catches panics from inside the user-provided callback so a misconfigured
+// repo fails at Build time with a typed error instead of crashing at first
+// Delete.
+func probeSoftDeletionValue(field fmap.Field, fn func(ctx context.Context) any) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("SetValueFn panicked during type probe: %v", r)
+		}
+	}()
+	value := fn(context.Background())
+	fieldType := field.GetType()
+	if value == nil {
+		if fieldType.Kind() == reflect.Ptr {
+			return nil
+		}
+		return fmt.Errorf("SetValueFn returned nil but field %q has non-pointer type %s", field.GetStructPath(), fieldType)
+	}
+	valueType := reflect.TypeOf(value)
+	if !valueType.AssignableTo(fieldType) {
+		return fmt.Errorf("SetValueFn returned %s, which is not assignable to field %q of type %s", valueType, field.GetStructPath(), fieldType)
+	}
+	return nil
+}
 
 type SoftDeletionBuilder[TModel any] struct {
 	storage types.ColumnsStorage
@@ -38,6 +67,10 @@ func (b *SoftDeletionBuilder[TModel]) Field(fieldPtr any) SoftDeletionValueSette
 	}
 	field := column.GetField()
 	return SoftDeletionValueFn(func(fn func(ctx context.Context) any) {
+		if err := probeSoftDeletionValue(field, fn); err != nil {
+			b.errors = append(b.errors, fmt.Errorf("soft delete: %w", err))
+			return
+		}
 		b.columns = append(b.columns, column)
 		b.fns[column] = func(model any, ctx context.Context) {
 			field.Set(model, fn(ctx))
