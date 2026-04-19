@@ -47,9 +47,30 @@ Now `PostCount` is automatically included in the SELECT of every request against
 !!! note "InnerJoin vs LeftJoin"
     `InnerJoin` drops users who have no posts — handy when you only care about active ones. `LeftJoin` keeps them, the aggregate returns `0` for loners.
 
-## Context-aware JOIN
+## Bound JOIN parameters — `LeftJoinOn` / `InnerJoinOn`
 
-The function returns the JOIN text and takes a `context.Context`. That lets you mix in runtime values (tenant ID, UI locale) into the body:
+When the ON-clause needs runtime values (tenant id, locale, …), use the
+parameter-bound forms. They take the joined table reference, the ON clause
+with `?` placeholders, and bound arguments — exactly like a WHERE.
+
+```go
+h.LeftJoinOn(
+    "posts",
+    "posts.user_id = users.id AND posts.tenant_id = ?",
+    tenantID,
+)
+```
+
+The arguments flow through the driver's parameter binding, so values cannot
+turn into SQL — even if `tenantID` originated in user input.
+
+`InnerJoinOn` works the same way for inner joins.
+
+## Legacy callback JOIN (deprecated)
+
+The original `LeftJoin(fn)` / `InnerJoin(fn)` helpers take a callback that
+returns the JOIN body. The callback receives a `context.Context`, but the
+returned string is inlined verbatim — values are NOT parameterised:
 
 ```go
 h.LeftJoin(func(ctx context.Context) string {
@@ -62,7 +83,9 @@ h.LeftJoin(func(ctx context.Context) string {
 ```
 
 !!! danger "SQL injection"
-    Values coming from the context into the JOIN body do not flow through parameter binding. If you interpolate user-supplied data, escape it yourself — or, better, switch to a WHERE with a bound parameter.
+    Anything you splice into the returned string lands in the SQL as text.
+    The callback form remains for backwards compatibility but is **deprecated**;
+    new code should use `LeftJoinOn` / `InnerJoinOn`.
 
 ## Combining with per-request WHERE
 

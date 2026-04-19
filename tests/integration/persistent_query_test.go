@@ -135,3 +135,102 @@ func TestPersistent_InnerJoin(t *testing.T) {
 		}
 	})
 }
+
+// TestPersistent_LeftJoinOn_BindsArgs — the bound JOIN form sends ON-clause
+// values through the driver. The repo joins posts only for a specific user_id;
+// post_count then reflects only that user's posts.
+func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		seed := defaultSeed(t)
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		// JOIN restricts the relationship to user[3] only — every other row
+		// will get a NULL right-hand side and post_count = 0.
+		targetUserID := seed.users[3].ID
+
+		repo, err := gerpo.NewBuilder[User]().
+			DB(ab.adapter).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).AsColumn().WithUpdateProtection()
+				c.Field(&m.Name).AsColumn()
+				c.Field(&m.Email).AsColumn()
+				c.Field(&m.Age).AsColumn()
+				c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+				c.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
+				c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+				c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
+					return "COALESCE(COUNT(posts.id), 0)"
+				})
+			}).
+			WithQuery(func(m *User, h query.PersistentHelper[User]) {
+				h.LeftJoinOn(
+					"posts",
+					"posts.user_id = users.id AND posts.user_id = ?",
+					targetUserID,
+				)
+				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
+				h.Where().Field(&m.DeletedAt).EQ(nil)
+			}).
+			Build()
+		require.NoError(t, err)
+
+		got, err := repo.GetList(ctx)
+		require.NoError(t, err)
+		require.Len(t, got, len(seed.users))
+
+		var hits int
+		for _, u := range got {
+			if u.ID == targetUserID {
+				assert.Equal(t, 3, u.PostCount, "target user keeps its 3 seeded posts")
+				hits++
+				continue
+			}
+			assert.Equal(t, 0, u.PostCount, "non-target user must have post_count=0 because JOIN ON filtered them out")
+		}
+		assert.Equal(t, 1, hits, "exactly one row matches targetUserID")
+	})
+}
+
+// TestPersistent_InnerJoinOn_FiltersByBoundArg — InnerJoinOn variant: only the
+// users matching the bound condition appear in the result.
+func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		seed := defaultSeed(t)
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		// Restrict the inner-join to a single user — only that user appears.
+		targetUserID := seed.users[2].ID
+
+		repo, err := gerpo.NewBuilder[User]().
+			DB(ab.adapter).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).AsColumn().WithUpdateProtection()
+				c.Field(&m.Name).AsColumn()
+				c.Field(&m.Email).AsColumn()
+				c.Field(&m.Age).AsColumn()
+				c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+				c.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
+				c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+			}).
+			WithQuery(func(m *User, h query.PersistentHelper[User]) {
+				h.InnerJoinOn(
+					"posts",
+					"posts.user_id = users.id AND posts.user_id = ?",
+					targetUserID,
+				)
+				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
+				h.Where().Field(&m.DeletedAt).EQ(nil)
+			}).
+			Build()
+		require.NoError(t, err)
+
+		got, err := repo.GetList(ctx)
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.Equal(t, targetUserID, got[0].ID)
+	})
+}

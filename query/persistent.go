@@ -18,11 +18,28 @@ type PersistentHelper[TModel any] interface {
 	// GroupBy groups the query results by the specified fields, accepting variadic pointers to fields for grouping operations.
 	GroupBy(fieldsPtr ...any) PersistentHelper[TModel]
 
-	// LeftJoin adds a LEFT JOIN clause to the query using a provided function that returns the SQL join statement.
+	// LeftJoin adds a LEFT JOIN whose body is produced by a context-aware
+	// callback. Values inside the returned string are inlined verbatim — they
+	// do NOT pass through the driver's parameter binding.
+	//
+	// Deprecated: prefer LeftJoinOn for parameter-bound JOINs.
 	LeftJoin(func(ctx context.Context) string) PersistentHelper[TModel]
 
-	// InnerJoin adds a INNER JOIN clause to the query using a provided function that returns the SQL join statement.
+	// InnerJoin adds an INNER JOIN whose body is produced by a context-aware
+	// callback. Values inside the returned string are inlined verbatim — they
+	// do NOT pass through the driver's parameter binding.
+	//
+	// Deprecated: prefer InnerJoinOn for parameter-bound JOINs.
 	InnerJoin(fn func(ctx context.Context) string) PersistentHelper[TModel]
+
+	// LeftJoinOn adds a LEFT JOIN with a fixed table reference and an ON
+	// clause containing `?` placeholders. Arguments are bound through the
+	// driver, exactly like WHERE parameters, eliminating the SQL injection
+	// risk of LeftJoin.
+	LeftJoinOn(table, on string, args ...any) PersistentHelper[TModel]
+
+	// InnerJoinOn is the parameter-bound counterpart of InnerJoin.
+	InnerJoinOn(table, on string, args ...any) PersistentHelper[TModel]
 }
 
 type Persistent[TModel any] struct {
@@ -38,13 +55,25 @@ func (h *Persistent[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
+// Deprecated: prefer LeftJoinOn for parameter-bound JOINs.
 func (h *Persistent[TModel]) LeftJoin(fn func(ctx context.Context) string) PersistentHelper[TModel] {
-	h.joinBuilder.LeftJoin(fn)
+	h.joinBuilder.LeftJoin(fn) //nolint:staticcheck // explicit pass-through for the deprecated API
 	return h
 }
 
+// Deprecated: prefer InnerJoinOn for parameter-bound JOINs.
 func (h *Persistent[TModel]) InnerJoin(fn func(ctx context.Context) string) PersistentHelper[TModel] {
-	h.joinBuilder.InnerJoin(fn)
+	h.joinBuilder.InnerJoin(fn) //nolint:staticcheck // explicit pass-through for the deprecated API
+	return h
+}
+
+func (h *Persistent[TModel]) LeftJoinOn(table, on string, args ...any) PersistentHelper[TModel] {
+	h.joinBuilder.LeftJoinOn(table, on, args...)
+	return h
+}
+
+func (h *Persistent[TModel]) InnerJoinOn(table, on string, args ...any) PersistentHelper[TModel] {
+	h.joinBuilder.InnerJoinOn(table, on, args...)
 	return h
 }
 
