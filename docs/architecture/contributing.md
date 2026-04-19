@@ -2,7 +2,7 @@
 
 ## Development environment
 
-- Go 1.21+.
+- Go 1.24+.
 - Docker for integration tests.
 - `mkdocs-material` if you want to preview the docs locally (`pip install mkdocs-material && mkdocs serve`).
 

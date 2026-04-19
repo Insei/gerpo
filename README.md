@@ -16,7 +16,7 @@
 go get github.com/insei/gerpo@latest
 ```
 
-Minimum Go version: **1.21**.
+Minimum Go version: **1.24**.
 
 ## Quick start
 
