@@ -19,10 +19,10 @@ const envDSN = "GERPO_INTEGRATION_DB_URL"
 
 // Глобальные коннекты к БД — открываются один раз в TestMain и переиспользуются.
 var (
-	dsn       string
-	pgx5Pool  *pgxv5.Pool
-	pgx4Pool  *pgxv4.Pool
-	stdlibDB  *sql.DB
+	dsn      string
+	pgx5Pool *pgxv5.Pool
+	pgx4Pool *pgxv4.Pool
+	stdlibDB *sql.DB
 )
 
 func TestMain(m *testing.M) {

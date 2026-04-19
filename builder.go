@@ -6,7 +6,6 @@ import (
 
 	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
-	"github.com/insei/gerpo/types"
 )
 
 type builder[TModel any] struct {
@@ -14,7 +13,6 @@ type builder[TModel any] struct {
 	executorOptions []executor.Option
 	table           string
 	opts            []Option[TModel]
-	columns         *types.ColumnsStorage
 	columnBuilderFn func(m *TModel, columns *ColumnBuilder[TModel])
 }
 

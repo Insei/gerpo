@@ -23,14 +23,14 @@ var countPool = sync.Pool{
 func NewCount(ctx context.Context, table string, storage types.ColumnsStorage) *Count {
 	f := countPool.Get().(*Count)
 	f.table = table
-	f.sqlselect.reset(ctx, storage)
+	f.reset(ctx, storage)
 	return f
 }
 
 // Release returns the statement to the pool. Must not be used after Release.
 func (c *Count) Release() {
 	c.table = ""
-	c.sqlselect.columnsStorage = nil
+	c.columnsStorage = nil
 	countPool.Put(c)
 }
 

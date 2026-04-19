@@ -1,4 +1,7 @@
-package types
+// Package types holds the low-level interfaces that gerpo expects from a database driver:
+// Result, Rows, Tx, ExecQuery and DBAdapter. The "types" name is kept for backwards
+// compatibility with the public API.
+package types //nolint:revive // public API package name kept for backwards compatibility
 
 import "context"
 

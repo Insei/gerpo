@@ -10,7 +10,7 @@ import (
 )
 
 type txWrap struct {
-	committed                      bool
+	committed                     bool
 	rollbackUnlessCommittedNeeded bool
 	tx                            *sql.Tx
 	placeholder                   placeholder.PlaceholderFormat

@@ -141,6 +141,9 @@ func BenchmarkGetFirst(b *testing.B) {
 	}
 	dateAt := time.Now().UTC()
 	db, err := pgxpool.Connect(context.Background(), "postgresql://postgres:903632as@localhost:5432/gerpo_test?sslmode=disable")
+	if err != nil {
+		b.Fatal(err)
+	}
 	adapter := pgx4.NewPoolAdapter(db)
 	//db := newMockDB()
 	//db.QueryContextFn = func(ctx context.Context, query string, args ...any) (extypes.Rows, error) {

@@ -380,6 +380,9 @@ func TestRepository_Delete(t *testing.T) {
 			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 			})
+			if err != nil {
+				t.Fatalf("repo build: %v", err)
+			}
 			repoCasted := repo.(*repository[model])
 			repoCasted.executor = tt.executor
 
@@ -562,6 +565,9 @@ func TestRepository_Update(t *testing.T) {
 			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID).AsColumn()
 			})
+			if err != nil {
+				t.Fatalf("repo build: %v", err)
+			}
 			repoCasted := repo.(*repository[model])
 			repoCasted.executor = tt.executor
 

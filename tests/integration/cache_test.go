@@ -161,4 +161,3 @@ func TestCache_DifferentContextsDoNotShare(t *testing.T) {
 		assert.Equal(t, "ctx2-sees", got.Title, "independent cache in the second context")
 	})
 }
-

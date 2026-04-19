@@ -9,6 +9,9 @@
 ## Check-in loop
 
 ```bash
+# Lint (golangci-lint v2)
+golangci-lint run ./...
+
 # Unit tests + race detector
 go test -race ./...
 
@@ -52,8 +55,9 @@ Common types used in the repo: `feat:`, `fix:`, `perf:`, `test:`, `docs:`, `ci:`
 
 ## Opening a PR
 
-A PR to `main` runs three jobs:
+A PR to `main` runs four jobs:
 
+- `lint` — `golangci-lint run ./...` with the config in `.golangci.yml`.
 - `unit` — build, race detector, full `go test`.
 - `integration` — `//go:build integration` against a PG service container.
 - `bench-diff` — runs mock benchmarks on head and on base, posts a [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) summary as a PR comment.

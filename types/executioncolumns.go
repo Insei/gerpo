@@ -30,7 +30,7 @@ func deleteFunc[S ~[]E, E any](s S, del func(E) bool) S {
 		return s
 	}
 
-	var newSlice []E = make([]E, 0, len(s))
+	newSlice := make([]E, 0, len(s))
 
 	for j := 0; j < len(s); j++ {
 		if v := s[j]; !del(s[j]) {

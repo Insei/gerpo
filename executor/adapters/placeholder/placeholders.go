@@ -14,10 +14,6 @@ type PlaceholderFormat interface {
 	ReplacePlaceholders(sql string) (string, error)
 }
 
-type placeholderDebugger interface {
-	debugPlaceholder() string
-}
-
 var (
 	// Question is a PlaceholderFormat instance that leaves placeholders as
 	// question marks.

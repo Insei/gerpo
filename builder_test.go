@@ -116,7 +116,7 @@ func TestBuilder_Columns(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			b := NewBuilder[mockModel]().(*builder[mockModel])
 			b.Columns(tt.columnBuilderFn)
-			if &b.columnBuilderFn == nil || b.columnBuilderFn == nil {
+			if b.columnBuilderFn == nil {
 				t.Errorf("columnBuilderFn is not set")
 			}
 		})
