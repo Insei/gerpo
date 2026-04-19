@@ -83,6 +83,7 @@ nav:
       - Hooks: features/hooks.md
       - Transactions: features/transactions.md
       - Cache: features/cache.md
+      - Tracing: features/tracing.md
       - Error transformer: features/error-transformer.md
       - Adapters: features/adapters.md
   - Architecture:
