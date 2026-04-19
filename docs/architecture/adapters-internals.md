@@ -43,20 +43,20 @@ pgx returns `pgx.Rows`, `database/sql` returns `*sql.Rows`. Both shapes are clos
 
 ```go
 type txWrap struct {
-    commited                      bool
+    committed                      bool
     rollbackUnlessCommittedNeeded bool
     tx                            <driver>.Tx // or *sql.Tx
 }
 ```
 
-- `Commit()` — calls driver commit, then sets `commited = true` on **success**.
+- `Commit()` — calls driver commit, then sets `committed = true` on **success**.
 - `Rollback()` — sets `rollbackUnlessCommittedNeeded = false`, then calls driver rollback.
-- `RollbackUnlessCommitted()` — if `!commited && rollbackUnlessCommittedNeeded`, delegates to `Rollback()`; otherwise no-op. Designed to be safe as a `defer`.
+- `RollbackUnlessCommitted()` — if `!committed && rollbackUnlessCommittedNeeded`, delegates to `Rollback()`; otherwise no-op. Designed to be safe as a `defer`.
 
 All three methods use pointer receivers so the state mutations actually stick.
 
 !!! warning "Historical bug"
-    pgx v4 and v5 adapters originally used value receivers and also forgot to set `commited`. `RollbackUnlessCommitted()` after `Commit()` returned `tx is closed`. The integration test `TestTx_RollbackUnlessCommitted_AfterCommit` catches this; fixed in the `test: cover hooks, soft delete, …` commit.
+    pgx v4 and v5 adapters originally used value receivers and also forgot to set `committed`. `RollbackUnlessCommitted()` after `Commit()` returned `tx is closed`. The integration test `TestTx_RollbackUnlessCommitted_AfterCommit` catches this; fixed in the `test: cover hooks, soft delete, …` commit.
 
 ## Writing your own
 
