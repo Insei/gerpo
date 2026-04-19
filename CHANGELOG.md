@@ -6,36 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
-## [Unreleased]
+## [0.9.5] - 2026-04-19
 
 ### Bug Fixes
 
-- Detect soft-delete value type mismatch at Build time (18e2251)
+- Detect soft-delete value type mismatch at Build time (d95fd03)
 
 ### CI / Build
 
-- Add golangci-lint v2 with baseline config and fix existing findings (1edc8e1)
-- Bump Go to 1.24 across go.mod, CI matrix and docs (babf3dd)
+- Bump golangci-lint-action to v7 for golangci-lint v2 support (13e2430)
+- Add golangci-lint v2 with baseline config and fix existing findings (762f315)
+- Bump Go to 1.24 across go.mod, CI matrix and docs (02b5be1)
 - Switch bench-diff and integration jobs to GitHub Actions (9fb2208)
 - Post per-MR benchmark diff comment using benchstat (91ca0c5)
 - **deps:** Bump golang.org/x/crypto from 0.31.0 to 0.45.0 (a4193e2)
 
 ### Documentation
 
-- Add runnable examples for godoc / pkg.go.dev (f3a4a0d)
+- Add "Why gerpo?" comparison page (ced6c5f)
+- Bootstrap CHANGELOG with git-cliff and add release tooling (2e62be1)
+- Add runnable examples for godoc / pkg.go.dev (518f74f)
 - Use simple/go icon instead of fontawesome/brands/go (2e1fcbd)
 - Pin MkDocs deps in docs/requirements.txt (6b93b6e)
 - Bootstrap MkDocs Material site with Features and Architecture (c280449)
 
 ### Features
 
-- Add tracer hook for executor operations (7f24176)
-- Add LeftJoinOn/InnerJoinOn with bound parameters (157fe59)
+- Add tracer hook for executor operations (c6879e4)
+- Add LeftJoinOn/InnerJoinOn with bound parameters (8203804)
 
 ### Misc
 
-- Fix "commited" typo in tx wrappers, add unit tests (eb605de)
-- Drop unused private sql() helpers in sqlstmt (504ff4f)
+- Add Makefile with common project commands (7eab67e)
+- Fix "commited" typo in tx wrappers, add unit tests (c6d60d7)
+- Drop unused private sql() helpers in sqlstmt (3b308a4)
 
 ### Performance
 
@@ -44,12 +48,12 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 ### Refactor
 
-- Factor query helpers around small composable interfaces (6d4b507)
-- Extract shared placeholder-rewriting adapter base (b95f4f1)
+- Factor query helpers around small composable interfaces (ec5f9f2)
+- Extract shared placeholder-rewriting adapter base (0f36e36)
 
 ### Tests
 
-- Pin JOIN/WHERE/Count argument ordering after LeftJoinOn (7f737bb)
+- Pin JOIN/WHERE/Count argument ordering after LeftJoinOn (370d715)
 - Add TestCompareDirectVsGerpo that prints a mock-bench summary table (6d1383c)
 - Cover hooks, soft delete, virtual columns, transactions, cache, error transformer; fix pgx tx state bug (069c92a)
 - Add query-layer integration tests and fix 3 bugs they uncovered (d98a89d)
