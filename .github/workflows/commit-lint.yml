@@ -1,0 +1,57 @@
+name: Commit lint
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  conventional-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate Conventional Commits style
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          echo "Checking commits ${BASE_SHA}..${HEAD_SHA}"
+          # Allowed types — keep aligned with cliff.toml.
+          allowed='(feat|fix|perf|refactor|docs|test|ci|build|chore|src|style|revert)'
+          # Conventional Commits header:
+          #   type(optional-scope)!: subject (>= 3 chars)
+          # The "!" marks a breaking change.
+          regex="^${allowed}(\([^)]+\))?(!)?: .{3,}"
+
+          bad_commits=()
+          while IFS= read -r commit; do
+            sha="${commit%% *}"
+            subject="${commit#* }"
+            if [[ ! "$subject" =~ $regex ]]; then
+              bad_commits+=("$sha — $subject")
+            fi
+          done < <(git log --no-merges --pretty=format:'%H %s' "$BASE_SHA".."$HEAD_SHA")
+
+          if (( ${#bad_commits[@]} > 0 )); then
+            echo
+            echo "::error::The following commits do not follow Conventional Commits:"
+            for c in "${bad_commits[@]}"; do
+              echo "::error::  $c"
+            done
+            echo
+            echo "Expected format:  <type>(<scope>)?(!)?: <subject>"
+            echo "Allowed types:   feat, fix, perf, refactor, docs, test, ci, build, chore, src, style, revert"
+            echo "Examples:"
+            echo "  feat: add LeftJoinOn helper"
+            echo "  fix(executor): skip nil tracer"
+            echo "  refactor!: rename Repository.Tx to WithTx"
+            exit 1
+          fi
+
+          echo "All commits follow Conventional Commits."
