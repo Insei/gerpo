@@ -8,7 +8,7 @@
 
 **GERPO** (Golang + Repository) is a generic repository pattern for Go with pluggable adapters and a tiny footprint. It is **not an ORM** — no migrations, no relations, no struct tags. All SQL behavior is declared once in the repository configuration; columns are bound to struct fields through pointers.
 
-> 📚 Full documentation: **[insei.github.io/gerpo](https://insei.github.io/gerpo/)** · API reference: **[pkg.go.dev/github.com/insei/gerpo](https://pkg.go.dev/github.com/insei/gerpo)**
+> 📚 Full documentation: **[insei.github.io/gerpo](https://insei.github.io/gerpo/)** · [Why gerpo?](https://insei.github.io/gerpo/why-gerpo/) (vs GORM / ent / bun / sqlc / sqlx) · API reference: **[pkg.go.dev/github.com/insei/gerpo](https://pkg.go.dev/github.com/insei/gerpo)**
 
 ## Install
 

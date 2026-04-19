@@ -69,6 +69,7 @@ extra:
 
 nav:
   - Get started: index.md
+  - Why gerpo?: why-gerpo.md
   - Features:
       - features/index.md
       - Repository builder: features/repository.md
