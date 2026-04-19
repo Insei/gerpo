@@ -142,25 +142,26 @@ const (
 	// OperationNBW is a constant of type Operation that represents the operation where the field begins with the value string.
 	OperationNBW = Operation("nbw")
 
-	// Case-insensitive strings filter operations
+	// Case-insensitive strings filter operations.
+	// Names keep the underscore for backwards compatibility with the public API.
 
 	// OperationCT_IC represents a case-insensitive "contains" operation for filtering or comparison logic.
-	OperationCT_IC = Operation("ct_ic")
+	OperationCT_IC = Operation("ct_ic") //nolint:revive // public API name kept for backwards compatibility
 
 	// OperationNCT_IC represents a case-insensitive "not contains" operation for evaluating string-based conditions.
-	OperationNCT_IC = Operation("nct_ic")
+	OperationNCT_IC = Operation("nct_ic") //nolint:revive // public API name kept for backwards compatibility
 
 	// OperationEW_IC represents a case-insensitive "ends with" operation for string comparison.
-	OperationEW_IC = Operation("ew_ic")
+	OperationEW_IC = Operation("ew_ic") //nolint:revive // public API name kept for backwards compatibility
 
 	// OperationNEW_IC represents a case-insensitive "ends with" operation for string comparison.
-	OperationNEW_IC = Operation("new_ic")
+	OperationNEW_IC = Operation("new_ic") //nolint:revive // public API name kept for backwards compatibility
 
 	// OperationBW_IC represents a case-insensitive "begins with" operation for string comparison.
-	OperationBW_IC = Operation("bw_ic")
+	OperationBW_IC = Operation("bw_ic") //nolint:revive // public API name kept for backwards compatibility
 
 	// OperationNBW_IC represents a case-insensitive "not begins" operation used for string comparison.
-	OperationNBW_IC = Operation("nbw_ic")
+	OperationNBW_IC = Operation("nbw_ic") //nolint:revive // public API name kept for backwards compatibility
 )
 
 type OrderDirection string

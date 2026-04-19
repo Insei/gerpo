@@ -12,7 +12,6 @@ type columnsStorage struct {
 	s       []Column
 	act     map[SQLAction][]Column
 	storage fmap.Storage
-	model   any
 }
 
 // NewEmptyColumnsStorage creates a new empty ColumnsStorage instance with initialized internal structures.

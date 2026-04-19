@@ -29,7 +29,7 @@ func newTxFixture(t *testing.T) (*txWrap, sqlmock.Sqlmock, func()) {
 }
 
 // TestTxWrap_Commit_SetsCommitted verifies Commit() flips the internal flag —
-// guarding against the historical "commited" typo that broke the field name
+// guarding against the historical typo that broke the field name
 // and made RollbackUnlessCommitted() try to roll back a committed tx.
 func TestTxWrap_Commit_SetsCommitted(t *testing.T) {
 	w, mock, cleanup := newTxFixture(t)

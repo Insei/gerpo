@@ -14,7 +14,7 @@ type Option[TModel any] interface {
 type optionFn[TModel any] func(c *repository[TModel]) error
 
 // apply implements the Option interface for optionFn.
-func (f optionFn[TModel]) apply(c *repository[TModel]) error {
+func (f optionFn[TModel]) apply(c *repository[TModel]) error { //nolint:unused // satisfies the Option interface used via dispatch
 	return f(c)
 }
 

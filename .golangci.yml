@@ -1,0 +1,40 @@
+version: "2"
+
+run:
+  timeout: 3m
+  build-tags:
+    - integration
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - unused
+  settings:
+    misspell:
+      locale: US
+  exclusions:
+    rules:
+      # Tests carry their own conventions and may shadow vars on purpose.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - staticcheck
+          - ineffassign
+          - unused
+      # Quick-fix suggestions about embedded selectors are matters of taste.
+      - linters:
+          - staticcheck
+        text: "QF1008"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofmt
