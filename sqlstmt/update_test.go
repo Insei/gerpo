@@ -51,67 +51,6 @@ func TestNewUpdate(t *testing.T) {
 	}
 }
 
-func TestUpdate_sql(t *testing.T) {
-	tests := []struct {
-		name             string
-		table            string
-		executionColumns []types.Column
-		expectedSQL      string
-		expectErr        bool
-	}{
-		{
-			name:  "BasicSQL",
-			table: "users",
-			executionColumns: []types.Column{
-				&mockColumn{name: "id", hasName: true},
-				&mockColumn{name: "name", hasName: true},
-			},
-			expectedSQL: "UPDATE users SET id = ?, name = ?",
-		},
-		{
-			name:             "NoColumns",
-			table:            "products",
-			executionColumns: []types.Column{},
-			expectErr:        true,
-		},
-		{
-			name:  "SomeColumnsWithoutName",
-			table: "orders",
-			executionColumns: []types.Column{
-				&mockColumn{name: "id", hasName: true},
-				&mockColumn{name: "", hasName: false},
-			},
-			expectedSQL: "UPDATE orders SET id = ?",
-		},
-		{
-			name:  "ColumnWithoutName",
-			table: "orders",
-			executionColumns: []types.Column{
-				&mockColumn{name: "", hasName: false},
-			},
-			expectErr: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			storage := newMockStorage(tc.executionColumns)
-			u := NewUpdate(context.Background(), storage, tc.table)
-
-			sqlStr, err := u.sql()
-			if tc.expectErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-
-			if sqlStr != tc.expectedSQL {
-				t.Errorf("Expected SQL '%s', got '%s'", tc.expectedSQL, sqlStr)
-			}
-		})
-	}
-}
-
 // TestUpdate_SQL tests the SQL method of the Update struct.
 func TestUpdate_SQL(t *testing.T) {
 	tests := []struct {

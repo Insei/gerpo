@@ -34,28 +34,6 @@ func NewUpdate(ctx context.Context, colStorage types.ColumnsStorage, table strin
 	}
 }
 
-func (u *Update) sql() (string, error) {
-	if u.table == "" {
-		return "", ErrTableIsNoSet
-	}
-	cols := u.columns.GetAll()
-	if len(cols) < 1 {
-		return "", ErrEmptyColumnsInExecutionSet
-	}
-	colsStr := ""
-	for _, col := range cols {
-		colName, ok := col.Name()
-		if !ok {
-			continue
-		}
-		colsStr += colName + " = ?, "
-	}
-	if colsStr == "" {
-		return "", fmt.Errorf("columns set is not empty, but no one column is not allowed to set")
-	}
-	return fmt.Sprintf("UPDATE %s SET %s", u.table, colsStr[:len(colsStr)-2]), nil
-}
-
 func (u *Update) ColumnsStorage() types.ColumnsStorage {
 	return u.colsStorage
 }
