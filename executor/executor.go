@@ -41,7 +41,22 @@ func (e *executor[TModel]) getExecQuery(ctx context.Context) ExecQuery {
 	return e.db
 }
 
-func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, error) {
+// startSpan opens a tracing span around an executor operation. When no Tracer
+// is configured, returns the original context and a no-op end function so the
+// callers can stay branch-free.
+func (e *executor[TModel]) startSpan(ctx context.Context, op string) (context.Context, SpanEnd) {
+	if e.tracer == nil {
+		return ctx, noopSpanEnd
+	}
+	return e.tracer(ctx, op)
+}
+
+func noopSpanEnd(error) {}
+
+func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (model *TModel, err error) {
+	ctx, end := e.startSpan(ctx, "gerpo.GetOne")
+	defer func() { end(err) }()
+
 	sql, args, err := stmt.SQL()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sql query from stmt: %w", err)
@@ -54,7 +69,6 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 		return nil, err
 	}
 	defer rows.Close() //nolint:errcheck
-	var model *TModel
 	if rows.Next() {
 		model = new(TModel)
 		pointers := stmt.Columns().GetModelPointers(model)
@@ -69,7 +83,10 @@ func (e *executor[TModel]) GetOne(ctx context.Context, stmt Stmt) (*TModel, erro
 	return model, nil
 }
 
-func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TModel, error) {
+func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) (models []*TModel, err error) {
+	ctx, end := e.startSpan(ctx, "gerpo.GetMultiple")
+	defer func() { end(err) }()
+
 	sql, args, err := stmt.SQL()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sql query from stmt: %w", err)
@@ -82,7 +99,6 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 		return nil, err
 	}
 	defer rows.Close() //nolint:errcheck
-	var models []*TModel
 	for rows.Next() {
 		model := new(TModel)
 		if err = rows.Scan(stmt.Columns().GetModelPointers(model)...); err != nil {
@@ -94,7 +110,10 @@ func (e *executor[TModel]) GetMultiple(ctx context.Context, stmt Stmt) ([]*TMode
 	return models, nil
 }
 
-func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TModel) error {
+func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TModel) (err error) {
+	ctx, end := e.startSpan(ctx, "gerpo.InsertOne")
+	defer func() { end(err) }()
+
 	sql, values, err := stmt.SQL(sqlstmt.WithModelValues(model))
 	if err != nil {
 		return fmt.Errorf("failed to get sql query from stmt: %w", err)
@@ -114,7 +133,10 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 	return nil
 }
 
-func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error) {
+func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (updatedRows int64, err error) {
+	ctx, end := e.startSpan(ctx, "gerpo.Update")
+	defer func() { end(err) }()
+
 	sql, values, err := stmt.SQL(sqlstmt.WithModelValues(model))
 	if err != nil {
 		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
@@ -123,7 +145,7 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 	if err != nil {
 		return 0, err
 	}
-	updatedRows, err := result.RowsAffected()
+	updatedRows, err = result.RowsAffected()
 	if err != nil {
 		return 0, err
 	}
@@ -133,7 +155,10 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 	return updatedRows, nil
 }
 
-func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, error) {
+func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (count uint64, err error) {
+	ctx, end := e.startSpan(ctx, "gerpo.Count")
+	defer func() { end(err) }()
+
 	sql, args, err := stmt.SQL()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
@@ -141,7 +166,6 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 	if cached, ok := get[uint64](ctx, e.cacheSource, sql, args...); ok {
 		return *cached, nil
 	}
-	count := uint64(0)
 	rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, args...)
 	if err != nil {
 		return 0, err
@@ -156,7 +180,10 @@ func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (uint64, e
 	return count, nil
 }
 
-func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (int64, error) {
+func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (deletedRows int64, err error) {
+	ctx, end := e.startSpan(ctx, "gerpo.Delete")
+	defer func() { end(err) }()
+
 	sql, args, err := stmt.SQL()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
@@ -165,7 +192,7 @@ func (e *executor[TModel]) Delete(ctx context.Context, stmt CountStmt) (int64, e
 	if err != nil {
 		return 0, err
 	}
-	deletedRows, err := result.RowsAffected()
+	deletedRows, err = result.RowsAffected()
 	if err != nil {
 		return 0, err
 	}

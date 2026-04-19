@@ -29,4 +29,5 @@ Reference of gerpo capabilities grouped by area.
 | Page | What's inside |
 |---|---|
 | [Cache](cache.md) | `CtxCache` — cache scoped to a request context |
+| [Tracing](tracing.md) | `WithTracer` hook — OpenTelemetry / Datadog / any tracer |
 | [Adapters](adapters.md) | pgx v5, pgx v4, database/sql, and custom adapters |
