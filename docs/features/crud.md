@@ -2,6 +2,18 @@
 
 The `Repository[T]` interface provides six methods: `GetFirst`, `GetList`, `Count`, `Insert`, `Update`, `Delete`. Each one accepts a `context.Context` and a variadic list of query functions that configure a single call.
 
+!!! tip "Reusable per-operation helpers"
+    Every per-operation helper (`GetFirstHelper`, `GetListHelper`, `CountHelper`, `InsertHelper`, `UpdateHelper`, `DeleteHelper`) is composed from small contracts in the `query` package: `Filterable` (`Where()`), `Sortable` (`OrderBy()`), `Excludable` (`Exclude/Only`), `Pageable` (`Page/Size`). You can write reusable middleware-style helpers against these narrow interfaces:
+
+    ```go
+    func applyTenant(h query.Filterable, tenantID uuid.UUID) {
+        h.Where().Field(...).EQ(tenantID)
+    }
+
+    repo.GetFirst(ctx, func(m *User, h query.GetFirstHelper[User]) { applyTenant(h, tid) })
+    repo.Update(ctx,  &u, func(m *User, h query.UpdateHelper[User])  { applyTenant(h, tid) })
+    ```
+
 ## GetFirst
 
 Return the first matching record.

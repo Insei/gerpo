@@ -8,10 +8,10 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-// CountHelper defines an interface for building and managing query conditions to count records of a specific model.
+// CountHelper is the per-request helper for repo.Count. It only filters —
+// see interfaces.go for the Filterable contract.
 type CountHelper[TModel any] interface {
-	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
-	Where() types.WhereTarget
+	Filterable
 }
 
 type CountApplier interface {

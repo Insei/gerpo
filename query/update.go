@@ -8,15 +8,11 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-// UpdateHelper is a generic interface for managing update operations on models in repository storage.
-// It allows specifying conditions and excluding specific fields from the update process.
+// UpdateHelper is the per-request helper for repo.Update. It composes the
+// small contracts from interfaces.go: filtering and narrowing the column set.
 type UpdateHelper[TModel any] interface {
-	// Exclude removes specified fields from requesting data from repository storage.
-	Exclude(fieldsPtr ...any)
-	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
-	Only(fieldsPtr ...any)
-	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
-	Where() types.WhereTarget
+	Filterable
+	Excludable
 }
 
 type UpdateApplier interface {
