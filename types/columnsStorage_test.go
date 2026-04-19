@@ -32,6 +32,13 @@ func (m *mockColumn) GetField() fmap.Field {
 	return m.field
 }
 
+func (m *mockColumn) GetPtr(model any) any {
+	if m.field == nil {
+		return nil
+	}
+	return m.field.GetPtr(model)
+}
+
 type mockField struct {
 	fmap.Field
 }

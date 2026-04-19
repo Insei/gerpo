@@ -9,6 +9,7 @@ import (
 
 	"github.com/insei/gerpo/executor"
 	extypes "github.com/insei/gerpo/executor/types"
+	"github.com/insei/gerpo/query"
 )
 
 type softModel struct {
@@ -116,6 +117,99 @@ func TestWithSoftDeletion_HappyPath(t *testing.T) {
 		Build()
 	if err != nil {
 		t.Fatalf("expected Build() to succeed for happy-path configuration, got: %v", err)
+	}
+}
+
+// mockResult / mockDB — minimal doubles used by the happy-path Delete test.
+type softMockResult struct{ rows int64 }
+
+func (r softMockResult) RowsAffected() (int64, error) { return r.rows, nil }
+
+type softMockAdapter struct {
+	execSQL  []string
+	execArgs [][]any
+	rows     int64
+}
+
+func (a *softMockAdapter) ExecContext(_ context.Context, sql string, args ...any) (extypes.Result, error) {
+	a.execSQL = append(a.execSQL, sql)
+	a.execArgs = append(a.execArgs, args)
+	return softMockResult{rows: a.rows}, nil
+}
+func (a *softMockAdapter) QueryContext(context.Context, string, ...any) (extypes.Rows, error) {
+	return nil, nil
+}
+func (a *softMockAdapter) BeginTx(context.Context) (extypes.Tx, error) { return nil, nil }
+
+// TestWithSoftDeletion_Delete_ExecutesUpdate — exercises the Delete path on a
+// repo with soft deletion configured. The mock adapter records the SQL, so we
+// can prove it was UPDATE ... SET deleted_at rather than DELETE FROM.
+func TestWithSoftDeletion_Delete_ExecutesUpdate(t *testing.T) {
+	adapter := &softMockAdapter{rows: 1}
+	repo, err := NewBuilder[softModel]().
+		DB(executor.DBAdapter(adapter)).
+		Table("soft_users").
+		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
+			c.Field(&m.ID).AsColumn()
+			c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+		}).
+		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
+			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
+				now := time.Now().UTC()
+				return &now
+			})
+		}).
+		Build()
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+
+	n, err := repo.Delete(context.Background(), func(m *softModel, h query.DeleteHelper[softModel]) {
+		h.Where().Field(&m.ID).EQ(7)
+	})
+	if err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("expected 1 row affected, got %d", n)
+	}
+	if len(adapter.execSQL) != 1 {
+		t.Fatalf("expected one exec, got %d", len(adapter.execSQL))
+	}
+	if !strings.HasPrefix(adapter.execSQL[0], "UPDATE ") {
+		t.Fatalf("soft delete must UPDATE, got: %s", adapter.execSQL[0])
+	}
+	if !strings.Contains(adapter.execSQL[0], "deleted_at") {
+		t.Fatalf("expected deleted_at in SET clause, got: %s", adapter.execSQL[0])
+	}
+}
+
+// TestWithSoftDeletion_Delete_NoRows_ReturnsNotFound — UPDATE touches zero rows
+// → the repo returns ErrNotFound wrapped with the context.
+func TestWithSoftDeletion_Delete_NoRows_ReturnsNotFound(t *testing.T) {
+	adapter := &softMockAdapter{rows: 0}
+	repo, err := NewBuilder[softModel]().
+		DB(executor.DBAdapter(adapter)).
+		Table("soft_users").
+		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
+			c.Field(&m.ID).AsColumn()
+			c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+		}).
+		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
+			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
+				now := time.Now().UTC()
+				return &now
+			})
+		}).
+		Build()
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	_, err = repo.Delete(context.Background(), func(m *softModel, h query.DeleteHelper[softModel]) {
+		h.Where().Field(&m.ID).EQ(7)
+	})
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 }
 
