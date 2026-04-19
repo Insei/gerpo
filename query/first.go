@@ -8,21 +8,13 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-// GetFirstHelper is an interface for building query conditions to retrieve the first record matching specified criteria.
-// It allows specifying WHERE conditions, excluding specific fields, and defining order-by operations for the query.
+// GetFirstHelper is the per-request helper for repo.GetFirst. It composes the
+// small contracts from interfaces.go: filtering, sorting and narrowing the
+// column set.
 type GetFirstHelper[TModel any] interface {
-
-	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
-	Where() types.WhereTarget
-
-	// Exclude removes specified fields from requesting data from repository storage.
-	Exclude(fieldsPtr ...any)
-
-	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
-	Only(fieldsPtr ...any)
-
-	// OrderBy defines the sorting criteria for a query and returns types.OrderTarget interface for further specification.
-	OrderBy() types.OrderTarget
+	Filterable
+	Sortable
+	Excludable
 }
 
 // GetFirstApplier defines an interface for applying columns, filters, and ordering in a query construction process.

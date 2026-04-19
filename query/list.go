@@ -8,22 +8,14 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-// GetListHelper is a generic interface for building complex queries to retrieve lists of data models.
+// GetListHelper is the per-request helper for repo.GetList. It composes
+// the small contracts from interfaces.go: filtering, sorting, narrowing the
+// column set, and pagination.
 type GetListHelper[TModel any] interface {
-	// Exclude removes specified fields from requesting data from repository storage.
-	Exclude(fieldsPtr ...any)
-	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
-	Only(fieldsPtr ...any)
-	// Where defines the starting point for building conditions in a query, returning a types.WhereTarget interface.
-	Where() types.WhereTarget
-	// OrderBy defines the sorting criteria for a query and returns types.OrderTarget interface for further specification.
-	OrderBy() types.OrderTarget
-
-	// Page sets the page number for pagination in a query and returns the same GetListHelper instance.
-	Page(page uint64) GetListHelper[TModel]
-
-	// Size sets the maximum number of items to retrieve per page and returns the same GetListHelper instance.
-	Size(size uint64) GetListHelper[TModel]
+	Filterable
+	Sortable
+	Excludable
+	Pageable[TModel]
 }
 
 type GetListApplier interface {

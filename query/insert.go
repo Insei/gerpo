@@ -7,11 +7,10 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
+// InsertHelper is the per-request helper for repo.Insert. It only narrows the
+// column set — see interfaces.go for the Excludable contract.
 type InsertHelper[TModel any] interface {
-	// Exclude removes specified fields from requesting data from repository storage.
-	Exclude(fieldsPtr ...any)
-	// Only includes the specified columns in the execution context, ignoring all others in the existing collection.
-	Only(fieldsPtr ...any)
+	Excludable
 }
 
 type InsertApplier interface {
