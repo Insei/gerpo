@@ -8,25 +8,40 @@
 
 ## Check-in loop
 
+Common tasks live in a `Makefile` — run `make help` for the catalog.
+
 ```bash
-# Lint (golangci-lint v2)
-golangci-lint run ./...
-
-# Unit tests + race detector
-go test -race ./...
-
-# Integration tests (PostgreSQL in Docker)
-docker compose -f tests/integration/docker-compose.yml up -d
-GERPO_INTEGRATION_DB_URL="postgres://gerpo:gerpo@localhost:5433/gerpo?sslmode=disable" \
-    go test -tags=integration ./tests/integration/...
-
-# Direct-vs-gerpo allocation benchmarks
-go test -bench='^Benchmark(GetFirst|GetList|Count|Insert|Update|Delete)_(Direct|Gerpo)$' \
-    -benchmem -run=^$ -count=5 ./tests/
-
-# Formatted summary
-GERPO_BENCH_REPORT=1 go test -run=TestCompareDirectVsGerpo -v ./tests/
+make lint               # golangci-lint v2
+make test               # go test -race ./...
+make integration-full   # docker up → integration tests → docker down
+make bench              # Direct vs Gerpo mock benchmarks (5 runs)
+make bench-report       # formatted summary table (~20s)
 ```
+
+If you want finer control over the integration suite:
+
+```bash
+make integration-up     # start Postgres once
+make integration        # run /tests/integration/ against the running PG
+make integration-down   # stop Postgres
+```
+
+Override the DSN if your local PG differs:
+
+```bash
+make integration INTEGRATION_DSN="postgres://..."
+```
+
+To preview the MkDocs site:
+
+```bash
+make docs-serve   # http://127.0.0.1:8000
+make docs-build   # build with --strict
+```
+
+You can of course still call the underlying `go test` / `docker compose` /
+`golangci-lint` commands directly; the Makefile is a convenience layer, not
+a requirement.
 
 ## Code style
 
@@ -122,7 +137,7 @@ cargo install git-cliff
 Per release:
 
 ```bash
-./scripts/release.sh v0.2.0
+make release TAG=v0.2.0   # wraps scripts/release.sh
 ```
 
 The script
