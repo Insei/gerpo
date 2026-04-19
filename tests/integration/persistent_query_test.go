@@ -193,6 +193,92 @@ func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
 	})
 }
 
+// TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount проверяет, что
+// добавление bound-аргумента в JOIN не ломает дальнейшие per-request фильтры,
+// IN-список, ORDER и Count, и что аргументы попадают в правильные позиции.
+//
+// JOIN bound arg: UUID (users[3].ID).
+// WHERE: Age GTE int(25), затем Age IN (int, int, int).
+// Если порядок аргументов перепутается, драйвер сразу упадёт на типе
+// (UUID не приведётся к int и наоборот).
+func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		seed := defaultSeed(t)
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		// Восстановим один user в "joined" наборе и одного — нет.
+		joinedUserID := seed.users[5].ID // age = 25, попадает и в JOIN, и в WHERE Age GTE 25.
+
+		repo, err := gerpo.NewBuilder[User]().
+			DB(ab.adapter).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).AsColumn().WithUpdateProtection()
+				c.Field(&m.Name).AsColumn()
+				c.Field(&m.Email).AsColumn()
+				c.Field(&m.Age).AsColumn()
+				c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+				c.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
+				c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+				c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
+					return "COALESCE(COUNT(posts.id), 0)"
+				})
+			}).
+			WithQuery(func(m *User, h query.PersistentHelper[User]) {
+				h.LeftJoinOn(
+					"posts",
+					"posts.user_id = users.id AND posts.user_id = ?",
+					joinedUserID,
+				)
+				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
+				h.Where().Field(&m.DeletedAt).EQ(nil)
+			}).
+			Build()
+		require.NoError(t, err)
+
+		// Список с per-request WHERE по int + ORDER по int. WHERE age >= 25 → users 5..9.
+		// Из них только user[5] совпадает с joinedUserID, и должен иметь PostCount=3.
+		// Если bound JOIN arg ($1) и WHERE arg ($2) перепутаются местами, PG прочитает
+		// `posts.user_id = 25` (int не валиден как UUID) — кейс упадёт.
+		got, err := repo.GetList(ctx, func(m *User, h query.GetListHelper[User]) {
+			h.Where().Field(&m.Age).GTE(25)
+			h.OrderBy().Field(&m.Age).ASC()
+		})
+		require.NoError(t, err)
+		require.Len(t, got, 5)
+		// users[5..9] в порядке возрастания age.
+		for i, u := range got {
+			expected := seed.users[5+i]
+			assert.Equal(t, expected.ID, u.ID)
+			if u.ID == joinedUserID {
+				assert.Equal(t, 3, u.PostCount, "joined user keeps its post_count")
+			} else {
+				assert.Equal(t, 0, u.PostCount, "non-joined users return 0")
+			}
+		}
+
+		// Тот же репо: WHERE с IN-списком (3 значения) — четыре аргумента всего:
+		// $1 = JOIN UUID, $2..$4 = три int-возраста.
+		gotIN, err := repo.GetList(ctx, func(m *User, h query.GetListHelper[User]) {
+			h.Where().Field(&m.Age).IN(25, 27, 29)
+			h.OrderBy().Field(&m.Age).ASC()
+		})
+		require.NoError(t, err)
+		require.Len(t, gotIN, 3)
+		assert.Equal(t, seed.users[5].ID, gotIN[0].ID)
+		assert.Equal(t, seed.users[7].ID, gotIN[1].ID)
+		assert.Equal(t, seed.users[9].ID, gotIN[2].ID)
+
+		// Count с тем же per-request WHERE — другая SQL форма, но тот же mergeArgs path.
+		cnt, err := repo.Count(ctx, func(m *User, h query.CountHelper[User]) {
+			h.Where().Field(&m.Age).GTE(25)
+		})
+		require.NoError(t, err)
+		assert.Equal(t, uint64(5), cnt)
+	})
+}
+
 // TestPersistent_InnerJoinOn_FiltersByBoundArg — InnerJoinOn variant: only the
 // users matching the bound condition appear in the result.
 func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
