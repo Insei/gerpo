@@ -83,13 +83,13 @@ func TestWhere_IN_NIN(t *testing.T) {
 		wanted := []any{seed.posts[0].ID, seed.posts[5].ID, seed.posts[10].ID}
 
 		in, err := repo.GetList(ctx, func(m *Post, h query.GetListHelper[Post]) {
-			h.Where().Field(&m.ID).In(wanted...) //gerpolint:disable-line=GPL005
+			h.Where().Field(&m.ID).In(wanted...)
 		})
 		require.NoError(t, err)
 		assert.Len(t, in, 3)
 
 		nin, err := repo.GetList(ctx, func(m *Post, h query.GetListHelper[Post]) {
-			h.Where().Field(&m.ID).NotIn(wanted...) //gerpolint:disable-line=GPL005
+			h.Where().Field(&m.ID).NotIn(wanted...)
 		})
 		require.NoError(t, err)
 		assert.Len(t, nin, len(seed.posts)-3)

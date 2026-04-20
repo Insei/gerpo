@@ -26,6 +26,14 @@ func positives() {
 	s := "x"
 	h().Field(&m.Email).In("a", "b", nil)
 	h().Field(&m.Email).In(&s)
+
+	// Inline []any{...}... — elements are type-checked individually.
+	h().Field(&m.Age).In([]any{1, 2, 3}...)
+	h().Field(&m.Name).In([]any{"a", "b"}...)
+
+	// []any through a single-assignment local var — elements recovered.
+	ages := []any{10, 20, 30}
+	h().Field(&m.Age).In(ages...)
 }
 
 func negatives() {
@@ -35,4 +43,11 @@ func negatives() {
 	h().Field(&m.Age).NotIn(1, 2, nil) // want `GPL002: NotIn: argument type untyped nil is not compatible with field type int`
 	h().Field(&m.Name).In(1, "b")      // want `GPL002: In: argument type int is not compatible with field type string`
 	h().Field(&m.Email).In(1)          // want `GPL002: In: argument type int is not compatible with field type \*string`
+
+	// Inline []any spread — each element checked; one bad entry flagged.
+	h().Field(&m.Age).In([]any{1, "bad", 3}...) // want `GPL002: In: argument type string is not compatible with field type int`
+
+	// []any through a single-assignment var — element type is statically resolvable.
+	names := []any{"a", 42} // want `GPL002: In: argument type int is not compatible with field type string`
+	h().Field(&m.Name).In(names...)
 }

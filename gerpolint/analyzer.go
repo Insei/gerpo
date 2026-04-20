@@ -139,6 +139,8 @@ func run(pass *analysis.Pass, cfg *Config) (any, error) {
 		})
 	}
 
+	varInits := buildVarInits(pass)
+
 	inspec := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	inspec.Preorder([]ast.Node{(*ast.CallExpr)(nil)}, func(n ast.Node) {
 		call := n.(*ast.CallExpr)
@@ -183,7 +185,7 @@ func run(pass *analysis.Pass, cfg *Config) (any, error) {
 				checkScalarArg(pass, report, op, fieldType, call.Args[0], cfg, RuleScalarTypeMismatch)
 			}
 		case opVariadic:
-			checkVariadic(pass, report, op, fieldType, call, cfg)
+			checkVariadic(pass, report, op, fieldType, call, cfg, varInits)
 		}
 	})
 
@@ -273,7 +275,7 @@ func checkScalarArg(pass *analysis.Pass, report reportFn, op operatorSpec, field
 	}
 }
 
-func checkVariadic(pass *analysis.Pass, report reportFn, op operatorSpec, fieldType types.Type, call *ast.CallExpr, cfg *Config) {
+func checkVariadic(pass *analysis.Pass, report reportFn, op operatorSpec, fieldType types.Type, call *ast.CallExpr, cfg *Config, vi *varInitIndex) {
 	// `In(xs...)` — single slice argument spread.
 	if call.Ellipsis != token.NoPos && len(call.Args) == 1 {
 		argType := pass.TypesInfo.TypeOf(call.Args[0])
@@ -286,6 +288,15 @@ func checkVariadic(pass *analysis.Pass, report reportFn, op operatorSpec, fieldT
 		}
 		elem := slice.Elem()
 		if isEmptyInterface(elem) {
+			// Recover static types from the backing composite literal when
+			// available — inline `[]any{a, b}...` or a single-assignment
+			// `xs := []any{a, b}; In(xs...)`.
+			if elts, ok := spreadElements(pass, vi, call.Args[0]); ok {
+				for _, e := range elts {
+					checkScalarArg(pass, report, op, fieldType, e, cfg, RuleVariadicElementMismatch)
+				}
+				return
+			}
 			if cfg.AnyArg != SeveritySkip {
 				report(RuleAnyTypedArgument, call.Args[0].Pos(),
 					"%s: %s(xs...) element type is `any`; static check skipped",

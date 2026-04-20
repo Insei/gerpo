@@ -121,11 +121,31 @@ h.Where().Field(&m.ID).In(wanted...) //gerpolint:disable-line=GPL005
 //gerpolint:enable
 ```
 
+## `[]any` spread recovery
+
+`In(xs...)` where `xs` is `[]any` would lose element types at the call site,
+so gerpolint recovers them from the backing composite literal. Two shapes
+are understood:
+
+```go
+// Inline — each element is checked against the field's type.
+h.Where().Field(&m.ID).In([]any{id1, id2, id3}...)
+
+// Single-assignment local variable — the initializer's elements are traced.
+wanted := []any{id1, "oops", id3}
+h.Where().Field(&m.ID).In(wanted...)
+//        ^ GPL002: argument type string is not compatible with field type uuid.UUID
+```
+
+A variable that is reassigned after its composite literal, or built up via
+`append` / a function return, falls back to the `GPL005` behavior — the
+analyzer cannot see its elements statically.
+
 ## When to reach for which knob
 
 - **CI-fail on real bugs**: leave defaults; `GPL001`–`GPL003` fire on concrete type errors.
 - **Field-pointer helpers**: if your code routes field pointers through helper functions, gerpolint cannot resolve them — either keep `-unresolved-field=skip` (default) or flip to `error` to force inlined usage.
-- **`[]any` slices**: inline a `//gerpolint:disable-line=GPL005` at the call site. Disabling `GPL005` globally via `disabled-rules: [GPL005]` silences every `any`-typed argument, which is usually too broad.
+- **`[]any` through a helper or `append`**: gerpolint cannot see the elements, so it will emit `GPL005`. Either refactor to a single-site literal (caught automatically) or add a targeted `//gerpolint:disable-line=GPL005`.
 - **Generated code**: bracket the file with `//gerpolint:disable` / `//gerpolint:enable` at the top and bottom.
 
 ## What gerpolint does *not* do
