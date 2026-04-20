@@ -8,7 +8,7 @@
 var ErrUserNotFound = errors.New("user not found")
 
 repo, _ := gerpo.New[User]().
-    DB(adapter).
+    Adapter(adapter).
     Table("users").
     Columns(/* … */).
     WithErrorTransformer(func(err error) error {

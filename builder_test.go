@@ -37,29 +37,29 @@ func TestBuilder_Table(t *testing.T) {
 	}
 }
 
-func TestBuilder_DB(t *testing.T) {
+func TestBuilder_Adapter(t *testing.T) {
 	mockDB := &sql.DB{}
 	tests := []struct {
-		name string
-		db   executor.Adapter
+		name    string
+		adapter executor.Adapter
 	}{
-		{"valid_db", databasesql.NewAdapter(mockDB)},
-		{"nil_db", nil},
+		{"valid_adapter", databasesql.NewAdapter(mockDB)},
+		{"nil_adapter", nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := New[mockModel]().(*builder[mockModel])
-			b.DB(tt.db)
-			if b.db != tt.db {
-				t.Errorf("expected db %v, got %v", tt.db, b.db)
+			b.Adapter(tt.adapter)
+			if b.adapter != tt.adapter {
+				t.Errorf("expected adapter %v, got %v", tt.adapter, b.adapter)
 			}
 		})
 	}
 }
 
 func TestBuilder_Build(t *testing.T) {
-	mockDB := databasesql.NewAdapter(&sql.DB{})
+	mockAdapter := databasesql.NewAdapter(&sql.DB{})
 	tests := []struct {
 		name        string
 		configure   func(b *builder[mockModel])
@@ -68,7 +68,7 @@ func TestBuilder_Build(t *testing.T) {
 		{
 			"valid_build",
 			func(b *builder[mockModel]) {
-				b.DB(mockDB).Table("users").Columns(func(m *mockModel, columns *ColumnBuilder[mockModel]) {
+				b.Adapter(mockAdapter).Table("users").Columns(func(m *mockModel, columns *ColumnBuilder[mockModel]) {
 					columns.Field(&m.ID)
 				})
 			},
@@ -77,16 +77,16 @@ func TestBuilder_Build(t *testing.T) {
 		{
 			"missing_table",
 			func(b *builder[mockModel]) {
-				b.DB(mockDB)
+				b.Adapter(mockAdapter)
 			},
 			errors.New("no table found"),
 		},
 		{
-			"missing_db",
+			"missing_adapter",
 			func(b *builder[mockModel]) {
 				b.Table("users")
 			},
-			errors.New("no database found"),
+			errors.New("no adapter found"),
 		},
 	}
 

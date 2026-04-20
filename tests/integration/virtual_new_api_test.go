@@ -19,7 +19,7 @@ import (
 func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
 	repo, err := gerpo.New[User]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -49,7 +49,7 @@ func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[U
 func newUserRepoComputeWithArgs(t *testing.T, ab adapterBundle, titleLike string) gerpo.Repository[User] {
 	t.Helper()
 	repo, err := gerpo.New[User]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -77,7 +77,7 @@ func newUserRepoComputeWithArgs(t *testing.T, ab adapterBundle, titleLike string
 func newUserRepoAggregate(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
 	repo, err := gerpo.New[User]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -167,7 +167,7 @@ func TestVirtual_NewAPI_AggregateAcceptsExplicitFilter(t *testing.T) {
 	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
 		seed := defaultSeed(t)
 		repo, err := gerpo.New[User]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()

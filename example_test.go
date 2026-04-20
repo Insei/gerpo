@@ -50,7 +50,7 @@ func ExampleNew() {
 	}
 
 	repo, err := gerpo.New[User]().
-		DB(pgx5.NewPoolAdapter(pool)).
+		Adapter(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -159,7 +159,7 @@ func ExampleWithSoftDeletion() {
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
 	repo, err := gerpo.New[User]().
-		DB(pgx5.NewPoolAdapter(pool)).
+		Adapter(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -190,7 +190,7 @@ func ExampleWithErrorTransformer() {
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
 	repo, err := gerpo.New[User]().
-		DB(pgx5.NewPoolAdapter(pool)).
+		Adapter(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -268,7 +268,7 @@ func ExampleWithTracer() {
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
 	repo, err := gerpo.New[User]().
-		DB(pgx5.NewPoolAdapter(pool)).
+		Adapter(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -290,7 +290,7 @@ func ExampleWithCacheStorage() {
 	cache := cachectx.New()
 
 	repo, err := gerpo.New[User]().
-		DB(pgx5.NewPoolAdapter(pool), executor.WithCacheStorage(cache)).
+		Adapter(pgx5.NewPoolAdapter(pool), executor.WithCacheStorage(cache)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()

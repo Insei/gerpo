@@ -31,7 +31,7 @@ func main() {
   phOption := databasesql.WithPlaceholder(placeholder.Dollar)
   dbWrap := databasesql.NewAdapter(db, phOption)
 
-  repo, err := gerpo.New[ModelType]().DB(dbWrap)
+  repo, err := gerpo.New[ModelType]().Adapter(dbWrap)
   // ... Configuring repository
 }
 ```

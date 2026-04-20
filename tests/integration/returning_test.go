@@ -74,7 +74,7 @@ func setupReturningSchema(t *testing.T) {
 func newReturningRepo(t *testing.T, ab adapterBundle) gerpo.Repository[returningModel] {
 	t.Helper()
 	repo, err := gerpo.New[returningModel]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("returning_demo").
 		Columns(func(m *returningModel, c *gerpo.ColumnBuilder[returningModel]) {
 			c.Field(&m.ID).ReadOnly().ReturnedOnInsert()        // PK with DB DEFAULT gen_random_uuid()

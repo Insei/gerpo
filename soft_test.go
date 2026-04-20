@@ -31,7 +31,7 @@ func (nopAdapter) QueryContext(context.Context, string, ...any) (extypes.Rows, e
 func (nopAdapter) BeginTx(context.Context) (extypes.Tx, error) { return nil, nil }
 
 func newSoftRepoBuilder() ColumnsAppender[softModel] {
-	return New[softModel]().DB(executor.Adapter(nopAdapter{})).Table("soft_users")
+	return New[softModel]().Adapter(executor.Adapter(nopAdapter{})).Table("soft_users")
 }
 
 // TestWithSoftDeletion_TypeMismatch_FailsAtBuild proves that returning a value
@@ -147,7 +147,7 @@ func (a *softMockAdapter) BeginTx(context.Context) (extypes.Tx, error) { return 
 func TestWithSoftDeletion_Delete_ExecutesUpdate(t *testing.T) {
 	adapter := &softMockAdapter{rows: 1}
 	repo, err := New[softModel]().
-		DB(executor.Adapter(adapter)).
+		Adapter(executor.Adapter(adapter)).
 		Table("soft_users").
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
@@ -189,7 +189,7 @@ func TestWithSoftDeletion_Delete_ExecutesUpdate(t *testing.T) {
 func TestWithSoftDeletion_Delete_NoRows_ReturnsNotFound(t *testing.T) {
 	adapter := &softMockAdapter{rows: 0}
 	repo, err := New[softModel]().
-		DB(executor.Adapter(adapter)).
+		Adapter(executor.Adapter(adapter)).
 		Table("soft_users").
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)

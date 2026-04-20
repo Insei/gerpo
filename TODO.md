@@ -8,8 +8,8 @@ none of them block the pre-1.0 cleanup.
 
 ## Multi-database support (currently: PostgreSQL-only in practice)
 
-gerpo's public messaging suggests "any SQL backend behind a `DBAdapter`", but
-the bundled adapters and the SQL fragments we emit are silently
+gerpo's public messaging suggests "any SQL backend behind an `executor.Adapter`",
+but the bundled adapters and the SQL fragments we emit are silently
 PostgreSQL-shaped. Several places need work before another major dialect can be
 treated as a first-class target.
 

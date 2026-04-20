@@ -20,7 +20,7 @@ import (
 func newCachedPostRepo(t *testing.T, ab adapterBundle, cache *cachectx.Cache) gerpo.Repository[Post] {
 	t.Helper()
 	repo, err := gerpo.New[Post]().
-		DB(ab.adapter, executor.WithCacheStorage(cache)).
+		Adapter(ab.adapter, executor.WithCacheStorage(cache)).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -140,7 +140,7 @@ func TestCache_WriteOneRepoInvalidatesOther(t *testing.T) {
 		shared := cachectx.New()
 
 		userRepo, err := gerpo.New[User]().
-			DB(ab.adapter, executor.WithCacheStorage(shared)).
+			Adapter(ab.adapter, executor.WithCacheStorage(shared)).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()

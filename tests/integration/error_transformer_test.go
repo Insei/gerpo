@@ -22,7 +22,7 @@ var errDomainPostNotFound = errors.New("domain: post not found")
 func newPostRepoWithErrorTransformer(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 	t.Helper()
 	repo, err := gerpo.New[Post]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 			c.Field(&m.ID).OmitOnUpdate()

@@ -29,7 +29,7 @@ type hookCounters struct {
 func newPostRepoWithHooks(t *testing.T, ab adapterBundle, c *hookCounters) gerpo.Repository[Post] {
 	t.Helper()
 	repo, err := gerpo.New[Post]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, cb *gerpo.ColumnBuilder[Post]) {
 			cb.Field(&m.ID).OmitOnUpdate()
@@ -157,7 +157,7 @@ func TestHooks_BeforeInsert_ErrorAbortsSQL(t *testing.T) {
 
 		wantErr := errors.New("reject this insert")
 		repo, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -197,7 +197,7 @@ func TestHooks_AfterInsert_ErrorSurfaces(t *testing.T) {
 
 		wantErr := errors.New("after-insert hook failed")
 		repo, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -237,7 +237,7 @@ func TestHooks_AfterInsert_CascadeInTx(t *testing.T) {
 
 		commentRepo := newCommentRepo(t, ab)
 		postWithComments, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -295,7 +295,7 @@ func TestHooks_AfterInsert_CascadeRollback(t *testing.T) {
 		wantErr := errors.New("cascade child failed")
 
 		postWithBadCascade, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -348,7 +348,7 @@ func TestHooks_Stacking(t *testing.T) {
 
 		var first, second int
 		repo, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()

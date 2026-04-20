@@ -44,7 +44,7 @@ func main() {
     pool, _ := pgxpool.New(context.Background(), "postgres://...")
 
     repo, err := gerpo.New[User]().
-        DB(pgx5.NewPoolAdapter(pool)).
+        Adapter(pgx5.NewPoolAdapter(pool)).
         Table("users").
         Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
             c.Field(&m.ID).OmitOnUpdate()
@@ -102,15 +102,15 @@ Full runnable samples live in [`examples/`](https://github.com/Insei/gerpo/tree/
 
 </div>
 
-## Supported databases & drivers
+## Supported adapters
 
-gerpo targets **PostgreSQL** today. All three bundled adapters wrap PostgreSQL drivers:
+gerpo talks to a database through an `executor.Adapter` — a thin wrapper around an underlying SQL driver. gerpo targets **PostgreSQL** today; all three bundled adapters wrap PostgreSQL drivers:
 
-| Adapter | Package | Placeholder format |
-|---|---|---|
-| pgx v5 | `executor/adapters/pgx5` | `$1, $2, …` |
-| pgx v4 | `executor/adapters/pgx4` | `$1, $2, …` |
-| database/sql | `executor/adapters/databasesql` | `?` or `$1` (configurable) — pair with a PG driver (`pq`, `pgx/stdlib`) |
+| Adapter | Package | Wraps driver | Placeholder format |
+|---|---|---|---|
+| pgx v5 | `executor/adapters/pgx5` | `github.com/jackc/pgx/v5` | `$1, $2, …` |
+| pgx v4 | `executor/adapters/pgx4` | `github.com/jackc/pgx/v4` | `$1, $2, …` |
+| database/sql | `executor/adapters/databasesql` | any `database/sql` driver — pair with a PG driver (`pq`, `pgx/stdlib`) | `?` or `$1` (configurable) |
 
 PG-compatible databases (CockroachDB, MariaDB ≥10.5, SQLite ≥3.35) are likely to work drop-in but are not formally tested. MySQL, MS SQL Server, and older SQLite are **not supported** — the SQL gerpo emits (LIKE `CAST(? AS text)`, `INSERT … RETURNING`, `COUNT(*) OVER ()`) assumes PostgreSQL. See the [TODO file](https://github.com/insei/gerpo/blob/main/TODO.md) for the multi-dialect backlog.
 

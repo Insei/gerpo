@@ -83,7 +83,7 @@ func (t *fakeTx) Rollback() error {
 }
 
 // TestAdapter_RewritesQuestionToDollar — placeholders are converted before
-// reaching the backend. Drives the real placeholder.Dollar transformation.
+// reaching the driver. Drives the real placeholder.Dollar transformation.
 func TestAdapter_RewritesQuestionToDollar(t *testing.T) {
 	b := &fakeDriver{}
 	a := New(b, placeholder.Dollar)
@@ -124,7 +124,7 @@ func TestTransaction_Commit_FlipsCommittedFlag(t *testing.T) {
 
 	require.NoError(t, tx.RollbackUnlessCommitted(),
 		"after Commit RollbackUnlessCommitted must be a no-op")
-	assert.Equal(t, 0, b.tx.rollbacks, "no rollback should reach the backend after a successful Commit")
+	assert.Equal(t, 0, b.tx.rollbacks, "no rollback should reach the driver after a successful Commit")
 }
 
 // TestTransaction_RollbackUnlessCommitted_WithoutCommit_RollsBack — happy path
@@ -155,7 +155,7 @@ func TestTransaction_ExplicitRollback_ClearsSafetyNet(t *testing.T) {
 
 	require.NoError(t, tx.Rollback())
 	require.NoError(t, tx.RollbackUnlessCommitted())
-	assert.Equal(t, 1, b.tx.rollbacks, "second rollback through the safety net must not reach the backend")
+	assert.Equal(t, 1, b.tx.rollbacks, "second rollback through the safety net must not reach the driver")
 }
 
 // TestTransaction_CommitError_DoesNotMarkCommitted — if Commit fails the flag
@@ -191,7 +191,7 @@ func TestTransaction_ExecAndQuery_RewritePlaceholders(t *testing.T) {
 	assert.Equal(t, "SELECT * FROM t WHERE id = $1", b.tx.queryCalls[0].sql)
 }
 
-// TestAdapter_BeginTxError_Propagates — backend BeginTx errors reach the
+// TestAdapter_BeginTxError_Propagates — driver BeginTx errors reach the
 // caller as-is.
 func TestAdapter_BeginTxError_Propagates(t *testing.T) {
 	beginFail := errors.New("begin failed")

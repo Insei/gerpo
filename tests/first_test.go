@@ -31,7 +31,7 @@ func TestGetFirst(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	repo, err := gerpo.New[User]().
-		DB(databasesql.NewAdapter(db)).
+		Adapter(databasesql.NewAdapter(db)).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {
 			columns.Field(&m.ID).OmitOnUpdate()
@@ -148,7 +148,7 @@ func BenchmarkGetFirst(b *testing.B) {
 	//	return &mockRows{alwaysNext: true}, nil
 	//}
 	repo, err := gerpo.New[User]().
-		DB(adapter).
+		Adapter(adapter).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {
 			columns.Field(&m.ID).OmitOnUpdate()

@@ -49,7 +49,7 @@ func newBenchMockDB(rowsPerQuery int) *mockDB {
 func newBenchRepo(b *testing.B, db *mockDB) gerpo.Repository[benchUser] {
 	b.Helper()
 	repo, err := gerpo.New[benchUser]().
-		DB(db).
+		Adapter(db).
 		Table("users").
 		Columns(func(m *benchUser, c *gerpo.ColumnBuilder[benchUser]) {
 			c.Field(&m.ID).OmitOnUpdate()

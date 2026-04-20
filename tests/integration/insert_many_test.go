@@ -51,7 +51,7 @@ func TestInsertMany_Empty(t *testing.T) {
 		defaultSeed(t)
 		var beforeCalls, afterCalls int
 		repo, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -123,7 +123,7 @@ func TestInsertMany_Hooks(t *testing.T) {
 
 		var beforeSeen, afterSeen int
 		repo, err := gerpo.New[Post]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -168,7 +168,7 @@ func TestInsertMany_LargeBatch_ChunksTransparently(t *testing.T) {
 		// active-cols ≤ 3, значит chunkSize ≥ 21000. Достаточно прислать
 		// чуть больше, чтобы стабильно уйти на второй чанк.
 		repo, err := gerpo.New[returningModel]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("returning_demo").
 			Columns(func(m *returningModel, c *gerpo.ColumnBuilder[returningModel]) {
 				c.Field(&m.ID).ReadOnly().ReturnedOnInsert()

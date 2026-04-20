@@ -28,7 +28,7 @@ func TestInsert(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	repo, err := gerpo.New[User]().
-		DB(databasesql.NewAdapter(db)).
+		Adapter(databasesql.NewAdapter(db)).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {
 			columns.Field(&m.ID).OmitOnUpdate()

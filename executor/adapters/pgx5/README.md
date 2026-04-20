@@ -20,7 +20,7 @@ func main() {
     var poolv5 *pgxpool.Pool
     dbWrap := pgx4.NewPoolAdapter(poolv5)
     
-    repo, err := gerpo.New[ModelType]().DB(dbWrap)
+    repo, err := gerpo.New[ModelType]().Adapter(dbWrap)
     // ... Configuring repository
 }
 ```

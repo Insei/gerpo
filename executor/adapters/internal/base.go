@@ -1,6 +1,6 @@
 // Package internal hosts the placeholder-rewriting plumbing shared by every
-// bundled gerpo DB adapter (pgx v5, pgx v4, database/sql). Each driver only
-// needs to provide a tiny Backend implementation; the plumbing — placeholder
+// bundled gerpo SQL adapter (pgx v5, pgx v4, database/sql). Each adapter only
+// needs to provide a tiny Driver implementation; the plumbing — placeholder
 // rewrite, transaction state machine, RollbackUnlessCommitted semantics —
 // lives here so all adapters stay consistent.
 //
@@ -15,19 +15,19 @@ import (
 	extypes "github.com/insei/gerpo/executor/types"
 )
 
-// Backend describes the driver-specific behavior the generic Adapter wraps.
+// Driver describes the driver-specific behavior the generic Adapter wraps.
 // Implementations are expected to convert their native Result/Rows types into
-// the executor.types interfaces themselves — Backend works in already-rewritten
+// the executor.types interfaces themselves — Driver works in already-rewritten
 // SQL, the generic Adapter handles placeholder translation upstream.
-type Backend interface {
+type Driver interface {
 	Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error)
 	Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error)
 	BeginTx(ctx context.Context) (TxDriver, error)
 }
 
-// TxDriver mirrors Backend minus BeginTx, plus Commit / Rollback. The wrapping
+// TxDriver mirrors Driver minus BeginTx, plus Commit / Rollback. The wrapping
 // transaction owns the committed / rollbackUnlessCommittedNeeded flags so
-// drivers do not need to reimplement them.
+// driver implementations do not need to reimplement them.
 type TxDriver interface {
 	Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error)
 	Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error)
@@ -36,18 +36,18 @@ type TxDriver interface {
 }
 
 // Adapter is the executor.types.Adapter implementation shared by every
-// bundled driver. It rewrites placeholders before each driver call and wraps
+// bundled adapter. It rewrites placeholders before each driver call and wraps
 // transactions in a state machine that makes RollbackUnlessCommitted safe to
 // use as a defer.
 type Adapter struct {
-	backend     Backend
+	driver      Driver
 	placeholder placeholder.PlaceholderFormat
 }
 
 // New constructs an Adapter that runs every SQL statement through the given
-// placeholder format before handing it over to the backend.
-func New(backend Backend, p placeholder.PlaceholderFormat) extypes.Adapter {
-	return &Adapter{backend: backend, placeholder: p}
+// placeholder format before handing it over to the driver.
+func New(driver Driver, p placeholder.PlaceholderFormat) extypes.Adapter {
+	return &Adapter{driver: driver, placeholder: p}
 }
 
 func (a *Adapter) ExecContext(ctx context.Context, sql string, args ...any) (extypes.Result, error) {
@@ -55,7 +55,7 @@ func (a *Adapter) ExecContext(ctx context.Context, sql string, args ...any) (ext
 	if err != nil {
 		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
 	}
-	return a.backend.Exec(ctx, rewritten, args...)
+	return a.driver.Exec(ctx, rewritten, args...)
 }
 
 func (a *Adapter) QueryContext(ctx context.Context, sql string, args ...any) (extypes.Rows, error) {
@@ -63,11 +63,11 @@ func (a *Adapter) QueryContext(ctx context.Context, sql string, args ...any) (ex
 	if err != nil {
 		return nil, fmt.Errorf("failed to replace placeholders: %w", err)
 	}
-	return a.backend.Query(ctx, rewritten, args...)
+	return a.driver.Query(ctx, rewritten, args...)
 }
 
 func (a *Adapter) BeginTx(ctx context.Context) (extypes.Tx, error) {
-	inner, err := a.backend.BeginTx(ctx)
+	inner, err := a.driver.BeginTx(ctx)
 	if err != nil {
 		return nil, err
 	}

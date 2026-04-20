@@ -6,7 +6,7 @@ A repository is assembled through the fluent `gerpo.New[T]()`. The chain `DB →
 
 ```go
 repo, err := gerpo.New[User]().
-    DB(adapter).
+    Adapter(adapter).
     Table("users").
     Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
         c.Field(&m.ID).OmitOnUpdate()
@@ -21,7 +21,7 @@ repo, err := gerpo.New[User]().
 
 ```go
 repo, err := gerpo.New[User]().
-    DB(adapter, executor.WithCacheStorage(ctxCache)).      // (1) adapter + executor options
+    Adapter(adapter, executor.WithCacheStorage(ctxCache)).      // (1) adapter + executor options
     Table("users").                                         // (2) table name
     Columns(colsFn).                                        // (3) column description
     WithQuery(persistentFn).                                // (4) persistent conditions

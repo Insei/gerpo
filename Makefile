@@ -4,7 +4,7 @@
 # your local Postgres is on a different port / user.
 INTEGRATION_DSN ?= postgres://gerpo:gerpo@localhost:5433/gerpo?sslmode=disable
 
-# Mock-adapter benchmarks that compare a raw DBAdapter call to gerpo.Repository.
+# Mock-adapter benchmarks that compare a raw executor.Adapter call to gerpo.Repository.
 BENCH_PATTERN := ^Benchmark(GetFirst|GetList|Count|Insert|Update|Delete)_(Direct|Gerpo)$$
 
 COMPOSE := docker compose -f tests/integration/docker-compose.yml

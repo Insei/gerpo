@@ -38,7 +38,7 @@ func main() {
 	defer db.Close()
 	dbWrap := databasesql.NewAdapter(db, databasesql.WithPlaceholder(placeholder.Dollar))
 	b := gerpo.New[test]().
-		DB(dbWrap).
+		Adapter(dbWrap).
 		Table("tests").
 		Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
 			columns.Field(&m.ID).OmitOnInsert().OmitOnUpdate()

@@ -63,7 +63,7 @@ gerpo does not model relations itself (no lazy load, no `has_many`), but the com
 
 ```go
 orderRepo, _ := gerpo.New[Order]().
-    DB(adapter).Table("orders").
+    Adapter(adapter).Table("orders").
     Columns(func(m *Order, c *gerpo.ColumnBuilder[Order]) {
         c.Field(&m.ID).OmitOnUpdate()
         c.Field(&m.UserID)
@@ -105,7 +105,7 @@ single-row hook.
 
 ```go
 orderRepo, _ := gerpo.New[Order]().
-    DB(adapter).Table("orders").
+    Adapter(adapter).Table("orders").
     Columns(/* … */).
     WithAfterInsertMany(func(ctx context.Context, orders []*Order) error {
         // Collect all items across all parents.

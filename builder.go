@@ -9,7 +9,7 @@ import (
 )
 
 type builder[TModel any] struct {
-	db              executor.Adapter
+	adapter         executor.Adapter
 	executorOptions []executor.Option
 	table           string
 	opts            []Option[TModel]
@@ -20,8 +20,12 @@ type TableChooser[TModel any] interface {
 	Table(table string) ColumnsAppender[TModel]
 }
 
-type ExecutorChooser[TModel any] interface {
-	DB(db executor.Adapter, opts ...executor.Option) TableChooser[TModel]
+// AdapterChooser is the first step in the fluent builder chain returned by
+// gerpo.New[T](). Pick the executor.Adapter that wraps your SQL driver (pgx5,
+// pgx4, database/sql) with Adapter(...); executor-level options (cache,
+// tracing) attach here too.
+type AdapterChooser[TModel any] interface {
+	Adapter(a executor.Adapter, opts ...executor.Option) TableChooser[TModel]
 }
 
 type ColumnsAppender[TModel any] interface {
@@ -29,9 +33,9 @@ type ColumnsAppender[TModel any] interface {
 }
 
 // New starts the fluent builder for a Repository[TModel]. The returned chain
-// is ExecutorChooser → TableChooser → ColumnsAppender → Builder; finalize with
+// is AdapterChooser → TableChooser → ColumnsAppender → Builder; finalize with
 // Build() to receive the Repository.
-func New[TModel any]() ExecutorChooser[TModel] {
+func New[TModel any]() AdapterChooser[TModel] {
 	return &builder[TModel]{}
 }
 
@@ -41,9 +45,11 @@ func (b *builder[TModel]) Table(table string) ColumnsAppender[TModel] {
 	return b
 }
 
-// DB sets the database connection to be used for the builder and returns a TableChooser for further configuration.
-func (b *builder[TModel]) DB(db executor.Adapter, opts ...executor.Option) TableChooser[TModel] {
-	b.db = db
+// Adapter binds the executor.Adapter (wrapping pgx5, pgx4, or database/sql)
+// that the repository will execute through; executor-level options — cache
+// storage, tracing, etc. — are applied here as well.
+func (b *builder[TModel]) Adapter(a executor.Adapter, opts ...executor.Option) TableChooser[TModel] {
+	b.adapter = a
 	b.executorOptions = opts
 	return b
 }
@@ -135,12 +141,12 @@ func (b *builder[TModel]) WithTracer(tracer Tracer) Builder[TModel] {
 
 // Build finalizes the builder configuration and returns a Repository instance or an error if essential elements are missing.
 func (b *builder[TModel]) Build() (Repository[TModel], error) {
-	if b.db == nil {
-		return nil, errors.New("no database found")
+	if b.adapter == nil {
+		return nil, errors.New("no adapter found")
 	}
 	if b.table == "" {
 		return nil, errors.New("no table found")
 	}
-	exec := executor.New[TModel](b.db, b.executorOptions...)
+	exec := executor.New[TModel](b.adapter, b.executorOptions...)
 	return newRepository(exec, b.table, b.columnBuilderFn, b.opts...)
 }

@@ -1,12 +1,17 @@
 # Adapter internals
 
-An adapter turns `executor.Adapter` calls into driver-specific calls. The placeholder rewrite, the transaction state machine and the `RollbackUnlessCommitted` semantics live once in the unexported `executor/adapters/internal` package; every bundled adapter (pgx v5, pgx v4, database/sql) only contributes a tiny `Driver` plus result/rows wrappers.
+An adapter turns `executor.Adapter` calls into underlying-driver calls. The placeholder rewrite, the transaction state machine and the `RollbackUnlessCommitted` semantics live once in the unexported `executor/adapters/internal` package; every bundled adapter (pgx v5, pgx v4, database/sql) only contributes a tiny `Driver` plus result/rows wrappers.
 
-## Anatomy of a driver package
+Terminology recap:
+
+- **driver** — the SQL library (`pgx/v5`, `pgx/v4`, `database/sql`), or the internal `internal.Driver` interface that delegates to one.
+- **adapter** — gerpo's public wrapper over a driver, implementing `executor.Adapter`.
+
+## Anatomy of an adapter package
 
 ```
-executor/adapters/<driver>/
-    pool.go    — Driver / TxDriver implementations + the public NewPoolAdapter / NewAdapter
+executor/adapters/<adapter>/
+    pool.go    — internal.Driver / internal.TxDriver implementations + the public NewPoolAdapter / NewAdapter
     rows.go    — rowsWrap adapting driver rows to types.Rows (only when the driver's Rows
                  type doesn't already satisfy the interface)
     result.go  — resultWrap adapting driver result to types.Result (same caveat)
@@ -81,12 +86,12 @@ All three are pointer-receiver methods on the shared type, so state mutations ac
 
 `types.Result` requires only `RowsAffected() (int64, error)`. `sql.Result` matches; pgx returns `pgconn.CommandTag` whose `RowsAffected()` returns just `int64`, so `resultWrap` adds the trailing `nil` error.
 
-## Writing your own driver
+## Writing your own adapter
 
-1. Implement `internal.Driver` (three methods) and `internal.TxDriver` (four methods) for your driver.
+1. Implement `internal.Driver` (three methods) and `internal.TxDriver` (four methods) on top of the SQL driver you're wrapping.
 2. Pick a placeholder format. Most non-PostgreSQL drivers keep `?` (`placeholder.Question`).
 3. Wrap your driver's `Rows`/`Result` types only if their methods don't already satisfy the interfaces in `executor/types`.
-4. Return `internal.New(yourBackend, yourPlaceholder)` from the public constructor.
+4. Return `internal.New(yourDriver, yourPlaceholder)` from the public constructor.
 
 A good smoke test is `TestSmoke` in `tests/integration/` — `forEachAdapter` will pick up your new bundle as soon as you add it to `allAdapters()`.
 

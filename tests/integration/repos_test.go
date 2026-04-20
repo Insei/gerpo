@@ -16,7 +16,7 @@ import (
 func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
 	repo, err := gerpo.New[User]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -53,7 +53,7 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 func newPostRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 	t.Helper()
 	repo, err := gerpo.New[Post]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
 			c.Field(&m.ID).OmitOnUpdate()
@@ -75,7 +75,7 @@ func newPostRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 func newCommentRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Comment] {
 	t.Helper()
 	repo, err := gerpo.New[Comment]().
-		DB(ab.adapter).
+		Adapter(ab.adapter).
 		Table("comments").
 		Columns(func(m *Comment, c *gerpo.ColumnBuilder[Comment]) {
 			c.Field(&m.ID).OmitOnUpdate()

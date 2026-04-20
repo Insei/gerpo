@@ -26,7 +26,7 @@ func TestPersistent_AutoGroupBy_AggregateVirtual(t *testing.T) {
 		defer cancel()
 
 		repo, err := gerpo.New[User]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -154,7 +154,7 @@ func TestPersistent_InnerJoin(t *testing.T) {
 		require.NoError(t, err)
 
 		repo, err := gerpo.New[User]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -196,7 +196,7 @@ func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
 		targetUserID := seed.users[3].ID
 
 		repo, err := gerpo.New[User]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -257,7 +257,7 @@ func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
 		joinedUserID := seed.users[5].ID // age = 25, попадает и в JOIN, и в WHERE Age GTE 25.
 
 		repo, err := gerpo.New[User]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()
@@ -337,7 +337,7 @@ func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
 		targetUserID := seed.users[2].ID
 
 		repo, err := gerpo.New[User]().
-			DB(ab.adapter).
+			Adapter(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 				c.Field(&m.ID).OmitOnUpdate()
