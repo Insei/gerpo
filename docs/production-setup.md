@@ -4,6 +4,9 @@ The individual feature pages walk through one concern at a time: [cache](feature
 
 It is opinionated on purpose. Substitute pieces to taste; the layering stays the same.
 
+!!! tip "Want a working example?"
+    Everything below is assembled into a runnable project under [`examples/todo-api/`](https://github.com/Insei/gerpo/tree/main/examples/todo-api) — a CRUD REST service for a `tasks` table with PostgreSQL, goose migrations and docker-compose wiring. `docker compose up --build` and the API boots on `:8080`. Read it alongside the snippets on this page.
+
 !!! warning "PostgreSQL only"
     All code below assumes PostgreSQL. gerpo's SQL fragments are PG-shaped — see [TODO](https://github.com/insei/gerpo/blob/main/TODO.md) for the multi-dialect backlog.
 

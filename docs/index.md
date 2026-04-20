@@ -88,6 +88,10 @@ Full runnable sample lives in [`examples/todo-api/`](https://github.com/Insei/ge
 
     Copy-paste starting point: pgx v5 + goose migrations + OpenTelemetry tracer + request-scope cache + domain error mapping + transactions — all in one place.
 
+-   :material-play-box-outline:{ .lg } **[Runnable example →](https://github.com/Insei/gerpo/tree/main/examples/todo-api)**
+
+    `examples/todo-api/` — a CRUD REST service with PostgreSQL, goose migrations and docker-compose wiring. `docker compose up --build` and you have a working tasks API. ~350 lines of Go in one place.
+
 -   :material-book-open-variant:{ .lg } **[Features →](features/index.md)**
 
     A walkthrough of every repository capability: CRUD, filters, ordering, hooks, soft delete, virtual columns, cache, transactions, adapters.

@@ -2,6 +2,9 @@
 
 Reference of gerpo capabilities grouped by area.
 
+!!! tip "See it all working together"
+    [`examples/todo-api/`](https://github.com/Insei/gerpo/tree/main/examples/todo-api) is a runnable CRUD REST service that combines most of the pages below — column bindings, RETURNING, request-scope cache, transactions via `RunInTx`, domain error mapping — against a real PostgreSQL with goose migrations. `docker compose up --build` and the API boots on `:8080`. Pair it with the [Production-ready setup](../production-setup.md) page for the narrated walkthrough.
+
 ## Configuration
 
 | Page | What's inside |
