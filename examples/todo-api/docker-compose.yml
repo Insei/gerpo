@@ -1,0 +1,36 @@
+name: gerpo-todo-api
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: todo
+      POSTGRES_PASSWORD: todo
+      POSTGRES_DB: todo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo -d todo"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      # Build context is the gerpo repo root so the module's `replace ../..`
+      # resolves during `go build`.
+      context: ../..
+      dockerfile: examples/todo-api/Dockerfile
+    environment:
+      DATABASE_URL: postgres://todo:todo@postgres:5432/todo?sslmode=disable
+      HTTP_ADDR: ":8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pg-data:

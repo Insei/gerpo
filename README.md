@@ -50,7 +50,7 @@ users, _ := repo.GetList(ctx, func(m *User, h query.GetListHelper[User]) {
 })
 ```
 
-Full runnable samples live in [`examples/`](examples/) and in the [integration tests](tests/integration/).
+Full runnable sample lives in [`examples/todo-api/`](examples/todo-api/) — a CRUD REST service with PostgreSQL, goose migrations and docker-compose wiring. Additional end-to-end scenarios are in the [integration tests](tests/integration/).
 
 ## Features
 

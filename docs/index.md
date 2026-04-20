@@ -74,7 +74,7 @@ func main() {
 }
 ```
 
-Full runnable samples live in [`examples/`](https://github.com/Insei/gerpo/tree/main/examples) and in the [integration tests](https://github.com/Insei/gerpo/tree/main/tests/integration).
+Full runnable sample lives in [`examples/todo-api/`](https://github.com/Insei/gerpo/tree/main/examples/todo-api) — a CRUD REST service with PostgreSQL, goose migrations and docker-compose wiring. Additional end-to-end scenarios are in the [integration tests](https://github.com/Insei/gerpo/tree/main/tests/integration).
 
 ## What to read next
 
