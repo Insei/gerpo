@@ -27,7 +27,9 @@ Three required pieces:
 3. **`WithQuery` with a filter** — so soft-deleted records don't leak into SELECTs. Without it they show up in listings.
 
 !!! note "SetValueFn return type"
-    The returned value must match the field type — for `*time.Time` return `*time.Time`, not `time.Time`. `Build()` runs every `SetValueFn` once with `context.Background()` and verifies the returned value is assignable to the field; a mismatch (or a panic from inside the callback) is reported as a build-time error rather than a runtime panic.
+    The returned value must match the field type — for `*time.Time` return `*time.Time`, not `time.Time`. `Build()` runs a type probe: each `SetValueFn` is invoked once with `context.Background()` and the returned value is checked against the field type. A mismatch (or a panic from inside the callback) is reported from `Build()` rather than crashing on the first soft `Delete()` call.
+
+    This is not a full compile-time check — the callback body still runs at repo-build time, and if it branches on ctx values (`ctx.Value(tenantKey)`) that `context.Background()` does not carry, the probe exercises a different path than production. Keep `SetValueFn` bodies free of ctx-dependent branches when possible, or accept that the probe only catches the common ctx=Background case.
 
 ## How it works
 

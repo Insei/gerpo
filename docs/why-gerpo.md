@@ -47,10 +47,7 @@ Skip it if:
 | **Tracing hook** | ✓ | plugin | hook | hook | ✗ | ✗ |
 | **Hooks (Before/After)** | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
 | **Custom SQL escape hatch** | ✓ (callbacks) | ✓ (`Raw()`) | ✓ | ✓ | n/a (everything is SQL) | ✓ |
-| **Lines of code** | ~3k | ~50k | ~80k | ~30k | n/a | ~3k |
 | **Reflection** | only at config (fmap + unsafe offsets) | runtime, every call | none (generated code) | runtime | none | minimal |
-
-The "Lines of code" row is rough but conveys the shape: gerpo is closer to sqlx in size and to ent in API ergonomics.
 
 ## Strengths
 
