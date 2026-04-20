@@ -12,12 +12,14 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 CREATE INDEX IF NOT EXISTS tasks_created_at_idx ON tasks (created_at DESC);
 
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION tasks_touch_updated_at() RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 DROP TRIGGER IF EXISTS tasks_touch ON tasks;
 CREATE TRIGGER tasks_touch
