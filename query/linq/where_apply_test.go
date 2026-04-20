@@ -74,7 +74,6 @@ func TestWhereBuilder_Column_AllOperators(t *testing.T) {
 	b.Column(col).NotStartsWith("a", true)
 	b.Column(col).EndsWith("a", true)
 	b.Column(col).NotEndsWith("a", true)
-	b.Column(col).OP(types.OperationEQ, 1)
 
 	w := &fakeWhere{}
 	require.NoError(t, b.Apply(&whereApplier{where: w}))

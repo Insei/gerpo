@@ -66,14 +66,6 @@ h.Where().Group(func(t types.WhereTarget) {
 }).OR().Field(&m.Role).EQ("admin")
 ```
 
-## Custom operation — `OP`
-
-If a column exposes a custom filter (relevant for [virtual columns](virtual-columns.md) with `WithBoolEqFilter`), invoke it by name:
-
-```go
-h.Where().Field(&m.IsActive).OP(types.OperationEQ, true)
-```
-
 ## Limitations
 
 - `LT`/`GT`/`LTE`/`GTE` do not type-check at runtime — the database does. gerpo passes values through as-is.

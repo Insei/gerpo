@@ -170,9 +170,6 @@ func (o *whereOperation) Contains(val any, ignoreCase ...bool) types.ANDOR {
 func (o *whereOperation) NotContains(val any, ignoreCase ...bool) types.ANDOR {
 	return o.push(resolveIgnoreCase(types.OperationNotContains, ignoreCase), val)
 }
-func (o *whereOperation) OP(operation types.Operation, val any) types.ANDOR {
-	return o.push(operation, val)
-}
 
 func (q *WhereBuilder) AND() types.WhereTarget {
 	q.ops = append(q.ops, whereOpEntry{kind: opAND})

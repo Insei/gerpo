@@ -261,9 +261,6 @@ type WhereOperation interface {
 	// NIN applies the NIN operation to filter records where the specified field not matches any of the provided values.
 	// Can accept slices in first argument.
 	NIN(vals ...any) ANDOR
-
-	// OP applies a custom operation using the specified Operation type and value for conditional query construction.
-	OP(operation Operation, val any) ANDOR
 }
 
 // OrderOperation represents an interface for defining order directives (ascending or descending) for query sorting.
