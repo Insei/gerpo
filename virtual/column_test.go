@@ -36,7 +36,7 @@ func TestColumnIsAvailableFilterOperation(t *testing.T) {
 	}
 
 	t.Run("Test GetAvailableFilterOperations", func(t *testing.T) {
-		c.IsAvailableFilterOperation(types.OperationIN)
+		c.IsAvailableFilterOperation(types.OperationIn)
 	})
 }
 
@@ -51,7 +51,7 @@ func TestColumnGetFilterFn(t *testing.T) {
 	}
 
 	t.Run("Test GetFilterFn", func(t *testing.T) {
-		c.GetFilterFn(types.OperationIN)
+		c.GetFilterFn(types.OperationIn)
 	})
 }
 

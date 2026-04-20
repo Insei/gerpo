@@ -66,14 +66,22 @@ func TestWhereBuilder_Column_AllOperators(t *testing.T) {
 	b.Column(col).GTE(1)
 	b.Column(col).LT(1)
 	b.Column(col).LTE(1)
-	b.Column(col).IN(1, 2)
-	b.Column(col).NIN(1, 2)
+	b.Column(col).In(1, 2)
+	b.Column(col).NotIn(1, 2)
 	b.Column(col).Contains("a")
 	b.Column(col).NotContains("a")
-	b.Column(col).StartsWith("a", true)
-	b.Column(col).NotStartsWith("a", true)
-	b.Column(col).EndsWith("a", true)
-	b.Column(col).NotEndsWith("a", true)
+	b.Column(col).StartsWith("a")
+	b.Column(col).NotStartsWith("a")
+	b.Column(col).EndsWith("a")
+	b.Column(col).NotEndsWith("a")
+	b.Column(col).EQFold("a")
+	b.Column(col).NEQFold("a")
+	b.Column(col).ContainsFold("a")
+	b.Column(col).NotContainsFold("a")
+	b.Column(col).StartsWithFold("a")
+	b.Column(col).NotStartsWithFold("a")
+	b.Column(col).EndsWithFold("a")
+	b.Column(col).NotEndsWithFold("a")
 
 	w := &fakeWhere{}
 	require.NoError(t, b.Apply(&whereApplier{where: w}))
@@ -146,20 +154,6 @@ func TestWhereBuilder_Apply_ConditionErrorPropagates(t *testing.T) {
 
 	err := b.Apply(&whereApplier{where: failWhere{}})
 	require.Error(t, err)
-}
-
-func TestResolveIgnoreCase(t *testing.T) {
-	got := resolveIgnoreCase(types.OperationContains, []bool{true})
-	assert.Equal(t, types.OperationContainsIgnoreCase, got)
-
-	got = resolveIgnoreCase(types.OperationContains, []bool{false, true})
-	assert.Equal(t, types.OperationContainsIgnoreCase, got)
-
-	got = resolveIgnoreCase(types.OperationContains, []bool{false})
-	assert.Equal(t, types.OperationContains, got)
-
-	got = resolveIgnoreCase(types.OperationContains, nil)
-	assert.Equal(t, types.OperationContains, got)
 }
 
 var _ = context.Background // keep context import — fakeWhere may grow

@@ -125,11 +125,11 @@ const (
 	// OperationLTE is a constant of type Operation that represents the operation where the field is less than or equal to the value.
 	OperationLTE = Operation("lte")
 
-	// OperationIN is a constant of type Operation that represents the operation where the field is in the specified values.
-	OperationIN = Operation("in")
+	// OperationIn matches rows whose field is included in the provided set.
+	OperationIn = Operation("in")
 
-	// OperationNIN is a constant of type Operation that represents the operation where the field is not in the specified values.
-	OperationNIN = Operation("nin")
+	// OperationNotIn matches rows whose field is NOT included in the provided set.
+	OperationNotIn = Operation("not_in")
 
 	// String filter operations.
 
@@ -151,26 +151,33 @@ const (
 	// OperationNotEndsWith matches rows whose field does not end with the value.
 	OperationNotEndsWith = Operation("not_ends_with")
 
-	// Case-insensitive variants of the string filter operations.
-	// They are selected automatically by WhereOperation methods when ignoreCase=true is passed.
+	// Case-insensitive ("fold") variants. The "Fold" suffix mirrors
+	// strings.EqualFold from the Go stdlib — equality that ignores case.
+	// For comparison/like operators, gerpo emits LOWER(column) <op> LOWER(?).
 
-	// OperationContainsIgnoreCase is the case-insensitive form of OperationContains.
-	OperationContainsIgnoreCase = Operation("contains_ic")
+	// OperationEQFold is the case-insensitive form of OperationEQ (string columns only).
+	OperationEQFold = Operation("eq_fold")
 
-	// OperationNotContainsIgnoreCase is the case-insensitive form of OperationNotContains.
-	OperationNotContainsIgnoreCase = Operation("not_contains_ic")
+	// OperationNEQFold is the case-insensitive form of OperationNEQ (string columns only).
+	OperationNEQFold = Operation("neq_fold")
 
-	// OperationStartsWithIgnoreCase is the case-insensitive form of OperationStartsWith.
-	OperationStartsWithIgnoreCase = Operation("starts_with_ic")
+	// OperationContainsFold is the case-insensitive form of OperationContains.
+	OperationContainsFold = Operation("contains_fold")
 
-	// OperationNotStartsWithIgnoreCase is the case-insensitive form of OperationNotStartsWith.
-	OperationNotStartsWithIgnoreCase = Operation("not_starts_with_ic")
+	// OperationNotContainsFold is the case-insensitive form of OperationNotContains.
+	OperationNotContainsFold = Operation("not_contains_fold")
 
-	// OperationEndsWithIgnoreCase is the case-insensitive form of OperationEndsWith.
-	OperationEndsWithIgnoreCase = Operation("ends_with_ic")
+	// OperationStartsWithFold is the case-insensitive form of OperationStartsWith.
+	OperationStartsWithFold = Operation("starts_with_fold")
 
-	// OperationNotEndsWithIgnoreCase is the case-insensitive form of OperationNotEndsWith.
-	OperationNotEndsWithIgnoreCase = Operation("not_ends_with_ic")
+	// OperationNotStartsWithFold is the case-insensitive form of OperationNotStartsWith.
+	OperationNotStartsWithFold = Operation("not_starts_with_fold")
+
+	// OperationEndsWithFold is the case-insensitive form of OperationEndsWith.
+	OperationEndsWithFold = Operation("ends_with_fold")
+
+	// OperationNotEndsWithFold is the case-insensitive form of OperationNotEndsWith.
+	OperationNotEndsWithFold = Operation("not_ends_with_fold")
 )
 
 type OrderDirection string
@@ -217,50 +224,73 @@ type WhereOption func(op Operation) Operation
 // WhereOperation defines an interface to apply various conditional operations for building queries.
 type WhereOperation interface {
 
-	// EQ applies an equality condition to the target field, comparing it with the specified value.
+	// EQ applies an equality condition (=) to the target field.
 	EQ(val any) ANDOR
 
-	// NEQ applies a "not equal to" condition to the query, comparing the field with the provided value.
-	// It returns an ANDOR interface to chain further logical conditions.
+	// NEQ applies an inequality condition (!=) to the target field.
 	NEQ(val any) ANDOR
 
-	// Contains applies a "contains" condition on the field with the provided value and returns an ANDOR for chaining.
-	Contains(val any, ignoreCase ...bool) ANDOR
-
-	// NotContains applies a "not contains" condition on the field with the provided value and returns an ANDOR for chaining.
-	NotContains(val any, ignoreCase ...bool) ANDOR
-
-	// StartsWith applies a "begins with" condition on the field with the provided value and returns an ANDOR for chaining.
-	StartsWith(val any, ignoreCase ...bool) ANDOR
-
-	// NotStartsWith applies a "not begins with" condition on the field with the provided value and returns an ANDOR for chaining.
-	NotStartsWith(val any, ignoreCase ...bool) ANDOR
-
-	// EndsWith applies an "ends with" condition on the field with the provided value and returns an ANDOR for chaining.
-	EndsWith(val any, ignoreCase ...bool) ANDOR
-
-	// NotEndsWith applies a "not ends with" condition on the field with the provided value and returns an ANDOR for chaining.
-	NotEndsWith(val any, ignoreCase ...bool) ANDOR
-
-	// GT applies a greater-than (>) condition on the field with the provided value and returns an ANDOR for chaining.
-	GT(val any) ANDOR
-
-	// GTE applies a "greater than or equal to" (>=) condition on the field with the provided value and returns an ANDOR for chaining.
-	GTE(val any) ANDOR
-
-	// LT applies a "less than" (<) condition on the field with the provided value and returns an ANDOR for chaining.
+	// LT applies a less-than (<) condition.
 	LT(val any) ANDOR
 
-	// LTE applies a "less than or equal to" (<=) condition on the field with the provided value and returns an ANDOR for chaining.
+	// LTE applies a less-than-or-equal (<=) condition.
 	LTE(val any) ANDOR
 
-	// IN applies the IN operation to filter records where the specified field matches any of the provided values.
-	// Can accept slices in first argument.
-	IN(vals ...any) ANDOR
+	// GT applies a greater-than (>) condition.
+	GT(val any) ANDOR
 
-	// NIN applies the NIN operation to filter records where the specified field not matches any of the provided values.
-	// Can accept slices in first argument.
-	NIN(vals ...any) ANDOR
+	// GTE applies a greater-than-or-equal (>=) condition.
+	GTE(val any) ANDOR
+
+	// In filters records whose field appears in the provided set.
+	// The first argument may be either a slice or a list of individual values.
+	In(vals ...any) ANDOR
+
+	// NotIn is the negation of In.
+	NotIn(vals ...any) ANDOR
+
+	// Contains matches rows whose string field contains the value as a substring.
+	Contains(val any) ANDOR
+
+	// NotContains is the negation of Contains.
+	NotContains(val any) ANDOR
+
+	// StartsWith matches rows whose string field begins with the value.
+	StartsWith(val any) ANDOR
+
+	// NotStartsWith is the negation of StartsWith.
+	NotStartsWith(val any) ANDOR
+
+	// EndsWith matches rows whose string field ends with the value.
+	EndsWith(val any) ANDOR
+
+	// NotEndsWith is the negation of EndsWith.
+	NotEndsWith(val any) ANDOR
+
+	// EQFold is the case-insensitive form of EQ (string fields only).
+	// Mirrors strings.EqualFold: lowercases both sides before comparing.
+	EQFold(val any) ANDOR
+
+	// NEQFold is the case-insensitive form of NEQ (string fields only).
+	NEQFold(val any) ANDOR
+
+	// ContainsFold is the case-insensitive form of Contains.
+	ContainsFold(val any) ANDOR
+
+	// NotContainsFold is the case-insensitive form of NotContains.
+	NotContainsFold(val any) ANDOR
+
+	// StartsWithFold is the case-insensitive form of StartsWith.
+	StartsWithFold(val any) ANDOR
+
+	// NotStartsWithFold is the case-insensitive form of NotStartsWith.
+	NotStartsWithFold(val any) ANDOR
+
+	// EndsWithFold is the case-insensitive form of EndsWith.
+	EndsWithFold(val any) ANDOR
+
+	// NotEndsWithFold is the case-insensitive form of NotEndsWith.
+	NotEndsWithFold(val any) ANDOR
 }
 
 // OrderOperation represents an interface for defining order directives (ascending or descending) for query sorting.

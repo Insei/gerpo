@@ -83,13 +83,13 @@ func TestWhere_IN_NIN(t *testing.T) {
 		wanted := []any{seed.posts[0].ID, seed.posts[5].ID, seed.posts[10].ID}
 
 		in, err := repo.GetList(ctx, func(m *Post, h query.GetListHelper[Post]) {
-			h.Where().Field(&m.ID).IN(wanted...)
+			h.Where().Field(&m.ID).In(wanted...)
 		})
 		require.NoError(t, err)
 		assert.Len(t, in, 3)
 
 		nin, err := repo.GetList(ctx, func(m *Post, h query.GetListHelper[Post]) {
-			h.Where().Field(&m.ID).NIN(wanted...)
+			h.Where().Field(&m.ID).NotIn(wanted...)
 		})
 		require.NoError(t, err)
 		assert.Len(t, nin, len(seed.posts)-3)
@@ -180,10 +180,10 @@ func TestWhere_LIKE_IgnoreCase(t *testing.T) {
 		assert.Equal(t, uint64(0), caseSensitive, "Contains is case-sensitive by default")
 
 		caseInsensitive, err := repo.Count(ctx, func(m *Post, h query.CountHelper[Post]) {
-			h.Where().Field(&m.Title).Contains("post", true)
+			h.Where().Field(&m.Title).ContainsFold("post")
 		})
 		require.NoError(t, err)
-		assert.Equal(t, uint64(30), caseInsensitive, "Contains(…, true) matches regardless of case")
+		assert.Equal(t, uint64(30), caseInsensitive, "ContainsFold matches regardless of case")
 	})
 }
 

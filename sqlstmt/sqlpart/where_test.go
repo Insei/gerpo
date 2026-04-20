@@ -572,7 +572,7 @@ func TestGenINFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genINFn(tc.query)
+			fn := genInFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedNeedAppendValues, ok)
@@ -622,7 +622,7 @@ func TestGenNINFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNINFn(tc.query)
+			fn := genNotInFn(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedNeedAppendValues, needAppendValues)
@@ -651,7 +651,7 @@ func TestGenCTICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genContainsICFn(tc.query)
+			fn := genContainsFoldFn(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, needAppendValues)
@@ -680,7 +680,7 @@ func TestGenNCTICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotContainsICFn(tc.query)
+			fn := genNotContainsFoldFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -709,7 +709,7 @@ func TestGenBWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genStartsWithICFn(tc.query)
+			fn := genStartsWithFoldFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -738,7 +738,7 @@ func TestGenNBWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotStartsWithICFn(tc.query)
+			fn := genNotStartsWithFoldFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -767,7 +767,7 @@ func TestGenEWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genEndsWithICFn(tc.query)
+			fn := genEndsWithFoldFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -796,7 +796,7 @@ func TestGenNEWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotEndsWithICFn(tc.query)
+			fn := genNotEndsWithFoldFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -1000,20 +1000,22 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			expectedOps: []types.Operation{
 				types.OperationEQ,
 				types.OperationNEQ,
-				types.OperationIN,
-				types.OperationNIN,
+				types.OperationIn,
+				types.OperationNotIn,
 				types.OperationContains,
 				types.OperationNotContains,
 				types.OperationStartsWith,
 				types.OperationNotStartsWith,
 				types.OperationEndsWith,
 				types.OperationNotEndsWith,
-				types.OperationContainsIgnoreCase,
-				types.OperationNotContainsIgnoreCase,
-				types.OperationStartsWithIgnoreCase,
-				types.OperationNotStartsWithIgnoreCase,
-				types.OperationEndsWithIgnoreCase,
-				types.OperationNotEndsWithIgnoreCase,
+				types.OperationEQFold,
+				types.OperationNEQFold,
+				types.OperationContainsFold,
+				types.OperationNotContainsFold,
+				types.OperationStartsWithFold,
+				types.OperationNotStartsWithFold,
+				types.OperationEndsWithFold,
+				types.OperationNotEndsWithFold,
 			},
 		},
 		{
@@ -1026,8 +1028,8 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationLTE,
 				types.OperationGT,
 				types.OperationGTE,
-				types.OperationIN,
-				types.OperationNIN,
+				types.OperationIn,
+				types.OperationNotIn,
 			},
 		},
 		{
@@ -1040,8 +1042,8 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationLTE,
 				types.OperationGT,
 				types.OperationGTE,
-				types.OperationIN,
-				types.OperationNIN,
+				types.OperationIn,
+				types.OperationNotIn,
 			},
 		},
 		{
@@ -1060,8 +1062,8 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			expectedOps: []types.Operation{
 				types.OperationEQ,
 				types.OperationNEQ,
-				types.OperationIN,
-				types.OperationNIN,
+				types.OperationIn,
+				types.OperationNotIn,
 			},
 		},
 		{

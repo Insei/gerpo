@@ -53,7 +53,7 @@ func genGTEFn(query string) func(ctx context.Context, value any) (string, bool) 
 	}
 }
 
-func genINFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genInFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
 		anyArr := (*[]any)(fPtr)
@@ -65,7 +65,7 @@ func genINFn(query string) func(ctx context.Context, value any) (string, bool) {
 		return query + " IN (" + placeholders + ")", true
 	}
 }
-func genNINFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotInFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
 		anyArr := (*[]any)(fPtr)
@@ -117,35 +117,53 @@ func genNotEndsWithFn(query string) func(ctx context.Context, value any) (string
 	}
 }
 
-func genContainsICFn(query string) func(ctx context.Context, value any) (string, bool) {
+// Case-insensitive "fold" variants — mirrors strings.EqualFold naming.
+
+func genEQFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		if value == nil {
+			return query + " IS NULL", false
+		}
+		return "LOWER(" + query + ") = LOWER(CAST(? AS text))", true
+	}
+}
+func genNEQFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
+	return func(ctx context.Context, value any) (string, bool) {
+		if value == nil {
+			return query + " IS NOT NULL", false
+		}
+		return "LOWER(" + query + ") != LOWER(CAST(? AS text))", true
+	}
+}
+
+func genContainsFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
 	}
 }
-func genNotContainsICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotContainsFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
 	}
 }
 
-func genStartsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genStartsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
 	}
 }
-func genNotStartsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotStartsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
 	}
 }
 
-func genEndsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genEndsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
 	}
 }
-
-func genNotEndsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotEndsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
 	}
@@ -166,20 +184,22 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 	case reflect.String:
 		filters[types.OperationEQ] = genEQFn(sqlColumnString)
 		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
-		filters[types.OperationIN] = genINFn(sqlColumnString)
-		filters[types.OperationNIN] = genNINFn(sqlColumnString)
-		filters[types.OperationContainsIgnoreCase] = genContainsICFn(sqlColumnString)
-		filters[types.OperationNotContainsIgnoreCase] = genNotContainsICFn(sqlColumnString)
-		filters[types.OperationStartsWithIgnoreCase] = genStartsWithICFn(sqlColumnString)
-		filters[types.OperationNotStartsWithIgnoreCase] = genNotStartsWithICFn(sqlColumnString)
-		filters[types.OperationEndsWithIgnoreCase] = genEndsWithICFn(sqlColumnString)
-		filters[types.OperationNotEndsWithIgnoreCase] = genNotEndsWithICFn(sqlColumnString)
+		filters[types.OperationIn] = genInFn(sqlColumnString)
+		filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
 		filters[types.OperationContains] = genContainsFn(sqlColumnString)
 		filters[types.OperationNotContains] = genNotContainsFn(sqlColumnString)
 		filters[types.OperationStartsWith] = genStartsWithFn(sqlColumnString)
 		filters[types.OperationNotStartsWith] = genNotStartsWithFn(sqlColumnString)
 		filters[types.OperationEndsWith] = genEndsWithFn(sqlColumnString)
 		filters[types.OperationNotEndsWith] = genNotEndsWithFn(sqlColumnString)
+		filters[types.OperationEQFold] = genEQFoldFn(sqlColumnString)
+		filters[types.OperationNEQFold] = genNEQFoldFn(sqlColumnString)
+		filters[types.OperationContainsFold] = genContainsFoldFn(sqlColumnString)
+		filters[types.OperationNotContainsFold] = genNotContainsFoldFn(sqlColumnString)
+		filters[types.OperationStartsWithFold] = genStartsWithFoldFn(sqlColumnString)
+		filters[types.OperationNotStartsWithFold] = genNotStartsWithFoldFn(sqlColumnString)
+		filters[types.OperationEndsWithFold] = genEndsWithFoldFn(sqlColumnString)
+		filters[types.OperationNotEndsWithFold] = genNotEndsWithFoldFn(sqlColumnString)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
@@ -189,8 +209,8 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		filters[types.OperationLTE] = genLTEFn(sqlColumnString)
 		filters[types.OperationGT] = genGTFn(sqlColumnString)
 		filters[types.OperationGTE] = genGTEFn(sqlColumnString)
-		filters[types.OperationIN] = genINFn(sqlColumnString)
-		filters[types.OperationNIN] = genNINFn(sqlColumnString)
+		filters[types.OperationIn] = genInFn(sqlColumnString)
+		filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
 	default:
 		switch derefType {
 		case reflect.TypeOf(time.Time{}):
@@ -201,8 +221,8 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		case reflect.TypeOf(uuid.UUID{}):
 			filters[types.OperationEQ] = genEQFn(sqlColumnString)
 			filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
-			filters[types.OperationIN] = genINFn(sqlColumnString)
-			filters[types.OperationNIN] = genNINFn(sqlColumnString)
+			filters[types.OperationIn] = genInFn(sqlColumnString)
+			filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
 		}
 	}
 	return filters

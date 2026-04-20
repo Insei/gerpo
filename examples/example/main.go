@@ -74,7 +74,7 @@ func main() {
 	ctxCache := ctx.WrapContext(context.Background())
 	_ = []int{1, 2, 3, 4, 5, 6}
 	list, err := repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
-		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)
+		h.Where().Field(&m.ID).In(1, 2, 3, 4, 5, 6)
 		h.Exclude(&m.UpdatedAt, &m.ID)
 	})
 

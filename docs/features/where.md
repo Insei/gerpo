@@ -22,35 +22,60 @@ h.Where().Field(&m.DeletedAt).EQ(nil) // IS NULL
 
 | Method | SQL |
 |---|---|
-| `IN(a, b, c)` | `IN (?, ?, ?)` |
-| `NIN(a, b, c)` | `NOT IN (?, ?, ?)` |
+| `In(a, b, c)` | `IN (?, ?, ?)` |
+| `NotIn(a, b, c)` | `NOT IN (?, ?, ?)` |
 
 Accept variadic `any` or an already-expanded slice:
 
 ```go
-h.Where().Field(&m.ID).IN(id1, id2, id3)
-h.Where().Field(&m.ID).IN(ids...) // if ids is []uuid.UUID
+h.Where().Field(&m.ID).In(id1, id2, id3)
+h.Where().Field(&m.ID).In(ids...) // if ids is []uuid.UUID
 ```
 
 ## String patterns
 
-| Method | SQL | Case-insensitive variant |
-|---|---|---|
-| `Contains(v)` | `LIKE CONCAT('%', CAST(? AS text), '%')` | `Contains(v, true)` → `LOWER(col) LIKE LOWER(…)` |
-| `NotContains(v)` | `NOT LIKE CONCAT('%', …, '%')` | `NotContains(v, true)` |
-| `StartsWith(v)` | `LIKE CONCAT(CAST(? AS text), '%')` | `StartsWith(v, true)` |
-| `NotStartsWith(v)` | `NOT LIKE CONCAT(…, '%')` | `NotStartsWith(v, true)` |
-| `EndsWith(v)` | `LIKE CONCAT('%', CAST(? AS text))` | `EndsWith(v, true)` |
-| `NotEndsWith(v)` | `NOT LIKE CONCAT('%', …)` | `NotEndsWith(v, true)` |
+String-typed (and `*string`) columns get six LIKE-style operators:
+
+| Method | SQL |
+|---|---|
+| `Contains(v)` | `LIKE CONCAT('%', CAST(? AS text), '%')` |
+| `NotContains(v)` | `NOT LIKE CONCAT('%', …, '%')` |
+| `StartsWith(v)` | `LIKE CONCAT(CAST(? AS text), '%')` |
+| `NotStartsWith(v)` | `NOT LIKE CONCAT(…, '%')` |
+| `EndsWith(v)` | `LIKE CONCAT('%', CAST(? AS text))` |
+| `NotEndsWith(v)` | `NOT LIKE CONCAT('%', …)` |
 
 ```go
-h.Where().Field(&m.Title).Contains("go", true)   // case-insensitive contains
-h.Where().Field(&m.Email).StartsWith("admin@")    // starts with
-h.Where().Field(&m.Path).EndsWith(".log", true)   // ends with, case-insensitive
+h.Where().Field(&m.Title).Contains("go")
+h.Where().Field(&m.Email).StartsWith("admin@")
+h.Where().Field(&m.Path).EndsWith(".log")
 ```
 
 !!! note "CAST(? AS text)"
     A bare `CONCAT(…)` breaks PostgreSQL type inference, so gerpo casts the parameter to `text` explicitly. The same form is valid in MySQL.
+
+## Case-insensitive (`Fold`) variants
+
+The `Fold` suffix is the Go-idiomatic spelling for case-insensitive equality (`strings.EqualFold`). All case-insensitive string operators follow the same naming:
+
+| Method | SQL |
+|---|---|
+| `EQFold(v)` | `LOWER(col) = LOWER(CAST(? AS text))` |
+| `NEQFold(v)` | `LOWER(col) != LOWER(CAST(? AS text))` |
+| `ContainsFold(v)` | `LOWER(col) LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))` |
+| `NotContainsFold(v)` | `LOWER(col) NOT LIKE LOWER(CONCAT('%', …, '%'))` |
+| `StartsWithFold(v)` | `LOWER(col) LIKE LOWER(CONCAT(CAST(? AS text), '%'))` |
+| `NotStartsWithFold(v)` | `LOWER(col) NOT LIKE LOWER(CONCAT(…, '%'))` |
+| `EndsWithFold(v)` | `LOWER(col) LIKE LOWER(CONCAT('%', CAST(? AS text)))` |
+| `NotEndsWithFold(v)` | `LOWER(col) NOT LIKE LOWER(CONCAT('%', …))` |
+
+```go
+h.Where().Field(&m.Email).EQFold("alice@Example.com")
+h.Where().Field(&m.Title).ContainsFold("go")
+h.Where().Field(&m.Path).EndsWithFold(".LOG")
+```
+
+All `*Fold` operators are registered only on string-typed columns (gerpo does not lowercase numbers or timestamps).
 
 ## Logic: AND, OR, Group
 

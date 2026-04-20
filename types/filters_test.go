@@ -91,9 +91,9 @@ func TestFilterManager_NilForPointerField_OK(t *testing.T) {
 
 func TestFilterManager_SliceOfValues_OK(t *testing.T) {
 	m := NewFilterManagerForField(getField(t, "Age"))
-	m.AddFilterFn(OperationIN, func(context.Context, any) (string, bool) { return "age IN (?)", true })
+	m.AddFilterFn(OperationIn, func(context.Context, any) (string, bool) { return "age IN (?)", true })
 
-	fn, _ := m.GetFilterFn(OperationIN)
+	fn, _ := m.GetFilterFn(OperationIn)
 	sql, args, err := fn(context.Background(), []int{1, 2, 3})
 	require.NoError(t, err)
 	assert.Equal(t, "age IN (?)", sql)
@@ -102,9 +102,9 @@ func TestFilterManager_SliceOfValues_OK(t *testing.T) {
 
 func TestFilterManager_EmptySlice_NoOp(t *testing.T) {
 	m := NewFilterManagerForField(getField(t, "Age"))
-	m.AddFilterFn(OperationIN, func(context.Context, any) (string, bool) { return "never", true })
+	m.AddFilterFn(OperationIn, func(context.Context, any) (string, bool) { return "never", true })
 
-	fn, _ := m.GetFilterFn(OperationIN)
+	fn, _ := m.GetFilterFn(OperationIn)
 	sql, args, err := fn(context.Background(), []int{})
 	require.NoError(t, err)
 	assert.Empty(t, sql)

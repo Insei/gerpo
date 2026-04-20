@@ -307,7 +307,7 @@ func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
 		// Тот же репо: WHERE с IN-списком (3 значения) — четыре аргумента всего:
 		// $1 = JOIN UUID, $2..$4 = три int-возраста.
 		gotIN, err := repo.GetList(ctx, func(m *User, h query.GetListHelper[User]) {
-			h.Where().Field(&m.Age).IN(25, 27, 29)
+			h.Where().Field(&m.Age).In(25, 27, 29)
 			h.OrderBy().Field(&m.Age).ASC()
 		})
 		require.NoError(t, err)
