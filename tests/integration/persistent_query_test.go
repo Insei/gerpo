@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -206,9 +205,7 @@ func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
 				c.Field(&m.CreatedAt).OmitOnUpdate()
 				c.Field(&m.UpdatedAt).OmitOnInsert()
 				c.Field(&m.DeletedAt).OmitOnInsert()
-				c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
-					return "COALESCE(COUNT(posts.id), 0)"
-				})
+				c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 			}).
 			WithQuery(func(m *User, h query.PersistentHelper[User]) {
 				h.LeftJoinOn(
@@ -267,9 +264,7 @@ func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
 				c.Field(&m.CreatedAt).OmitOnUpdate()
 				c.Field(&m.UpdatedAt).OmitOnInsert()
 				c.Field(&m.DeletedAt).OmitOnInsert()
-				c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
-					return "COALESCE(COUNT(posts.id), 0)"
-				})
+				c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 			}).
 			WithQuery(func(m *User, h query.PersistentHelper[User]) {
 				h.LeftJoinOn(

@@ -13,9 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newUserRepoComputeDropIn assembles a User repository using Compute(sql) instead
-// of the deprecated WithSQL(func(ctx)). The setup is otherwise identical to
-// newUserRepo, so any behavioral divergence indicates a regression.
+// newUserRepoComputeDropIn assembles a User repository using Compute(sql). The
+// setup mirrors newUserRepo, so any behavioral divergence indicates a regression.
 func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
 	repo, err := gerpo.New[User]().
@@ -102,8 +101,8 @@ func newUserRepoAggregate(t *testing.T, ab adapterBundle) gerpo.Repository[User]
 	return repo
 }
 
-// TestVirtual_NewAPI_ComputeDropIn — Compute(sql) yields the same observable result
-// as the deprecated WithSQL(func(ctx) string) on every adapter.
+// TestVirtual_NewAPI_ComputeDropIn — Compute(sql) behaves identically across every
+// adapter for a straightforward aggregate expression over a JOIN.
 func TestVirtual_NewAPI_ComputeDropIn(t *testing.T) {
 	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
 		seed := defaultSeed(t)
@@ -115,7 +114,7 @@ func TestVirtual_NewAPI_ComputeDropIn(t *testing.T) {
 			h.Where().Field(&m.ID).EQ(seed.users[0].ID)
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 3, got.PostCount, "Compute must produce the same count as WithSQL")
+		assert.Equal(t, 3, got.PostCount, "Compute must return the aggregated count per user")
 	})
 }
 

@@ -37,9 +37,7 @@ func TestInsert(t *testing.T) {
 			columns.Field(&m.Name)
 			columns.Field(&m.DeletedAt).OmitOnInsert()
 			columns.Field(&m.VirtualString).AsVirtual().
-				WithSQL(func(ctx context.Context) string {
-					return `convert(varchar(25), getdate(), 120)`
-				}) //Check that not appends to update sql query
+				Compute("convert(varchar(25), getdate(), 120)") //Check that not appends to update sql query
 			columns.Field(&m.AnotherTable).WithTable("<another_table>") // in real usage join should be configured in WithQuery, but now we simply drops this column
 		}).
 		WithBeforeInsert(func(ctx context.Context, m *User) error {

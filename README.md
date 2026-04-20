@@ -105,13 +105,9 @@ Against a mock adapter (IO = 0) the relative overhead is larger, but absolute co
 **1.0.0**
 
 - [x] Caching engine configuration in the repository builder (#46).
-- [ ] New API for configuring virtual columns (current one marked deprecated).
+- [x] New API for configuring virtual columns — `Compute(sql, args...)` replaced `WithSQL`; `Aggregate()` marks aggregate expressions; `Filter(op, spec)` registers per-operator overrides.
 
-The rest of the API is stable and not expected to change in 1.0.0.
-
-**1.1.0**
-
-- Return inserted IDs and generated timestamps.
+The API is now stable and ready for v1.0.0.
 
 ## Contributing
 

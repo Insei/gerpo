@@ -68,7 +68,7 @@ A repository is safe to share across goroutines. Internally, statement objects a
 
 `Build()` returns an error if:
 
-- `DB` or `Table` is not set;
+- `Adapter` or `Table` is not set;
 - `Columns` contains no columns;
-- a virtual column lacks `WithSQL`;
+- a virtual column lacks `Compute`;
 - `WithSoftDeletion` references a field that is not declared as a column.

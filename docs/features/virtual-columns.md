@@ -134,12 +134,3 @@ repo.Insert(ctx, u)
 ```
 
 The next `GetFirst` returns whatever the database computed.
-
-## Migration: deprecated → new
-
-| Deprecated                                   | New                                                              |
-|----------------------------------------------|------------------------------------------------------------------|
-| `WithSQL(func(ctx) string)`                  | `Compute(sql string, args ...any)`                               |
-| `WithBoolEqFilter(fn)`                       | `Filter(types.OperationEQ, virtual.Match{Cases: ..., Default})`  |
-
-`WithSQL` and `WithBoolEqFilter` still compile; the deprecation bracket is 1–2 minor releases. Existing code keeps working — plan the migration before the next major bump.

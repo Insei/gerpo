@@ -19,12 +19,14 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - `types`: `SQLFilterManager.GetFilterFn` now returns `func(ctx, value any) (string, []any, error)` so filters can carry bound arguments directly; the legacy `AddFilterFn(op, func) (string, bool)` keeps working as a thin adapter and `AddFilterFnArgs` exposes the new shape.
 - `types.Column`: adds `IsAggregate() bool` and `HasFilterOverride(op Operation) bool` (default `false` on regular columns) so the WHERE builder can enforce the aggregate guard uniformly.
 
-### Deprecations
+### Breaking Changes
 
-- `virtual.(*Builder).WithSQL` — use `Compute(sql, args...)`.
-- `virtual.(*Builder).WithBoolEqFilter` — use `Filter(types.OperationEQ, virtual.Match{...})`.
+- `virtual.(*Builder).WithSQL` removed — use `Compute(sql, args...)`.
+- `virtual.(*Builder).WithBoolEqFilter` removed — use `Filter(types.OperationEQ, virtual.Match{...})`.
+- `virtual.BoolEQFilterBuilder` and its `AddTrueSQLFn` / `AddFalseSQLFn` / `AddNilSQLFn` removed alongside `WithBoolEqFilter`.
+- `virtual.WithSQL` and `virtual.WithBoolEqFilter` package-level options removed.
 
-Both still compile; the deprecation bracket is 1–2 minor releases.
+Existing callers pass through the new API one-to-one: `AsVirtual().WithSQL(func(ctx) string { return expr })` becomes `AsVirtual().Compute(expr)`. Note that `Compute` wraps the expression in parentheses by contract — update any regex-based SQL assertions to match the extra `(...)`.
 
 ## [0.9.5] - 2026-04-19
 

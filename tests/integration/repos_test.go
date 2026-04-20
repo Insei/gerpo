@@ -26,9 +26,7 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 			c.Field(&m.CreatedAt).OmitOnUpdate()
 			c.Field(&m.UpdatedAt).OmitOnInsert()
 			c.Field(&m.DeletedAt).OmitOnInsert()
-			c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
-				return "COALESCE(COUNT(posts.id), 0)"
-			})
+			c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
 			h.LeftJoinOn("posts", "posts.user_id = users.id")

@@ -40,12 +40,8 @@ func TestGetFirst(t *testing.T) {
 			columns.Field(&m.Name)
 			columns.Field(&m.DeletedAt).OmitOnInsert()
 			columns.Field(&m.VirtualString).AsVirtual().
-				WithSQL(func(ctx context.Context) string {
-					return `convert(varchar(25), getdate(), 120)`
-				}) //Check that not appends to update sql query
-			columns.Field(&m.LastLoginTime).AsVirtual().WithSQL(func(ctx context.Context) string {
-				return "MAX(logins.created_at)"
-			})
+				Compute("convert(varchar(25), getdate(), 120)") //Check that not appends to update sql query
+			columns.Field(&m.LastLoginTime).AsVirtual().Compute("MAX(logins.created_at)")
 		}).
 		WithSoftDeletion(func(m *User, softDeletion *gerpo.SoftDeletionBuilder[User]) {
 			softDeletion.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -73,8 +69,8 @@ func TestGetFirst(t *testing.T) {
 			},
 			setupDb: func(mockDB sqlmock.Sqlmock, dateAt time.Time, m *User) {
 
-				mockDB.ExpectQuery(`SELECT users.id, users.created_at, users.updated_at, users.name, users.deleted_at, convert\(varchar\(25\), getdate\(\), 120\), MAX\(logins.created_at\)
-						FROM users 
+				mockDB.ExpectQuery(`SELECT users.id, users.created_at, users.updated_at, users.name, users.deleted_at, \(convert\(varchar\(25\), getdate\(\), 120\)\), \(MAX\(logins.created_at\)\)
+						FROM users
 					    LEFT JOIN logins ON logins.user_id = users.id WHERE \(users.deleted_at IS NULL\) ORDER BY users.created_at ASC LIMIT 1`).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at", "name", "virtual_string", "logins_created_at", "deleted_at"}).
 						AddRow(m.ID, dateAt, &dateAt, "TestName", &dateAt, time.Now().String(), &dateAt)).
@@ -157,12 +153,8 @@ func BenchmarkGetFirst(b *testing.B) {
 			columns.Field(&m.Name)
 			columns.Field(&m.DeletedAt).OmitOnInsert()
 			//columns.Field(&m.VirtualString).AsVirtual().
-			//	WithSQL(func(ctx context.Context) string {
-			//		return `convert(varchar(25), getdate(), 120)`
-			//	}) //Check that not appends to update sql query
-			//columns.Field(&m.LastLoginTime).AsVirtual().WithSQL(func(ctx context.Context) string {
-			//	return "MAX(logins.created_at)"
-			//})
+			//	Compute("convert(varchar(25), getdate(), 120)") //Check that not appends to update sql query
+			//columns.Field(&m.LastLoginTime).AsVirtual().Compute("MAX(logins.created_at)")
 		}).
 		WithSoftDeletion(func(m *User, softDeletion *gerpo.SoftDeletionBuilder[User]) {
 			softDeletion.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
