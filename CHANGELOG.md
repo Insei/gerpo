@@ -6,28 +6,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
-## [Unreleased]
+## [1.0.0] - 2026-04-20
+
+### Bug Fixes
+
+- **cache:** Wipe whole per-context storage on any repo write (eb49a83)
+
+### Documentation
+
+- Add examples/todo-api callouts across the site (d8c9ff7)
+- Add production-ready setup page (08fd914)
+- Document savepoints deferral (review 3.5) (f5d4e1d)
+- State PostgreSQL-only scope prominently (fb360f2)
+- Capture multi-database support backlog in TODO.md (53fd382)
+- Drop LOC comparison, clarify SetValueFn probe scope (bc1da3a)
 
 ### Features
 
-- `virtual`: new column API — `Compute(sql, args...)` replaces `WithSQL`; `Aggregate()` marks aggregate expressions; `Filter(op, spec)` registers per-operator overrides through the `FilterSpec` sum-type (`virtual.SQL`, `Bound`, `SQLArgs`, `Match`, `Func`).
-- `sqlstmt`: `WhereBuilder` refuses to build a WHERE condition on an aggregate virtual column without an explicit `Filter()` override and surfaces a clear error instead of emitting invalid SQL.
-- `sqlstmt`: Compute-bound args declared via `Compute(sql, args...)` are propagated through SELECT and auto-derived WHERE filters in positional order.
+- Add InsertMany for batched multi-row inserts (dfbb249)
+- RETURNING for Insert/Update with per-request override (b71ed1b)
+- Hook callbacks return error, enable cascade-related-rows pattern (8ede5cd)
+- **query:** Auto GROUP BY when an aggregate virtual column is in SELECT (c4e3700)
+- **virtual:** New Compute/Aggregate/Filter API with FilterSpec sum-type (b849beb)
 
 ### Refactor
 
-- `types`: `SQLFilterManager.GetFilterFn` now returns `func(ctx, value any) (string, []any, error)` so filters can carry bound arguments directly; the legacy `AddFilterFn(op, func) (string, bool)` keeps working as a thin adapter and `AddFilterFnArgs` exposes the new shape.
-- `types.Column`: adds `IsAggregate() bool` and `HasFilterOverride(op Operation) bool` (default `false` on regular columns) so the WHERE builder can enforce the aggregate guard uniformly.
+- Remove deprecated virtual-column API (ff28d90)
+- Unify terminology — driver / adapter / backend (6433655)
+- Replace repo.Tx(tx) with ctx-carried gerpo.WithTx / RunInTx (79a7f6a)
+- Unify adapter/driver terminology (1ee19e1)
+- **types:** Rename NEQ → NotEQ (and NEQFold → NotEQFold) (a3f3446)
+- **types:** Rename IN/NIN, drop variadic ignoreCase, add *Fold ops (9499cf1)
+- Rename gerpo.NewBuilder → gerpo.New (low-level New made internal) (27bf9d3)
+- Remove deprecated callback JOIN API (LeftJoin/InnerJoin) (2cf7903)
+- **cachectx:** Rename CtxCache→Cache, NewCtxCache→WrapContext (3fa7f8e)
+- **column:** Rename *Protection to OmitOn* and add ReadOnly shortcut (9f25e4c)
+- Drop AsColumn(), Field() returns a column directly (1fe1ab4)
+- Move Tracer hook from executor to Repository with table info (6282ba0)
+- **types:** Drop WhereOperation.OP escape hatch (8e96aab)
+- **types:** Rename LIKE operators to readable names (b8d5406)
 
-### Breaking Changes
+### Tests
 
-- `virtual.(*Builder).WithSQL` removed — use `Compute(sql, args...)`.
-- `virtual.(*Builder).WithBoolEqFilter` removed — use `Filter(types.OperationEQ, virtual.Match{...})`.
-- `virtual.BoolEQFilterBuilder` and its `AddTrueSQLFn` / `AddFalseSQLFn` / `AddNilSQLFn` removed alongside `WithBoolEqFilter`.
-- `virtual.WithSQL` and `virtual.WithBoolEqFilter` package-level options removed.
+- **integration:** Fix returning_test closure pointers (de5454f)
+- Raise unit coverage from ~61% to ≥75% on every non-adapter package (e330ed1)
 
-Existing callers pass through the new API one-to-one: `AsVirtual().WithSQL(func(ctx) string { return expr })` becomes `AsVirtual().Compute(expr)`. Note that `Compute` wraps the expression in parentheses by contract — update any regex-based SQL assertions to match the extra `(...)`.
+### Examples
 
+- Replace kitchen-sink script with todo-api CRUD service (04f8af5)
+
+### Examples/todo-api
+
+- Remove stray .AsVirtual() from Title column (1a2a25e)
+- Wrap plpgsql function in goose StatementBegin/End (5805e7c)
 ## [0.9.5] - 2026-04-19
 
 ### Bug Fixes
@@ -45,6 +76,7 @@ Existing callers pass through the new API one-to-one: `AsVirtual().WithSQL(func(
 
 ### Documentation
 
+- Prepare changelog for v0.9.5 (12dd77b)
 - Add "Why gerpo?" comparison page (ced6c5f)
 - Bootstrap CHANGELOG with git-cliff and add release tooling (2e62be1)
 - Add runnable examples for godoc / pkg.go.dev (518f74f)
