@@ -40,7 +40,7 @@ func (c *column) AddFilterFnArgs(operation Operation, sqlGenFn func(ctx context.
 	c.avail = append(c.avail, operation)
 	c.operations[operation] = func(ctx context.Context, value any) (string, []any, error) {
 		if c.field.GetType().Kind() == reflect.Ptr && value == nil &&
-			(operation == OperationEQ || operation == OperationNEQ) {
+			(operation == OperationEQ || operation == OperationNotEQ) {
 			return sqlGenFn(ctx, value)
 		}
 

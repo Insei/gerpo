@@ -7,7 +7,7 @@ All operators are built with `h.Where().Field(&m.X).<Op>(val)`. The result is an
 | Method | SQL | Works for |
 |---|---|---|
 | `EQ(v)` | `= ?` (or `IS NULL` when `v == nil`) | any type |
-| `NEQ(v)` | `!= ?` (or `IS NOT NULL`) | any |
+| `NotEQ(v)` | `!= ?` (or `IS NOT NULL`) | any |
 | `LT(v)` | `< ?` | numbers, dates |
 | `LTE(v)` | `<= ?` | numbers, dates |
 | `GT(v)` | `> ?` | numbers, dates |
@@ -61,7 +61,7 @@ The `Fold` suffix is the Go-idiomatic spelling for case-insensitive equality (`s
 | Method | SQL |
 |---|---|
 | `EQFold(v)` | `LOWER(col) = LOWER(CAST(? AS text))` |
-| `NEQFold(v)` | `LOWER(col) != LOWER(CAST(? AS text))` |
+| `NotEQFold(v)` | `LOWER(col) != LOWER(CAST(? AS text))` |
 | `ContainsFold(v)` | `LOWER(col) LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))` |
 | `NotContainsFold(v)` | `LOWER(col) NOT LIKE LOWER(CONCAT('%', …, '%'))` |
 | `StartsWithFold(v)` | `LOWER(col) LIKE LOWER(CONCAT(CAST(? AS text), '%'))` |
@@ -87,12 +87,12 @@ All `*Fold` operators are registered only on string-typed columns (gerpo does no
 // (age >= 18 AND email IS NOT NULL) OR role = 'admin'
 h.Where().Group(func(t types.WhereTarget) {
     t.Field(&m.Age).GTE(18).
-        AND().Field(&m.Email).NEQ(nil)
+        AND().Field(&m.Email).NotEQ(nil)
 }).OR().Field(&m.Role).EQ("admin")
 ```
 
 ## Limitations
 
 - `LT`/`GT`/`LTE`/`GTE` do not type-check at runtime — the database does. gerpo passes values through as-is.
-- For string LIKE operators the value must be a string; for `EQ`/`NEQ` the value type must match the field type (nullable types accept `nil`).
+- For string LIKE operators the value must be a string; for `EQ`/`NotEQ` the value type must match the field type (nullable types accept `nil`).
 - A type mismatch produces a descriptive error wrapped with `gerpo.ErrApplyQuery`.

@@ -23,7 +23,7 @@ func (m *MockColumn) GetFilterFn(operation types.Operation) (func(ctx context.Co
 			}
 			return m.name + " = ?", []any{value}, nil
 		},
-		types.OperationNEQ: func(ctx context.Context, value any) (string, []any, error) {
+		types.OperationNotEQ: func(ctx context.Context, value any) (string, []any, error) {
 			if value == nil {
 				return m.name + " IS NOT NULL", nil, nil
 			}
@@ -175,9 +175,9 @@ func TestWhereBuilder_AppendCondition(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name:           "Add NEQ condition with nil",
+			name:           "Add NotEQ condition with nil",
 			column:         &MockColumn{name: "deleted_at", allowedAction: true},
-			operation:      types.OperationNEQ,
+			operation:      types.OperationNotEQ,
 			value:          nil,
 			initialSQL:     "",
 			expectedSQL:    "deleted_at IS NOT NULL",
@@ -406,7 +406,7 @@ func TestGenNEQFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNEQFn(tc.query)
+			fn := genNotEQFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -991,7 +991,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fieldName: "Bool",
 			expectedOps: []types.Operation{
 				types.OperationEQ,
-				types.OperationNEQ,
+				types.OperationNotEQ,
 			},
 		},
 		{
@@ -999,7 +999,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fieldName: "String",
 			expectedOps: []types.Operation{
 				types.OperationEQ,
-				types.OperationNEQ,
+				types.OperationNotEQ,
 				types.OperationIn,
 				types.OperationNotIn,
 				types.OperationContains,
@@ -1009,7 +1009,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationEndsWith,
 				types.OperationNotEndsWith,
 				types.OperationEQFold,
-				types.OperationNEQFold,
+				types.OperationNotEQFold,
 				types.OperationContainsFold,
 				types.OperationNotContainsFold,
 				types.OperationStartsWithFold,
@@ -1023,7 +1023,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fieldName: "Int",
 			expectedOps: []types.Operation{
 				types.OperationEQ,
-				types.OperationNEQ,
+				types.OperationNotEQ,
 				types.OperationLT,
 				types.OperationLTE,
 				types.OperationGT,
@@ -1037,7 +1037,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fieldName: "Float64",
 			expectedOps: []types.Operation{
 				types.OperationEQ,
-				types.OperationNEQ,
+				types.OperationNotEQ,
 				types.OperationLT,
 				types.OperationLTE,
 				types.OperationGT,
@@ -1061,7 +1061,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fieldName: "UUID",
 			expectedOps: []types.Operation{
 				types.OperationEQ,
-				types.OperationNEQ,
+				types.OperationNotEQ,
 				types.OperationIn,
 				types.OperationNotIn,
 			},
@@ -1071,7 +1071,7 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 			fieldName: "TimePtr",
 			expectedOps: []types.Operation{
 				types.OperationEQ,
-				types.OperationNEQ,
+				types.OperationNotEQ,
 				types.OperationLT,
 				types.OperationGT,
 				types.OperationLTE,

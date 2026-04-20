@@ -110,8 +110,8 @@ const (
 	// OperationEQ is a constant of type Operation that represents the operation where the field is equal to the value
 	OperationEQ = Operation("eq")
 
-	// OperationNEQ is a constant of type Operation that represents the operation where the field is not equal to the value.
-	OperationNEQ = Operation("neq")
+	// OperationNotEQ is a constant of type Operation that represents the operation where the field is not equal to the value.
+	OperationNotEQ = Operation("not_eq")
 
 	// OperationGT is a constant of type Operation that represents the operation where the field is greater than the value.
 	OperationGT = Operation("gt")
@@ -158,8 +158,8 @@ const (
 	// OperationEQFold is the case-insensitive form of OperationEQ (string columns only).
 	OperationEQFold = Operation("eq_fold")
 
-	// OperationNEQFold is the case-insensitive form of OperationNEQ (string columns only).
-	OperationNEQFold = Operation("neq_fold")
+	// OperationNotEQFold is the case-insensitive form of OperationNotEQ (string columns only).
+	OperationNotEQFold = Operation("not_eq_fold")
 
 	// OperationContainsFold is the case-insensitive form of OperationContains.
 	OperationContainsFold = Operation("contains_fold")
@@ -227,8 +227,8 @@ type WhereOperation interface {
 	// EQ applies an equality condition (=) to the target field.
 	EQ(val any) ANDOR
 
-	// NEQ applies an inequality condition (!=) to the target field.
-	NEQ(val any) ANDOR
+	// NotEQ applies an inequality condition (!=) to the target field.
+	NotEQ(val any) ANDOR
 
 	// LT applies a less-than (<) condition.
 	LT(val any) ANDOR
@@ -271,8 +271,8 @@ type WhereOperation interface {
 	// Mirrors strings.EqualFold: lowercases both sides before comparing.
 	EQFold(val any) ANDOR
 
-	// NEQFold is the case-insensitive form of NEQ (string fields only).
-	NEQFold(val any) ANDOR
+	// NotEQFold is the case-insensitive form of NotEQ (string fields only).
+	NotEQFold(val any) ANDOR
 
 	// ContainsFold is the case-insensitive form of Contains.
 	ContainsFold(val any) ANDOR

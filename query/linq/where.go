@@ -94,7 +94,7 @@ func (q *WhereBuilder) Group(f func(t types.WhereTarget)) types.ANDOR {
 }
 
 // whereOperation binds either a types.Column or a fieldPtr to its parent WhereBuilder
-// so that the subsequent EQ/NEQ/… call can append a structured operation without a closure.
+// so that the subsequent EQ/NotEQ/… call can append a structured operation without a closure.
 type whereOperation struct {
 	parent   *WhereBuilder
 	column   types.Column
@@ -120,12 +120,12 @@ func (o *whereOperation) push(operation types.Operation, val any) types.ANDOR {
 
 // Universal operators.
 
-func (o *whereOperation) EQ(val any) types.ANDOR  { return o.push(types.OperationEQ, val) }
-func (o *whereOperation) NEQ(val any) types.ANDOR { return o.push(types.OperationNEQ, val) }
-func (o *whereOperation) GT(val any) types.ANDOR  { return o.push(types.OperationGT, val) }
-func (o *whereOperation) GTE(val any) types.ANDOR { return o.push(types.OperationGTE, val) }
-func (o *whereOperation) LT(val any) types.ANDOR  { return o.push(types.OperationLT, val) }
-func (o *whereOperation) LTE(val any) types.ANDOR { return o.push(types.OperationLTE, val) }
+func (o *whereOperation) EQ(val any) types.ANDOR    { return o.push(types.OperationEQ, val) }
+func (o *whereOperation) NotEQ(val any) types.ANDOR { return o.push(types.OperationNotEQ, val) }
+func (o *whereOperation) GT(val any) types.ANDOR    { return o.push(types.OperationGT, val) }
+func (o *whereOperation) GTE(val any) types.ANDOR   { return o.push(types.OperationGTE, val) }
+func (o *whereOperation) LT(val any) types.ANDOR    { return o.push(types.OperationLT, val) }
+func (o *whereOperation) LTE(val any) types.ANDOR   { return o.push(types.OperationLTE, val) }
 
 func (o *whereOperation) In(vals ...any) types.ANDOR    { return o.push(types.OperationIn, vals) }
 func (o *whereOperation) NotIn(vals ...any) types.ANDOR { return o.push(types.OperationNotIn, vals) }
@@ -156,8 +156,8 @@ func (o *whereOperation) NotEndsWith(val any) types.ANDOR {
 func (o *whereOperation) EQFold(val any) types.ANDOR {
 	return o.push(types.OperationEQFold, val)
 }
-func (o *whereOperation) NEQFold(val any) types.ANDOR {
-	return o.push(types.OperationNEQFold, val)
+func (o *whereOperation) NotEQFold(val any) types.ANDOR {
+	return o.push(types.OperationNotEQFold, val)
 }
 func (o *whereOperation) ContainsFold(val any) types.ANDOR {
 	return o.push(types.OperationContainsFold, val)

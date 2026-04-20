@@ -38,17 +38,17 @@ func TestFilterManager_AddAndGetFilterFn(t *testing.T) {
 	assert.Equal(t, "name = ?", sql)
 	assert.Equal(t, []any{"alice"}, args)
 
-	_, ok = m.GetFilterFn(OperationNEQ)
+	_, ok = m.GetFilterFn(OperationNotEQ)
 	assert.False(t, ok, "unregistered operation → not found")
 }
 
 func TestFilterManager_AvailableAndIsAvailable(t *testing.T) {
 	m := NewFilterManagerForField(getField(t, "Name"))
 	m.AddFilterFn(OperationEQ, func(context.Context, any) (string, bool) { return "", false })
-	m.AddFilterFn(OperationNEQ, func(context.Context, any) (string, bool) { return "", false })
+	m.AddFilterFn(OperationNotEQ, func(context.Context, any) (string, bool) { return "", false })
 
 	ops := m.GetAvailableFilterOperations()
-	assert.ElementsMatch(t, []Operation{OperationEQ, OperationNEQ}, ops)
+	assert.ElementsMatch(t, []Operation{OperationEQ, OperationNotEQ}, ops)
 	assert.True(t, m.IsAvailableFilterOperation(OperationEQ))
 	assert.False(t, m.IsAvailableFilterOperation(OperationGT))
 }

@@ -33,7 +33,7 @@ Wherever the column is referenced — SELECT, auto-derived WHERE filter, ORDER B
 
 ## Auto-derived filters
 
-Compute-built virtual columns inherit the full set of operators that a regular column of the same Go type would support. For example, a `string`-typed virtual column gets `EQ`, `NEQ`, `In`, `NotIn`, `Contains`, `ContainsFold`, and every other LIKE variant for free. For numeric types you also get `LT`/`LTE`/`GT`/`GTE`.
+Compute-built virtual columns inherit the full set of operators that a regular column of the same Go type would support. For example, a `string`-typed virtual column gets `EQ`, `NotEQ`, `In`, `NotIn`, `Contains`, `ContainsFold`, and every other LIKE variant for free. For numeric types you also get `LT`/`LTE`/`GT`/`GTE`.
 
 The predicate takes the form `(compute_sql) op ?`, so the column's bound args come first, followed by the user value.
 

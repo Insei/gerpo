@@ -55,7 +55,7 @@ SELECT will read `posts.post_title`. The JOIN itself must be configured via [Per
 
 ### Nullable columns
 
-Use a pointer type — `*string`, `*time.Time`, `*bool`. The `EQ(nil)` / `NEQ(nil)` operators work and gerpo generates `IS NULL` / `IS NOT NULL`.
+Use a pointer type — `*string`, `*time.Time`, `*bool`. The `EQ(nil)` / `NotEQ(nil)` operators work and gerpo generates `IS NULL` / `IS NOT NULL`.
 
 ```go
 type User struct {

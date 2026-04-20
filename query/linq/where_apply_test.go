@@ -61,7 +61,7 @@ func TestWhereBuilder_Column_AllOperators(t *testing.T) {
 
 	// Touch every chainable operator — just verifies they build a non-empty plan.
 	b.Column(col).EQ(1)
-	b.Column(col).NEQ(1)
+	b.Column(col).NotEQ(1)
 	b.Column(col).GT(1)
 	b.Column(col).GTE(1)
 	b.Column(col).LT(1)
@@ -75,7 +75,7 @@ func TestWhereBuilder_Column_AllOperators(t *testing.T) {
 	b.Column(col).EndsWith("a")
 	b.Column(col).NotEndsWith("a")
 	b.Column(col).EQFold("a")
-	b.Column(col).NEQFold("a")
+	b.Column(col).NotEQFold("a")
 	b.Column(col).ContainsFold("a")
 	b.Column(col).NotContainsFold("a")
 	b.Column(col).StartsWithFold("a")

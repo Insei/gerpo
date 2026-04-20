@@ -36,7 +36,7 @@ func TestWhere_NEQ(t *testing.T) {
 		defer cancel()
 
 		got, err := repo.GetList(ctx, func(m *Post, h query.GetListHelper[Post]) {
-			h.Where().Field(&m.ID).NEQ(seed.posts[0].ID)
+			h.Where().Field(&m.ID).NotEQ(seed.posts[0].ID)
 		})
 		require.NoError(t, err)
 		assert.Len(t, got, len(seed.posts)-1)
@@ -121,7 +121,7 @@ func TestWhere_NEQ_Nil(t *testing.T) {
 		defer cancel()
 
 		got, err := repo.Count(ctx, func(m *User, h query.CountHelper[User]) {
-			h.Where().Field(&m.Email).NEQ(nil)
+			h.Where().Field(&m.Email).NotEQ(nil)
 		})
 		require.NoError(t, err)
 		assert.Equal(t, uint64(5), got, "5 users have non-NULL email")

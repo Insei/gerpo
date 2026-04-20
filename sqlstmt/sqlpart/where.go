@@ -22,7 +22,7 @@ func genEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 		return query + " = ?", true
 	}
 }
-func genNEQFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotEQFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		if value == nil {
 			return query + " IS NOT NULL", false
@@ -127,7 +127,7 @@ func genEQFoldFn(query string) func(ctx context.Context, value any) (string, boo
 		return "LOWER(" + query + ") = LOWER(CAST(? AS text))", true
 	}
 }
-func genNEQFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotEQFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		if value == nil {
 			return query + " IS NOT NULL", false
@@ -173,17 +173,17 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 	filters := make(map[types.Operation]func(ctx context.Context, value any) (string, bool))
 	if field.GetType().Kind() == reflect.Ptr {
 		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
 	}
 
 	derefType := field.GetDereferencedType()
 	switch derefType.Kind() {
 	case reflect.Bool:
 		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
 	case reflect.String:
 		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
 		filters[types.OperationIn] = genInFn(sqlColumnString)
 		filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
 		filters[types.OperationContains] = genContainsFn(sqlColumnString)
@@ -193,7 +193,7 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		filters[types.OperationEndsWith] = genEndsWithFn(sqlColumnString)
 		filters[types.OperationNotEndsWith] = genNotEndsWithFn(sqlColumnString)
 		filters[types.OperationEQFold] = genEQFoldFn(sqlColumnString)
-		filters[types.OperationNEQFold] = genNEQFoldFn(sqlColumnString)
+		filters[types.OperationNotEQFold] = genNotEQFoldFn(sqlColumnString)
 		filters[types.OperationContainsFold] = genContainsFoldFn(sqlColumnString)
 		filters[types.OperationNotContainsFold] = genNotContainsFoldFn(sqlColumnString)
 		filters[types.OperationStartsWithFold] = genStartsWithFoldFn(sqlColumnString)
@@ -204,7 +204,7 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
 		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
 		filters[types.OperationLT] = genLTFn(sqlColumnString)
 		filters[types.OperationLTE] = genLTEFn(sqlColumnString)
 		filters[types.OperationGT] = genGTFn(sqlColumnString)
@@ -220,7 +220,7 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 			filters[types.OperationGTE] = genGTEFn(sqlColumnString)
 		case reflect.TypeOf(uuid.UUID{}):
 			filters[types.OperationEQ] = genEQFn(sqlColumnString)
-			filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
+			filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
 			filters[types.OperationIn] = genInFn(sqlColumnString)
 			filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
 		}

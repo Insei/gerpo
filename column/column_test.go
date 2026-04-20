@@ -24,7 +24,7 @@ func TestColumnGetFilterFn(t *testing.T) {
 		operation types.Operation
 	}{
 		{"ValidOperationEQ", types.OperationEQ},
-		{"ValidOperationNEQ", types.OperationNEQ},
+		{"ValidOperationNotEQ", types.OperationNotEQ},
 		{"InvalidOperation", types.Operation("INVALID")},
 	}
 
