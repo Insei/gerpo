@@ -1,0 +1,22 @@
+version: "2"
+
+run:
+  timeout: 2m
+
+linters:
+  default: none
+  enable:
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gerpolint
+  settings:
+    custom:
+      gerpolint:
+        type: module
+        description: Type-safe check of gerpo WHERE filter arguments.
+        original-url: https://github.com/insei/gerpo
+        settings:
+          unresolved-field: skip
+          any-arg: warn

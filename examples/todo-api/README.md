@@ -113,6 +113,23 @@ CREATE TABLE tasks (
 writes to it — `OmitOnInsert().ReturnedOnUpdate()` in the column definition
 keeps the write path clean and still reads the post-trigger value back.
 
+## Static analysis with gerpolint
+
+This example wires [gerpolint](../../docs/features/static-analysis.md) — the
+`go/analysis` checker that catches WHERE-filter type mismatches that slip
+past the compiler — through the golangci-lint module-plugin system.
+[`.custom-gcl.yml`](.custom-gcl.yml) points at the local gerpo checkout
+(`path: ../..`), [`.golangci.yml`](.golangci.yml) enables `gerpolint` as a
+custom linter alongside `govet`/`staticcheck`/etc.
+
+```bash
+make lint       # builds ./bin/custom-gcl with gerpolint embedded and runs it
+```
+
+Try it: flip `EQ(id)` to `EQ(123)` in `internal/task/service.go:Get` and the
+linter flags `GPL001: argument type int is not compatible with field type
+uuid.UUID`.
+
 ## What this example deliberately leaves out
 
 - Authentication, rate limiting, structured logs, TLS — add to taste.
