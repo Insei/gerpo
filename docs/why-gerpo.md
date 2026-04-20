@@ -6,7 +6,7 @@ Go has a healthy data-access ecosystem — full-blown ORMs, code generators, que
 
 - One **declarative configuration** per entity wires struct fields to columns through pointers — `c.Field(&m.Email)` — so renames are a refactor, not a search-and-replace through string tags.
 - Six methods per repository (`GetFirst`, `GetList`, `Count`, `Insert`, `Update`, `Delete`) cover the everyday CRUD; everything else (joins, soft-delete, virtual columns, hooks, caching, tracing) is opt-in.
-- Three driver adapters (`pgx5`, `pgx4`, `database/sql`) all sit behind a 3-method `Adapter` interface — bring your own driver in ~50 lines.
+- **PostgreSQL-only** today. Three bundled adapters (`pgx5`, `pgx4`, `database/sql`) all wrap PG drivers. Other dialects (MySQL, MS SQL Server, older SQLite) are on the backlog, not on the main path.
 - **Not** an ORM. No migrations, no relations, no struct tags. Schema management is your problem (`golang-migrate`, `goose`, `atlas`, …).
 
 ## When to pick gerpo
@@ -15,7 +15,7 @@ Pick gerpo when you want:
 
 - A clear, type-safe boundary between business code and SQL.
 - Predictable allocations and SQL generation — `make bench-report` shows the overhead per operation.
-- Multiple drivers behind one interface (microservices on PostgreSQL today, easy to add ClickHouse / SQLite tomorrow).
+- You run on PostgreSQL (or a PG-compatible database — CockroachDB, MariaDB ≥10.5, SQLite ≥3.35) and want multiple PG drivers behind one interface (pgx v5, pgx v4, `database/sql` + `pq` or `pgx/stdlib`).
 - Per-request caching that just turns on (`Cache`).
 - An OpenTelemetry-style tracing hook without forcing OTel as a dependency.
 - A small, readable codebase you can fork or wrap.
@@ -26,6 +26,7 @@ Skip it if:
 
 - You want migrations bundled with your data layer — pick **GORM** or **ent** instead.
 - You want navigation properties / lazy loading (`user.Posts`, `post.Comments`) — `gerpo` deliberately doesn't provide them.
+- You need to talk to **MySQL, MS SQL Server, or older SQLite**. gerpo emits PostgreSQL-shaped SQL and does not abstract the dialect today — see [TODO](https://github.com/insei/gerpo/blob/main/TODO.md) for the backlog.
 - Your team already runs on raw SQL and wants compile-time-checked queries from `.sql` files — pick **sqlc**.
 - You only need a thin marshalling layer over `database/sql` — pick **sqlx**.
 - You can't tolerate an API that is still pre-1.0 — gerpo is on the road to 1.0 with a stated stable subset, but the deprecated virtual-column API is still in flux.
@@ -41,7 +42,8 @@ Skip it if:
 | **Migrations** | ✗ (external) | ✓ | ✓ | ✓ | ✗ | ✗ |
 | **Relations / navigation** | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
 | **Struct tags required** | ✗ | ✓ | ✗ | ✓ | ✗ | ✓ |
-| **Pluggable drivers** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Supported databases** | PostgreSQL only | multi-dialect | multi-dialect | multi-dialect | multi-dialect | any (via `database/sql`) |
+| **Pluggable drivers (within dialect)** | ✓ (pgx5, pgx4, database/sql) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Soft delete built-in** | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
 | **Per-request cache** | ✓ (`Cache`) | plugin | ✗ | ✗ | ✗ | ✗ |
 | **Tracing hook** | ✓ | plugin | hook | hook | ✗ | ✗ |

@@ -1,6 +1,9 @@
 # Adapters
 
-gerpo never talks to a specific driver directly — it communicates through the `executor.Adapter` interface. Three implementations ship in the box.
+gerpo never talks to a specific driver directly — it communicates through the `executor.Adapter` interface. Three implementations ship in the box — all three wrap PostgreSQL drivers.
+
+!!! warning "PostgreSQL-only today"
+    The SQL gerpo emits (`CAST(? AS text)` inside LIKE, `INSERT … RETURNING`, `COUNT(*) OVER ()`, etc.) is PostgreSQL-shaped. The bundled adapters are wrappers around PG drivers. PG-compatible databases (CockroachDB, MariaDB ≥10.5, SQLite ≥3.35) are likely to work, not formally tested. MySQL / MS SQL Server / older SQLite are **not supported** — see [TODO](https://github.com/insei/gerpo/blob/main/TODO.md) for the multi-dialect backlog.
 
 ## Bundled adapters
 
@@ -34,7 +37,7 @@ Identical API, just a different pgx major.
 
 ### database/sql
 
-A universal adapter for any `*sql.DB`. Defaults to `?` placeholders (MySQL-compatible). For PostgreSQL switch to `$1` explicitly:
+A universal adapter for any `*sql.DB`. Use it with a PostgreSQL driver (`pq`, `pgx/stdlib`). Defaults to `?` placeholders; for PG switch to `$1`:
 
 ```go
 import (
@@ -85,8 +88,10 @@ type Tx interface {
 ## Why write a custom adapter
 
 - **Tracing** — wrap an existing adapter and add spans/logs around `ExecContext`/`QueryContext`.
-- **A different driver** — ClickHouse, SQLite, MSSQL.
+- **A different PostgreSQL driver** — gerpo ships pgx v4, pgx v5 and `database/sql`; if your stack uses a different PG driver, wrap it in ~50 lines.
 - **Mocks** — this is exactly how the mock benchmarks and some unit tests are wired (see `tests/mockdb_test.go`).
+
+A non-PG dialect (MySQL, MSSQL, ClickHouse) needs more than a new adapter — gerpo's SQL generation is PostgreSQL-shaped. See [TODO](https://github.com/insei/gerpo/blob/main/TODO.md).
 
 A small tracing wrapper:
 

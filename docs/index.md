@@ -5,6 +5,9 @@
 !!! tip "One-line ideology"
     *Schema and SQL live inside the repository configuration; columns are bound to struct fields via pointers — not strings, not tags.*
 
+!!! warning "Database support"
+    gerpo currently targets **PostgreSQL** (and PG-compatible databases such as CockroachDB). The SQL fragments gerpo emits — placeholder format, LIKE type-casts, `INSERT … RETURNING`, window functions — assume PostgreSQL. MySQL, MS SQL Server, and older SQLite are **not supported** today. See [TODO](https://github.com/insei/gerpo/blob/main/TODO.md) for the multi-dialect backlog.
+
 ## Install
 
 ```bash
@@ -99,12 +102,16 @@ Full runnable samples live in [`examples/`](https://github.com/Insei/gerpo/tree/
 
 </div>
 
-## Supported drivers
+## Supported databases & drivers
+
+gerpo targets **PostgreSQL** today. All three bundled adapters wrap PostgreSQL drivers:
 
 | Adapter | Package | Placeholder format |
 |---|---|---|
 | pgx v5 | `executor/adapters/pgx5` | `$1, $2, …` |
 | pgx v4 | `executor/adapters/pgx4` | `$1, $2, …` |
-| database/sql | `executor/adapters/databasesql` | `?` or `$1` (configurable) |
+| database/sql | `executor/adapters/databasesql` | `?` or `$1` (configurable) — pair with a PG driver (`pq`, `pgx/stdlib`) |
 
-You can wrap any driver of your own — just implement the `executor.Adapter` interface (three methods: `ExecContext`, `QueryContext`, `BeginTx`). See [Adapters](features/adapters.md).
+PG-compatible databases (CockroachDB, MariaDB ≥10.5, SQLite ≥3.35) are likely to work drop-in but are not formally tested. MySQL, MS SQL Server, and older SQLite are **not supported** — the SQL gerpo emits (LIKE `CAST(? AS text)`, `INSERT … RETURNING`, `COUNT(*) OVER ()`) assumes PostgreSQL. See the [TODO file](https://github.com/insei/gerpo/blob/main/TODO.md) for the multi-dialect backlog.
+
+You can wrap a custom adapter — implement `executor.Adapter` (`ExecContext`, `QueryContext`, `BeginTx`). See [Adapters](features/adapters.md).

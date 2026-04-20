@@ -8,6 +8,8 @@
 
 **GERPO** (Golang + Repository) is a generic repository pattern for Go with pluggable adapters and a tiny footprint. It is **not an ORM** — no migrations, no relations, no struct tags. All SQL behavior is declared once in the repository configuration; columns are bound to struct fields through pointers.
 
+> **Database support.** gerpo currently targets **PostgreSQL** (and PG-compatible databases such as CockroachDB). The SQL fragments gerpo emits — placeholder format, LIKE type-casts, `RETURNING`, window functions — assume PostgreSQL. MySQL, MS SQL Server, and pre-3.35 SQLite are **not supported** today. See [`TODO.md`](TODO.md) for the multi-dialect backlog.
+
 > 📚 Full documentation: **[insei.github.io/gerpo](https://insei.github.io/gerpo/)** · [Why gerpo?](https://insei.github.io/gerpo/why-gerpo/) (vs GORM / ent / bun / sqlc / sqlx) · API reference: **[pkg.go.dev/github.com/insei/gerpo](https://pkg.go.dev/github.com/insei/gerpo)**
 
 ## Install
@@ -65,13 +67,17 @@ Full runnable samples live in [`examples/`](examples/) and in the [integration t
 | Cache | Context-scoped cache out of the box, pluggable backend | [Cache](https://insei.github.io/gerpo/features/cache/) |
 | Error handling | `WithErrorTransformer` maps gerpo errors to domain errors | [Error transformer](https://insei.github.io/gerpo/features/error-transformer/) |
 
-## Supported drivers
+## Supported databases & drivers
+
+gerpo targets **PostgreSQL** today. All three bundled adapters wrap PostgreSQL drivers:
 
 | Adapter | Package | Placeholders |
 |---|---|---|
 | pgx v5 | `executor/adapters/pgx5` | `$1, $2, …` |
 | pgx v4 | `executor/adapters/pgx4` | `$1, $2, …` |
-| database/sql | `executor/adapters/databasesql` | `?` or `$1` (configurable) |
+| database/sql | `executor/adapters/databasesql` | `?` or `$1` (configurable) — use with a PG driver (`pq`, `pgx/stdlib`) |
+
+PG-compatible databases (CockroachDB, MariaDB ≥10.5, SQLite ≥3.35) are likely to work as drop-in — not formally tested. MySQL, MS SQL Server, and older SQLite are **not supported**: gerpo's LIKE `CAST(? AS text)`, `INSERT … RETURNING`, and window-function `COUNT(*) OVER ()` all assume PG. See [`TODO.md`](TODO.md).
 
 Writing a custom adapter is three methods (`ExecContext`, `QueryContext`, `BeginTx`) — see [Adapters](https://insei.github.io/gerpo/features/adapters/) and [adapter internals](https://insei.github.io/gerpo/architecture/adapters-internals/).
 
