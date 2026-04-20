@@ -61,7 +61,7 @@ Full runnable samples live in [`examples/`](examples/) and in the [integration t
 | Persistent queries | Always-on WHERE, JOIN, GROUP BY via `WithQuery` | [Persistent queries](https://insei.github.io/gerpo/features/persistent-queries/) |
 | Soft delete | Rewrite DELETE as UPDATE of a marker field | [Soft delete](https://insei.github.io/gerpo/features/soft-delete/) |
 | Hooks | Before/After for Insert/Update, AfterSelect | [Hooks](https://insei.github.io/gerpo/features/hooks/) |
-| Transactions | `repo.Tx(tx)` binds a repository to any driver transaction | [Transactions](https://insei.github.io/gerpo/features/transactions/) |
+| Transactions | `gerpo.WithTx(ctx, tx)` / `gerpo.RunInTx` share one tx across every Repository bound to the same context | [Transactions](https://insei.github.io/gerpo/features/transactions/) |
 | Cache | Context-scoped cache out of the box, pluggable backend | [Cache](https://insei.github.io/gerpo/features/cache/) |
 | Error handling | `WithErrorTransformer` maps gerpo errors to domain errors | [Error transformer](https://insei.github.io/gerpo/features/error-transformer/) |
 

@@ -82,12 +82,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	repoTx, err := repo.Tx(tx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	txCtx := gerpo.WithTx(ctxCache, tx)
 	start := time.Now()
-	model, err := repoTx.GetFirst(ctxCache)
+	model, err := repo.GetFirst(txCtx)
 	elapsed := time.Since(start)
 	if err != nil {
 		log.Print(err)
@@ -95,13 +92,13 @@ func main() {
 	log.Printf("FIRST Repo db get one %s", elapsed)
 
 	start = time.Now()
-	model, err = repoTx.GetFirst(ctxCache, func(m *test, b query.GetFirstHelper[test]) {
+	model, err = repo.GetFirst(txCtx, func(m *test, b query.GetFirstHelper[test]) {
 		b.Where().
 			Field(&m.ID).EQ(2)
 		b.OrderBy().Field(m.Name).DESC()
 		b.Exclude(&m.UpdatedAt, m.ID)
 	})
-	err = repoTx.Insert(ctxCache, model)
+	err = repo.Insert(txCtx, model)
 	if err != nil {
 		log.Print(err)
 	}

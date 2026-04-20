@@ -8,8 +8,7 @@ import (
 )
 
 type executor[TModel any] struct {
-	db                   Adapter
-	getExecQueryReplaced func(ctx context.Context) ExecQuery
+	db Adapter
 
 	options
 }
@@ -26,17 +25,12 @@ func New[TModel any](db Adapter, opts ...Option) Executor[TModel] {
 	return e
 }
 
-func (e *executor[TModel]) Tx(tx Tx) Executor[TModel] {
-	ecp := *e
-	ecp.getExecQueryReplaced = func(ctx context.Context) ExecQuery {
-		return tx
-	}
-	return &ecp
-}
-
+// getExecQuery returns the ExecQuery to use for the current call. When ctx
+// carries a Tx (installed via executor.WithTx / gerpo.WithTx), that Tx wins;
+// otherwise the repository-level adapter is used.
 func (e *executor[TModel]) getExecQuery(ctx context.Context) ExecQuery {
-	if e.getExecQueryReplaced != nil {
-		return e.getExecQueryReplaced(ctx)
+	if tx, ok := txFromContext(ctx); ok {
+		return tx
 	}
 	return e.db
 }

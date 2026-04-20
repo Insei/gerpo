@@ -209,10 +209,11 @@ func ExampleWithErrorTransformer() {
 	_ = repo
 }
 
-// ExampleRepository_Tx shows the standard transactional pattern: open a
-// driver transaction, wrap the repository with .Tx(tx), then commit or roll
-// back. RollbackUnlessCommitted is safe to defer even after a successful Commit.
-func ExampleRepository_Tx() {
+// ExampleWithTx shows the standard transactional pattern: open a driver
+// transaction, inject it into the context via gerpo.WithTx, then run any
+// Repository calls with that context. RollbackUnlessCommitted is safe to defer
+// even after a successful Commit — the second call becomes a no-op.
+func ExampleWithTx() {
 	adapter := exampleAdapter()
 	repo := exampleRepo()
 
@@ -223,11 +224,31 @@ func ExampleRepository_Tx() {
 	}
 	defer func() { _ = tx.RollbackUnlessCommitted() }()
 
-	txRepo := repo.Tx(tx)
-	if err := txRepo.Insert(ctx, &User{ID: uuid.New(), Name: "Carol"}); err != nil {
+	txCtx := gerpo.WithTx(ctx, tx)
+	if err := repo.Insert(txCtx, &User{ID: uuid.New(), Name: "Carol"}); err != nil {
 		return
 	}
 	if err := tx.Commit(); err != nil {
+		panic(err)
+	}
+}
+
+// ExampleRunInTx is the higher-level form: gerpo.RunInTx begins the tx, calls
+// fn with a tx-bearing ctx, and handles Commit / RollbackUnlessCommitted based
+// on whether fn returns an error. Several repositories can share the same ctx
+// — a single call covers all of them.
+func ExampleRunInTx() {
+	adapter := exampleAdapter()
+	orders := exampleRepo()
+	items := exampleRepo()
+
+	err := gerpo.RunInTx(context.Background(), adapter, func(ctx context.Context) error {
+		if err := orders.Insert(ctx, &User{ID: uuid.New(), Name: "Alice"}); err != nil {
+			return err
+		}
+		return items.Insert(ctx, &User{ID: uuid.New(), Name: "Bob"})
+	})
+	if err != nil {
 		panic(err)
 	}
 }

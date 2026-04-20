@@ -108,13 +108,6 @@ func (r *repository[TModel]) GetColumns() types.ColumnsStorage {
 	return r.columns
 }
 
-func (r *repository[TModel]) Tx(tx executor.Tx) Repository[TModel] {
-	txExecutor := r.executor.Tx(tx)
-	repocp := *r
-	repocp.executor = txExecutor
-	return &repocp
-}
-
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error) {
 	ctx, end := r.startSpan(ctx, "gerpo.GetFirst")
 	defer func() { end(err) }()

@@ -100,7 +100,7 @@ func datadogTracer() gerpo.Tracer {
 | `repo.Update`   | `gerpo.Update`   |
 | `repo.Delete`   | `gerpo.Delete`   |
 
-`repo.Tx(tx)` does not open a span — it merely returns a tx-bound repository view; spans appear when the bound repository runs an actual operation.
+`gerpo.WithTx(ctx, tx)` does not open a span — it only stashes the transaction into the context; spans appear when a Repository method actually runs with that context.
 
 ## Disabled by default
 

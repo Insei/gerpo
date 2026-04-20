@@ -22,7 +22,7 @@ Reference of gerpo capabilities grouped by area.
 | [WHERE operators](where.md) | EQ, NotEQ, LT/LTE/GT/GTE, In/NotIn, Contains/StartsWith/EndsWith (+Fold variants), AND/OR/Group |
 | [Ordering & pagination](order-pagination.md) | `OrderBy`, `Page`, `Size` |
 | [Exclude & Only](exclude-only.md) | Narrowing columns in SELECT/INSERT/UPDATE |
-| [Transactions](transactions.md) | `BeginTx`, `repo.Tx`, `Commit`, `Rollback`, `RollbackUnlessCommitted` |
+| [Transactions](transactions.md) | `BeginTx`, `gerpo.WithTx(ctx, tx)`, `gerpo.RunInTx`, `Commit`, `Rollback`, `RollbackUnlessCommitted` |
 
 ## Infrastructure
 

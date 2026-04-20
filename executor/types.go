@@ -23,7 +23,6 @@ type Executor[TModel any] interface {
 	Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error)
 	Count(ctx context.Context, stmt CountStmt) (uint64, error)
 	Delete(ctx context.Context, stmt CountStmt) (int64, error)
-	Tx(tx Tx) Executor[TModel]
 }
 
 type CountStmt interface {

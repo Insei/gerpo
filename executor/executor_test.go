@@ -838,40 +838,25 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestGetExecQuery(t *testing.T) {
-	tests := []struct {
-		name                 string
-		ctx                  context.Context
-		getExecQueryReplaced func(ctx context.Context) ExecQuery
-		expectedExecQueryNil bool
-	}{
-		{
-			name:                 "Return original db instance",
-			ctx:                  context.Background(),
-			getExecQueryReplaced: nil,
-			expectedExecQueryNil: false,
-		},
-		{
-			name: "Return replaced ExecQuery",
-			ctx:  context.Background(),
-			getExecQueryReplaced: func(ctx context.Context) ExecQuery {
-				return nil
-			},
-			expectedExecQueryNil: true,
-		},
+func TestGetExecQuery_PrefersCtxTxOverAdapter(t *testing.T) {
+	db := &dbsql.DB{}
+	e := &executor[testModel]{
+		db: databasesql.NewAdapter(db),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			db := &dbsql.DB{}
-			e := &executor[testModel]{
-				db:                   databasesql.NewAdapter(db),
-				getExecQueryReplaced: tt.getExecQueryReplaced,
-			}
-			execQuery := e.getExecQuery(tt.ctx)
-			if (execQuery == nil) != tt.expectedExecQueryNil {
-				t.Errorf("executor.getExecQuery() is %v, but expected %v", e.getExecQuery(tt.ctx), nil)
-			}
-		})
+	// No tx in ctx → the adapter wins.
+	if got := e.getExecQuery(context.Background()); got == nil {
+		t.Fatal("expected the adapter to be returned when ctx carries no tx")
+	}
+
+	// Tx injected into ctx → it wins, regardless of the adapter stored on the executor.
+	fakeTx := &stubTxExecQuery{}
+	ctx := WithTx(context.Background(), fakeTx)
+	if got := e.getExecQuery(ctx); got != fakeTx {
+		t.Fatalf("expected tx from ctx, got %v", got)
 	}
 }
+
+// stubTxExecQuery is an executor.Tx stub — zero behavior, used only to assert
+// identity in TestGetExecQuery_PrefersCtxTxOverAdapter.
+type stubTxExecQuery struct{ Tx }

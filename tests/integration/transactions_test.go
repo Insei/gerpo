@@ -25,7 +25,7 @@ func TestTx_Commit(t *testing.T) {
 		tx, err := ab.adapter.BeginTx(ctx)
 		require.NoError(t, err)
 
-		txRepo := repo.Tx(tx)
+		txCtx := gerpo.WithTx(ctx, tx)
 		p := Post{
 			ID:        uuid.New(),
 			UserID:    seed.users[0].ID,
@@ -33,7 +33,7 @@ func TestTx_Commit(t *testing.T) {
 			Content:   "c",
 			CreatedAt: time.Now().UTC(),
 		}
-		require.NoError(t, txRepo.Insert(ctx, &p))
+		require.NoError(t, repo.Insert(txCtx, &p))
 		require.NoError(t, tx.Commit())
 
 		got, err := repo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
@@ -55,7 +55,7 @@ func TestTx_Rollback(t *testing.T) {
 		tx, err := ab.adapter.BeginTx(ctx)
 		require.NoError(t, err)
 
-		txRepo := repo.Tx(tx)
+		txCtx := gerpo.WithTx(ctx, tx)
 		p := Post{
 			ID:        uuid.New(),
 			UserID:    seed.users[0].ID,
@@ -63,7 +63,7 @@ func TestTx_Rollback(t *testing.T) {
 			Content:   "c",
 			CreatedAt: time.Now().UTC(),
 		}
-		require.NoError(t, txRepo.Insert(ctx, &p))
+		require.NoError(t, repo.Insert(txCtx, &p))
 		require.NoError(t, tx.Rollback())
 
 		_, err = repo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
@@ -87,7 +87,7 @@ func TestTx_Isolation(t *testing.T) {
 		require.NoError(t, err)
 		defer func() { _ = tx.Rollback() }()
 
-		txRepo := repo.Tx(tx)
+		txCtx := gerpo.WithTx(ctx, tx)
 		p := Post{
 			ID:        uuid.New(),
 			UserID:    seed.users[0].ID,
@@ -95,7 +95,7 @@ func TestTx_Isolation(t *testing.T) {
 			Content:   "c",
 			CreatedAt: time.Now().UTC(),
 		}
-		require.NoError(t, txRepo.Insert(ctx, &p))
+		require.NoError(t, repo.Insert(txCtx, &p))
 
 		// Чтение через отдельный pool (pgx5Pool) — другой коннект, не в транзакции.
 		var exists bool
@@ -104,7 +104,7 @@ func TestTx_Isolation(t *testing.T) {
 		assert.False(t, exists, "uncommitted row must not be visible to other connections")
 
 		// Внутри транзакции — видна.
-		got, err := txRepo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
+		got, err := repo.GetFirst(txCtx, func(m *Post, h query.GetFirstHelper[Post]) {
 			h.Where().Field(&m.ID).EQ(p.ID)
 		})
 		require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestTx_RollbackUnlessCommitted_AfterCommit(t *testing.T) {
 		tx, err := ab.adapter.BeginTx(ctx)
 		require.NoError(t, err)
 
-		txRepo := repo.Tx(tx)
+		txCtx := gerpo.WithTx(ctx, tx)
 		p := Post{
 			ID:        uuid.New(),
 			UserID:    seed.users[0].ID,
@@ -132,7 +132,7 @@ func TestTx_RollbackUnlessCommitted_AfterCommit(t *testing.T) {
 			Content:   "c",
 			CreatedAt: time.Now().UTC(),
 		}
-		require.NoError(t, txRepo.Insert(ctx, &p))
+		require.NoError(t, repo.Insert(txCtx, &p))
 		require.NoError(t, tx.Commit())
 		// После Commit вызов должен быть безопасным.
 		require.NoError(t, tx.RollbackUnlessCommitted(), "RollbackUnlessCommitted after Commit must be a no-op")
@@ -156,7 +156,7 @@ func TestTx_RollbackUnlessCommitted_WithoutCommit(t *testing.T) {
 		tx, err := ab.adapter.BeginTx(ctx)
 		require.NoError(t, err)
 
-		txRepo := repo.Tx(tx)
+		txCtx := gerpo.WithTx(ctx, tx)
 		p := Post{
 			ID:        uuid.New(),
 			UserID:    seed.users[0].ID,
@@ -164,7 +164,7 @@ func TestTx_RollbackUnlessCommitted_WithoutCommit(t *testing.T) {
 			Content:   "c",
 			CreatedAt: time.Now().UTC(),
 		}
-		require.NoError(t, txRepo.Insert(ctx, &p))
+		require.NoError(t, repo.Insert(txCtx, &p))
 		require.NoError(t, tx.RollbackUnlessCommitted())
 
 		_, err = repo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
