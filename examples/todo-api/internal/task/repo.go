@@ -28,7 +28,7 @@ func NewRepository(adapter executor.Adapter) (gerpo.Repository[Task], error) {
 			c.Field(&m.CreatedAt).ReadOnly().ReturnedOnInsert()
 			// Trigger-maintained column — written on every UPDATE by the server.
 			c.Field(&m.UpdatedAt).OmitOnInsert().ReturnedOnUpdate()
-			c.Field(&m.Title).AsVirtual()
+			c.Field(&m.Title)
 			c.Field(&m.Description)
 			c.Field(&m.Done)
 		}).
