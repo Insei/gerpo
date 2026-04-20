@@ -8,7 +8,7 @@ This section is for people who want to know gerpo from the inside — contributo
 | [Layers](layers.md) | How a request travels from `Repository` down to the driver |
 | [SQL generation](sql-generation.md) | `sqlstmt` and `sqlpart` — assembling the SQL text |
 | [Field mapping](field-mapping.md) | How gerpo sees struct fields through pointers |
-| [Caching internals](caching.md) | Inside `CtxCache` |
+| [Caching internals](caching.md) | Inside `Cache` |
 | [Adapter internals](adapters-internals.md) | How an adapter is written — placeholder rewrite, `Rows`, transactions |
 | [Contributing](contributing.md) | Building, testing, and shipping a change |
 

@@ -56,6 +56,6 @@ func (s *cacheStorage) Clean(modelKey string) {
 	s.c[modelKey] = make(map[string]any)
 }
 
-func NewCtxCache(ctx context.Context) context.Context {
+func WrapContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxCacheKey, &cacheStorage{mtx: &sync.Mutex{}, c: make(map[string]map[string]any)})
 }

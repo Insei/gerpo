@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newCachedPostRepo собирает Post-репозиторий, подключённый к CtxCache.
-func newCachedPostRepo(t *testing.T, ab adapterBundle, cache *cachectx.CtxCache) gerpo.Repository[Post] {
+// newCachedPostRepo собирает Post-репозиторий, подключённый к Cache.
+func newCachedPostRepo(t *testing.T, ab adapterBundle, cache *cachectx.Cache) gerpo.Repository[Post] {
 	t.Helper()
 	repo, err := gerpo.NewBuilder[Post]().
 		DB(ab.adapter, executor.WithCacheStorage(cache)).
@@ -46,7 +46,7 @@ func TestCache_HitReturnsStaleValue(t *testing.T) {
 
 		baseCtx, cancel := testCtx(t)
 		defer cancel()
-		ctx := cachectx.NewCtxCache(baseCtx)
+		ctx := cachectx.WrapContext(baseCtx)
 
 		target := seed.posts[0]
 
@@ -78,7 +78,7 @@ func TestCache_InvalidatedOnInsert(t *testing.T) {
 
 		baseCtx, cancel := testCtx(t)
 		defer cancel()
-		ctx := cachectx.NewCtxCache(baseCtx)
+		ctx := cachectx.WrapContext(baseCtx)
 
 		target := seed.posts[0]
 		// Первый запрос — кеш заполняется.
@@ -110,7 +110,7 @@ func TestCache_InvalidatedOnInsert(t *testing.T) {
 	})
 }
 
-// TestCache_WithoutMiddleware_WorksAsMiss — без NewCtxCache в контексте кеш
+// TestCache_WithoutMiddleware_WorksAsMiss — без WrapContext в контексте кеш
 // просто не срабатывает, ошибки наружу не просачиваются.
 func TestCache_WithoutMiddleware_WorksAsMiss(t *testing.T) {
 	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
@@ -120,7 +120,7 @@ func TestCache_WithoutMiddleware_WorksAsMiss(t *testing.T) {
 
 		ctx, cancel := testCtx(t)
 		defer cancel()
-		// NewCtxCache не вызываем.
+		// WrapContext не вызываем.
 
 		target := seed.posts[0]
 		got, err := repo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
@@ -140,8 +140,8 @@ func TestCache_DifferentContextsDoNotShare(t *testing.T) {
 
 		base, cancel := testCtx(t)
 		defer cancel()
-		ctx1 := cachectx.NewCtxCache(base)
-		ctx2 := cachectx.NewCtxCache(base)
+		ctx1 := cachectx.WrapContext(base)
+		ctx2 := cachectx.WrapContext(base)
 
 		target := seed.posts[0]
 		_, err := repo.GetFirst(ctx1, func(m *Post, h query.GetFirstHelper[Post]) {

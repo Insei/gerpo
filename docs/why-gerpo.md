@@ -16,7 +16,7 @@ Pick gerpo when you want:
 - A clear, type-safe boundary between business code and SQL.
 - Predictable allocations and SQL generation — `make bench-report` shows the overhead per operation.
 - Multiple drivers behind one interface (microservices on PostgreSQL today, easy to add ClickHouse / SQLite tomorrow).
-- Per-request caching that just turns on (`CtxCache`).
+- Per-request caching that just turns on (`Cache`).
 - An OpenTelemetry-style tracing hook without forcing OTel as a dependency.
 - A small, readable codebase you can fork or wrap.
 
@@ -43,7 +43,7 @@ Skip it if:
 | **Struct tags required** | ✗ | ✓ | ✗ | ✓ | ✗ | ✓ |
 | **Pluggable drivers** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Soft delete built-in** | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
-| **Per-request cache** | ✓ (`CtxCache`) | plugin | ✗ | ✗ | ✗ | ✗ |
+| **Per-request cache** | ✓ (`Cache`) | plugin | ✗ | ✗ | ✗ | ✗ |
 | **Tracing hook** | ✓ | plugin | hook | hook | ✗ | ✗ |
 | **Hooks (Before/After)** | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
 | **Custom SQL escape hatch** | ✓ (callbacks) | ✓ (`Raw()`) | ✓ | ✓ | n/a (everything is SQL) | ✓ |

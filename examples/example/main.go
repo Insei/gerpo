@@ -73,7 +73,7 @@ func main() {
 		})
 	repo, err := b.Build()
 
-	ctxCache := ctx.NewCtxCache(context.Background())
+	ctxCache := ctx.WrapContext(context.Background())
 	_ = []int{1, 2, 3, 4, 5, 6}
 	list, err := repo.GetList(ctxCache, func(m *test, h query.GetListHelper[test]) {
 		h.Where().Field(&m.ID).IN(1, 2, 3, 4, 5, 6)

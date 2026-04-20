@@ -282,7 +282,7 @@ func ExampleWithCacheStorage() {
 
 	// Wrap the request context once at the entry point so subsequent reads
 	// served by this repo go through the cache.
-	ctx := cachectx.NewCtxCache(context.Background())
+	ctx := cachectx.WrapContext(context.Background())
 	_, _ = repo.GetFirst(ctx, func(m *User, h query.GetFirstHelper[User]) {
 		h.Where().Field(&m.ID).EQ(uuid.UUID{})
 	})

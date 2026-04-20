@@ -1,6 +1,6 @@
 # Cache
 
-gerpo can attach a `cache.Storage` to the executor. The built-in implementation is `CtxCache`: a cache scoped to a single `context.Context`. It helps when one business operation fetches the same records multiple times.
+gerpo can attach a `cache.Storage` to the executor. The built-in implementation is `Cache`: a cache scoped to a single `context.Context`. It helps when one business operation fetches the same records multiple times.
 
 ## Wiring
 
@@ -23,14 +23,14 @@ repo, _ := gerpo.NewBuilder[User]().
 For each request you must **wrap the ctx**:
 
 ```go
-reqCtx := cachectx.NewCtxCache(ctx)
+reqCtx := cachectx.WrapContext(ctx)
 
 // every subsequent call should go through reqCtx
 repo.GetFirst(reqCtx, whereByID)
 repo.GetFirst(reqCtx, whereByID) // ← hit, served from cache
 ```
 
-Without `NewCtxCache(ctx)` the cache just does nothing — a warning goes to the log, and the queries themselves still work.
+Without `WrapContext(ctx)` the cache just does nothing — a warning goes to the log, and the queries themselves still work.
 
 ## Behavior
 
@@ -43,7 +43,7 @@ Without `NewCtxCache(ctx)` the cache just does nothing — a warning goes to the
 ## When it helps
 
 - **N+1 protection:** one business call hits `repo.GetFirst(ctx, id)` from several places — the cache returns the first result.
-- **Proxying middleware:** wrap an incoming HTTP request in `NewCtxCache`, and the whole handler/service tree shares the cache.
+- **Proxying middleware:** wrap an incoming HTTP request in `WrapContext`, and the whole handler/service tree shares the cache.
 
 ## When to skip
 

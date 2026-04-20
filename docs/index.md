@@ -87,7 +87,7 @@ Full runnable samples live in [`examples/`](https://github.com/Insei/gerpo/tree/
 
 -   :material-sitemap:{ .lg } **[Architecture →](architecture/index.md)**
 
-    How gerpo is built internally: layers, SQL generation, pointer-based field mapping via fmap, adapter implementations, CtxCache. For contributors.
+    How gerpo is built internally: layers, SQL generation, pointer-based field mapping via fmap, adapter implementations, Cache. For contributors.
 
 -   :simple-go:{ .lg } **[API reference →](https://pkg.go.dev/github.com/insei/gerpo)**
 

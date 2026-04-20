@@ -181,7 +181,7 @@ func TestNewCtxCache(t *testing.T) {
 	baseCtx := context.Background()
 
 	// Generate a new context with cacheStorage
-	ctx := NewCtxCache(baseCtx)
+	ctx := WrapContext(baseCtx)
 
 	// Retrieve the cacheStorage from the context
 	cache, ok := ctx.Value(ctxCacheKey).(*cacheStorage)

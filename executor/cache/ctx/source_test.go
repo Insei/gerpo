@@ -58,7 +58,7 @@ func TestGetStorage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &CtxCache{log: logger.NoopLogger}
+			s := &Cache{log: logger.NoopLogger}
 			_, err := s.getStorage(tt.ctx)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -87,14 +87,14 @@ func TestGet(t *testing.T) {
 		},
 		{
 			name:        "Valid context with storage",
-			ctx:         NewCtxCache(context.Background()),
+			ctx:         WrapContext(context.Background()),
 			expectedErr: types.ErrNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &CtxCache{log: logger.NoopLogger}
+			s := &Cache{log: logger.NoopLogger}
 			_, err := s.Get(tt.ctx, "someKey", "someStatement")
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr)
@@ -124,7 +124,7 @@ func TestSet(t *testing.T) {
 		},
 		{
 			name:          "OK",
-			ctx:           NewCtxCache(context.Background()),
+			ctx:           WrapContext(context.Background()),
 			modelKey:      "testKey",
 			cache:         "fakeCache",
 			statement:     "setCache",
@@ -135,7 +135,7 @@ func TestSet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &CtxCache{log: logger.NoopLogger, key: tt.modelKey}
+			s := &Cache{log: logger.NoopLogger, key: tt.modelKey}
 			s.Set(tt.ctx, tt.cache, tt.statement, tt.statementArgs...)
 		})
 	}
@@ -155,13 +155,13 @@ func TestClean(t *testing.T) {
 		},
 		{
 			name: "Context with storage",
-			ctx:  NewCtxCache(context.Background()),
+			ctx:  WrapContext(context.Background()),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &CtxCache{log: logger.NoopLogger, key: "testKey"}
+			s := &Cache{log: logger.NoopLogger, key: "testKey"}
 			s.Clean(tt.ctx)
 			// Since method doesn't return anything, no assertions made.
 		})
