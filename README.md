@@ -93,12 +93,22 @@ Details and rationale: [Ideology](https://insei.github.io/gerpo/architecture/ide
 
 ## Performance
 
-gerpo uses minimal reflection and pools statement objects to keep allocations under control. Measured against a real pgx v4 pool on the same query:
+gerpo uses minimal reflection and pools statement objects to keep allocations under control. Two views of the overhead — a mock adapter isolates the framework cost, a real PostgreSQL shows the cost a caller actually experiences with network round-trip in the picture.
 
-- `ns/op`: **+8%** compared to the raw driver.
-- `B/op` / `allocs/op`: ~2× — the price of generic SQL generation and struct-field mapping.
+**Against real PostgreSQL.** `make bench-report-pg` spins up an isolated `postgres:16` in Docker, applies the bench schema, runs every CRUD op paired (pgx v5 pool vs gerpo repo), and tears the stack down. Sample run on a local machine:
 
-Against a mock adapter (IO = 0) the relative overhead is larger, but absolute cost per call is ≈0.5–1.5 µs. In a real database, network and query time dwarf the framework overhead. The full mock comparison matrix is produced by `GERPO_BENCH_REPORT=1 go test -run=TestCompareDirectVsGerpo -v ./tests/`.
+| Op        | Direct ns/op | Gerpo ns/op | × ns | × B  | × allocs |
+|-----------|-------------:|------------:|-----:|-----:|---------:|
+| GetFirst  | 59 804       | 66 878      | 1.1× | 2.0× | 1.5×     |
+| GetList   | 84 030       | 100 375     | 1.2× | 1.2× | 1.1×     |
+| Count     | 105 780      | 162 432     | 1.5× | 2.6× | 2.9×     |
+| Insert    | 1 607 957    | 1 638 373   | 1.0× | 2.4× | 2.0×     |
+| Update    | 1 488 061    | 1 621 205   | 1.1× | 3.1× | 2.6×     |
+| Delete    | 58 162       | 63 522      | 1.1× | 2.3× | 2.0×     |
+
+Reads and Delete-on-miss come out at roughly +10 % latency. `INSERT` / `UPDATE` sit at ~1.6 ms per call on a local PG — that is a real fsync on commit, not framework overhead; the gerpo layer contributes ~30 µs on top. `Count` is the outlier at +50 % because a trivial `SELECT count(*) WHERE age >= ?` is so cheap that gerpo's fixed per-call cost is visible as a percentage; it shrinks on non-trivial queries. Allocation ratios reflect the price of generic SQL generation and struct-field mapping.
+
+**Against a mock adapter** (IO = 0, `make bench-report`) the ratios are larger — the framework cost is no longer amortised by network. Per-op absolute cost stays in the 0.5–1.5 µs band, which is what survives on real traffic.
 
 ## Roadmap
 

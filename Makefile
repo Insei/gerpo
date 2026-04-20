@@ -46,8 +46,21 @@ bench: ## Run Direct vs Gerpo mock benchmarks (5 runs)
 	go test -bench='$(BENCH_PATTERN)' -benchmem -run=^$$ -count=5 ./tests/
 
 .PHONY: bench-report
-bench-report: ## Print the Direct vs Gerpo summary table
+bench-report: ## Print the Direct vs Gerpo summary table (mock adapter, no IO)
 	GERPO_BENCH_REPORT=1 go test -run=TestCompareDirectVsGerpo -v ./tests/
+
+BENCH_COMPOSE := docker compose -f tests/bench/docker-compose.yml
+BENCH_DSN := postgres://bench:bench@localhost:5434/bench?sslmode=disable
+
+.PHONY: bench-report-pg
+bench-report-pg: ## One-shot: spin up an isolated PG, run the pgx v5 vs Gerpo table, tear PG down
+	@set -e; \
+	echo ">>> starting isolated bench Postgres"; \
+	$(BENCH_COMPOSE) up -d --wait; \
+	trap '$(BENCH_COMPOSE) down -v --remove-orphans' EXIT; \
+	echo ">>> running bench"; \
+	GERPO_BENCH_REPORT=1 GERPO_BENCH_PG_DSN="$(BENCH_DSN)" \
+	    go test -tags=benchpg -run=TestComparePgxVsGerpo -v ./tests/bench/...
 
 .PHONY: docs-serve
 docs-serve: ## Preview the MkDocs site at http://127.0.0.1:8000

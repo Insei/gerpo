@@ -1,0 +1,26 @@
+# Self-contained Postgres for the real-PG bench report. Deliberately separate
+# from tests/integration/docker-compose.yml: different project name, different
+# host port, named volume scoped to this stack so `down -v` wipes everything.
+name: gerpo-bench
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bench
+      POSTGRES_PASSWORD: bench
+      POSTGRES_DB: bench
+    ports:
+      # 5434 — shifted from the integration stack (5433) and the todo-api
+      # example (5432) so all three can run in parallel.
+      - "5434:5432"
+    volumes:
+      - bench-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bench -d bench"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+
+volumes:
+  bench-data:
