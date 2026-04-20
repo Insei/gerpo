@@ -276,40 +276,39 @@ func checkScalarArg(pass *analysis.Pass, report reportFn, op operatorSpec, field
 }
 
 func checkVariadic(pass *analysis.Pass, report reportFn, op operatorSpec, fieldType types.Type, call *ast.CallExpr, cfg *Config, vi *varInitIndex) {
-	// `In(xs...)` — single slice argument spread.
-	if call.Ellipsis != token.NoPos && len(call.Args) == 1 {
-		argType := pass.TypesInfo.TypeOf(call.Args[0])
-		if argType == nil {
-			return
-		}
-		slice, ok := argType.Underlying().(*types.Slice)
-		if !ok {
-			return
-		}
-		elem := slice.Elem()
-		if isEmptyInterface(elem) {
-			// Recover static types from the backing composite literal when
-			// available — inline `[]any{a, b}...` or a single-assignment
-			// `xs := []any{a, b}; In(xs...)`.
-			if elts, ok := spreadElements(pass, vi, call.Args[0]); ok {
-				for _, e := range elts {
-					checkScalarArg(pass, report, op, fieldType, e, cfg, RuleVariadicElementMismatch)
+	// Single-slice argument — treat as a set regardless of `...`. gerpo
+	// auto-unwraps a `[]any{slice}` wrapper for In/NotIn (see
+	// types/filters.go), so `In(ids)` and `In(ids...)` produce the same
+	// SQL and deserve the same static check.
+	if len(call.Args) == 1 {
+		arg := call.Args[0]
+		if argType := pass.TypesInfo.TypeOf(arg); argType != nil {
+			if slice, ok := argType.Underlying().(*types.Slice); ok {
+				elem := slice.Elem()
+				if isEmptyInterface(elem) {
+					// Recover element types from a backing literal or
+					// append-chain accumulator when possible.
+					if elts, ok := spreadElements(pass, vi, arg); ok {
+						for _, e := range elts {
+							checkScalarArg(pass, report, op, fieldType, e, cfg, RuleVariadicElementMismatch)
+						}
+						return
+					}
+					if cfg.AnyArg != SeveritySkip {
+						report(RuleAnyTypedArgument, arg.Pos(),
+							"%s: %s: slice element type is `any`; static check skipped",
+							RuleAnyTypedArgument, op.name)
+					}
+					return
+				}
+				if !isCompatible(fieldType, elem, nil, false) {
+					report(RuleVariadicElementMismatch, arg.Pos(),
+						"%s: %s: slice element type %s is not compatible with field type %s",
+						RuleVariadicElementMismatch, op.name, displayType(elem), displayType(fieldType))
 				}
 				return
 			}
-			if cfg.AnyArg != SeveritySkip {
-				report(RuleAnyTypedArgument, call.Args[0].Pos(),
-					"%s: %s(xs...) element type is `any`; static check skipped",
-					RuleAnyTypedArgument, op.name)
-			}
-			return
 		}
-		if !isCompatible(fieldType, elem, nil, false) {
-			report(RuleVariadicElementMismatch, call.Args[0].Pos(),
-				"%s: %s: spread element type %s is not compatible with field type %s",
-				RuleVariadicElementMismatch, op.name, displayType(elem), displayType(fieldType))
-		}
-		return
 	}
 
 	for _, a := range call.Args {

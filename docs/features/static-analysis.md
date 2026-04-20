@@ -123,18 +123,21 @@ h.Where().Field(&m.ID).In(wanted...) //gerpolint:disable-line=GPL005
 
 ## `[]any` spread recovery
 
-`In(xs...)` where `xs` is `[]any` would lose element types at the call site,
-so gerpolint recovers them from the backing composite literal or
-`append`-chain. Three shapes are understood:
+`In(xs)` / `In(xs...)` where `xs` is a slice would lose element types at
+the call site, so gerpolint recovers them from the backing composite
+literal or `append`-chain. gerpo itself auto-unwraps a single slice
+argument for `In`/`NotIn` (see `types/filters.go`), so the linter treats
+`In(xs)` and `In(xs...)` identically. Three shapes are understood:
 
 ```go
-// (1) Inline composite literal.
+// (1) Inline composite literal — with or without the spread operator.
 h.Where().Field(&m.ID).In([]any{id1, id2, id3}...)
+h.Where().Field(&m.ID).In([]any{id1, id2, id3})
 
 // (2) Single-assignment local variable.
 wanted := []any{id1, "oops", id3}
-h.Where().Field(&m.ID).In(wanted...)
-//        ^ GPL002: argument type string is not compatible with field type uuid.UUID
+h.Where().Field(&m.ID).In(wanted)
+//                       ^ GPL002: argument type string is not compatible with field type uuid.UUID
 
 // (3) Accumulator-style append chain.
 var t []any

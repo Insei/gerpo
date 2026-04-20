@@ -55,6 +55,17 @@ func positives() {
 	w = append(w, 1)
 	w = append(w, []any{2, 3}...)
 	h().Field(&m.Age).In(w...)
+
+	// Auto-unwrap: gerpo accepts a single slice argument without `...`.
+	h().Field(&m.Age).In([]any{1, 2, 3})
+	h().Field(&m.Name).In([]any{"a", "b"})
+
+	idsNoSpread := []any{10, 20}
+	h().Field(&m.Age).In(idsNoSpread)
+
+	var p []any
+	p = append(p, 1, 2)
+	h().Field(&m.Age).In(p)
 }
 
 func negatives() {
@@ -82,6 +93,13 @@ func negatives() {
 	u = append(u, 1)
 	u = append(u, "bad") // want `GPL002: In: argument type string is not compatible with field type int`
 	h().Field(&m.Age).In(u...)
+
+	// No-spread form: bad element inside the slice is still caught.
+	h().Field(&m.Age).In([]any{1, "nope", 3}) // want `GPL002: In: argument type string is not compatible with field type int`
+
+	// No-spread with typed slice that mismatches the field.
+	strs := []string{"a"}
+	h().Field(&m.Age).In(strs) // want `GPL002: In: slice element type string is not compatible with field type int`
 }
 
 func blockedCases() {
@@ -91,15 +109,15 @@ func blockedCases() {
 	var t []any
 	mutate(&t)
 	t = append(t, 1)
-	h().Field(&m.Age).In(t...) // want `GPL005: In\(xs\.\.\.\) element type is .any.; static check skipped`
+	h().Field(&m.Age).In(t...) // want `GPL005: In: slice element type is .any.; static check skipped`
 
 	// Reassignment from a non-literal, non-append RHS blocks the variable.
 	u := []any{1}
 	u = getSlice()
-	h().Field(&m.Age).In(u...) // want `GPL005: In\(xs\.\.\.\) element type is .any.; static check skipped`
+	h().Field(&m.Age).In(u...) // want `GPL005: In: slice element type is .any.; static check skipped`
 
 	// Index-write mutates elements we can't track — block.
 	w := []any{1, 2}
 	w[1] = "x"
-	h().Field(&m.Age).In(w...) // want `GPL005: In\(xs\.\.\.\) element type is .any.; static check skipped`
+	h().Field(&m.Age).In(w...) // want `GPL005: In: slice element type is .any.; static check skipped`
 }
