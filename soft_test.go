@@ -18,7 +18,7 @@ type softModel struct {
 }
 
 // nopAdapter is the smallest possible executor.DBAdapter. It is never
-// invoked from these tests — they exercise NewBuilder + SoftDeletion at
+// invoked from these tests — they exercise New + SoftDeletion at
 // configuration time only.
 type nopAdapter struct{}
 
@@ -31,7 +31,7 @@ func (nopAdapter) QueryContext(context.Context, string, ...any) (extypes.Rows, e
 func (nopAdapter) BeginTx(context.Context) (extypes.Tx, error) { return nil, nil }
 
 func newSoftRepoBuilder() ColumnsAppender[softModel] {
-	return NewBuilder[softModel]().DB(executor.DBAdapter(nopAdapter{})).Table("soft_users")
+	return New[softModel]().DB(executor.DBAdapter(nopAdapter{})).Table("soft_users")
 }
 
 // TestWithSoftDeletion_TypeMismatch_FailsAtBuild proves that returning a value
@@ -146,7 +146,7 @@ func (a *softMockAdapter) BeginTx(context.Context) (extypes.Tx, error) { return 
 // can prove it was UPDATE ... SET deleted_at rather than DELETE FROM.
 func TestWithSoftDeletion_Delete_ExecutesUpdate(t *testing.T) {
 	adapter := &softMockAdapter{rows: 1}
-	repo, err := NewBuilder[softModel]().
+	repo, err := New[softModel]().
 		DB(executor.DBAdapter(adapter)).
 		Table("soft_users").
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
@@ -188,7 +188,7 @@ func TestWithSoftDeletion_Delete_ExecutesUpdate(t *testing.T) {
 // → the repo returns ErrNotFound wrapped with the context.
 func TestWithSoftDeletion_Delete_NoRows_ReturnsNotFound(t *testing.T) {
 	adapter := &softMockAdapter{rows: 0}
-	repo, err := NewBuilder[softModel]().
+	repo, err := New[softModel]().
 		DB(executor.DBAdapter(adapter)).
 		Table("soft_users").
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {

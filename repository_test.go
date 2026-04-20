@@ -125,7 +125,7 @@ func TestRepository_GetFirst(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := newRepository[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID)
 				builder.Field(&m.Name)
 				builder.Field(&m.Email)
@@ -230,7 +230,7 @@ func TestRepository_GetList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := newRepository[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID)
 				builder.Field(&m.Name)
 				builder.Field(&m.Email)
@@ -305,7 +305,7 @@ func TestRepository_Count(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := newRepository[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID)
 				builder.Field(&m.Name)
 				builder.Field(&m.Email)
@@ -377,7 +377,7 @@ func TestRepository_Delete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := newRepository[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID)
 			})
 			if err != nil {
@@ -477,7 +477,7 @@ func TestRepository_Insert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := newRepository[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID)
 				builder.Field(&m.Name)
 				builder.Field(&m.Email)
@@ -562,7 +562,7 @@ func TestRepository_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := New[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
+			repo, err := newRepository[model](nil, "test_table", func(m *model, builder *ColumnBuilder[model]) {
 				builder.Field(&m.ID)
 			})
 			if err != nil {

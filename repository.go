@@ -65,7 +65,11 @@ func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	}
 }
 
-func New[TModel any](exec executor.Executor[TModel], table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
+// newRepository is the low-level constructor used by the fluent builder
+// (gerpo.New[TModel]().…Build()). It assumes a fully prepared executor and a
+// columnsFn — kept unexported so that external callers always go through the
+// builder, which validates db / table / columns and applies executor options.
+func newRepository[TModel any](exec executor.Executor[TModel], table string, columnsFn func(m *TModel, builder *ColumnBuilder[TModel]), opts ...Option[TModel]) (Repository[TModel], error) {
 	model, fields, err := getModelAndFields[TModel]()
 	if err != nil {
 		return nil, err

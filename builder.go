@@ -28,8 +28,10 @@ type ColumnsAppender[TModel any] interface {
 	Columns(fn func(m *TModel, columns *ColumnBuilder[TModel])) Builder[TModel]
 }
 
-// NewBuilder creates a new instance of the repository builder using the specified generic type for model TModel.
-func NewBuilder[TModel any]() ExecutorChooser[TModel] {
+// New starts the fluent builder for a Repository[TModel]. The returned chain
+// is ExecutorChooser → TableChooser → ColumnsAppender → Builder; finalize with
+// Build() to receive the Repository.
+func New[TModel any]() ExecutorChooser[TModel] {
 	return &builder[TModel]{}
 }
 
@@ -116,5 +118,5 @@ func (b *builder[TModel]) Build() (Repository[TModel], error) {
 		return nil, errors.New("no table found")
 	}
 	exec := executor.New[TModel](b.db, b.executorOptions...)
-	return New(exec, b.table, b.columnBuilderFn, b.opts...)
+	return newRepository(exec, b.table, b.columnBuilderFn, b.opts...)
 }

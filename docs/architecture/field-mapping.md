@@ -14,7 +14,7 @@ where `&m.Email` is the reference. That needs a trick: convert a pointer-to-fiel
 
 ## How fmap does it
 
-1. On `gerpo.NewBuilder[T]()`, gerpo creates a zero `T` on the heap once.
+1. On `gerpo.New[T]()`, gerpo creates a zero `T` on the heap once.
 2. `fmap` walks the struct using reflection and records each field's `unsafe.Offsetof`.
 3. For every `c.Field(&m.X)` the builder takes the pointer `&m.X`, subtracts the base address of the zero-struct, and looks up the field by offset. O(1).
 4. At query time, when the repo has a real `*T`, it reads/writes the field by adding the offset back — `unsafe.Pointer` arithmetic without `reflect.Value`.

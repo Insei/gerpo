@@ -25,7 +25,7 @@ func TestPersistent_AutoGroupBy_AggregateVirtual(t *testing.T) {
 		ctx, cancel := testCtx(t)
 		defer cancel()
 
-		repo, err := gerpo.NewBuilder[User]().
+		repo, err := gerpo.New[User]().
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -153,7 +153,7 @@ func TestPersistent_InnerJoin(t *testing.T) {
 			lonelyUser.ID, lonelyUser.Name, lonelyUser.Age, lonelyUser.CreatedAt)
 		require.NoError(t, err)
 
-		repo, err := gerpo.NewBuilder[User]().
+		repo, err := gerpo.New[User]().
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -195,7 +195,7 @@ func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
 		// will get a NULL right-hand side and post_count = 0.
 		targetUserID := seed.users[3].ID
 
-		repo, err := gerpo.NewBuilder[User]().
+		repo, err := gerpo.New[User]().
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -256,7 +256,7 @@ func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
 		// Восстановим один user в "joined" наборе и одного — нет.
 		joinedUserID := seed.users[5].ID // age = 25, попадает и в JOIN, и в WHERE Age GTE 25.
 
-		repo, err := gerpo.NewBuilder[User]().
+		repo, err := gerpo.New[User]().
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -336,7 +336,7 @@ func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
 		// Restrict the inner-join to a single user — only that user appears.
 		targetUserID := seed.users[2].ID
 
-		repo, err := gerpo.NewBuilder[User]().
+		repo, err := gerpo.New[User]().
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {

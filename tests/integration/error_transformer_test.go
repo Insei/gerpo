@@ -21,7 +21,7 @@ var errDomainPostNotFound = errors.New("domain: post not found")
 // gerpo.ErrNotFound на доменную ошибку.
 func newPostRepoWithErrorTransformer(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[Post]().
+	repo, err := gerpo.New[Post]().
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {

@@ -27,7 +27,7 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(databasesql.NewAdapter(db)).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {

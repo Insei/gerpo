@@ -56,7 +56,7 @@ func otelTracer() gerpo.Tracer {
     }
 }
 
-repo, _ := gerpo.NewBuilder[User]().
+repo, _ := gerpo.New[User]().
     DB(pgx5.NewPoolAdapter(pool)).
     Table("users").
     Columns(...).

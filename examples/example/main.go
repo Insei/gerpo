@@ -37,7 +37,7 @@ func main() {
 	}
 	defer db.Close()
 	dbWrap := databasesql.NewAdapter(db, databasesql.WithPlaceholder(placeholder.Dollar))
-	b := gerpo.NewBuilder[test]().
+	b := gerpo.New[test]().
 		DB(dbWrap).
 		Table("tests").
 		Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {

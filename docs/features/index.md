@@ -6,9 +6,9 @@ Reference of gerpo capabilities grouped by area.
 
 | Page | What's inside |
 |---|---|
-| [Repository builder](repository.md) | `NewBuilder[T]()`, `DB`, `Table`, `Build`, repository lifecycle |
-| [Columns](columns.md) | `AsColumn`, `AsVirtual`, insert/update protection, aliases, columns from other tables |
-| [Persistent queries](persistent-queries.md) | `WithQuery`: conditions, JOINs, GROUP BY applied to every request |
+| [Repository builder](repository.md) | `New[T]()`, `DB`, `Table`, `Build`, repository lifecycle |
+| [Columns](columns.md) | `Field`, `AsVirtual`, `OmitOnInsert`/`OmitOnUpdate`/`ReadOnly`, aliases, columns from other tables |
+| [Persistent queries](persistent-queries.md) | `WithQuery`: conditions, JOINs, auto GROUP BY |
 | [Soft delete](soft-delete.md) | Turning DELETE into UPDATE |
 | [Virtual columns](virtual-columns.md) | Computed fields at the SELECT level |
 | [Hooks](hooks.md) | Before/After for Insert/Update/Select |
@@ -19,7 +19,7 @@ Reference of gerpo capabilities grouped by area.
 | Page | What's inside |
 |---|---|
 | [CRUD operations](crud.md) | `GetFirst`, `GetList`, `Count`, `Insert`, `Update`, `Delete` |
-| [WHERE operators](where.md) | EQ, NEQ, LT/LTE/GT/GTE, IN/NIN, CT/BW/EW + IC, AND/OR/Group |
+| [WHERE operators](where.md) | EQ, NEQ, LT/LTE/GT/GTE, IN/NIN, Contains/StartsWith/EndsWith (+IgnoreCase), AND/OR/Group |
 | [Ordering & pagination](order-pagination.md) | `OrderBy`, `Page`, `Size` |
 | [Exclude & Only](exclude-only.md) | Narrowing columns in SELECT/INSERT/UPDATE |
 | [Transactions](transactions.md) | `BeginTx`, `repo.Tx`, `Commit`, `Rollback`, `RollbackUnlessCommitted` |

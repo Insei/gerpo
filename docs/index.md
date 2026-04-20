@@ -40,7 +40,7 @@ type User struct {
 func main() {
     pool, _ := pgxpool.New(context.Background(), "postgres://...")
 
-    repo, err := gerpo.NewBuilder[User]().
+    repo, err := gerpo.New[User]().
         DB(pgx5.NewPoolAdapter(pool)).
         Table("users").
         Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {

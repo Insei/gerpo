@@ -15,7 +15,7 @@ import (
 // (исключение soft-deleted записей).
 func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -52,7 +52,7 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 // Используется для тестов hooks, joins, базовый CRUD.
 func newPostRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[Post]().
+	repo, err := gerpo.New[Post]().
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
@@ -74,7 +74,7 @@ func newPostRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 // newCommentRepo собирает Repository[Comment].
 func newCommentRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Comment] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[Comment]().
+	repo, err := gerpo.New[Comment]().
 		DB(ab.adapter).
 		Table("comments").
 		Columns(func(m *Comment, c *gerpo.ColumnBuilder[Comment]) {

@@ -28,7 +28,7 @@ func TestBuilder_Table(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.Table(tt.table)
 			if b.table != tt.wantTable {
 				t.Errorf("expected table %v, got %v", tt.wantTable, b.table)
@@ -49,7 +49,7 @@ func TestBuilder_DB(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.DB(tt.db)
 			if b.db != tt.db {
 				t.Errorf("expected db %v, got %v", tt.db, b.db)
@@ -92,7 +92,7 @@ func TestBuilder_Build(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			tt.configure(b)
 			_, err := b.Build()
 			if (err != nil && tt.expectError == nil) || (err == nil && tt.expectError != nil) || (err != nil && err.Error() != tt.expectError.Error()) {
@@ -114,7 +114,7 @@ func TestBuilder_Columns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.Columns(tt.columnBuilderFn)
 			if b.columnBuilderFn == nil {
 				t.Errorf("columnBuilderFn is not set")
@@ -135,7 +135,7 @@ func TestBuilder_WithQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.WithQuery(tt.queryFn)
 			if len(b.opts) != tt.expected {
 				t.Errorf("expected %v opts, got %v", tt.expected, len(b.opts))
@@ -156,7 +156,7 @@ func TestBuilder_BeforeInsert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.WithBeforeInsert(tt.beforeInsertFn)
 			if len(b.opts) != tt.expected {
 				t.Errorf("expected %v opts, got %v", tt.expected, len(b.opts))
@@ -177,7 +177,7 @@ func TestBuilder_AfterInsert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.WithAfterInsert(tt.afterInsertFn)
 			if len(b.opts) != tt.expected {
 				t.Errorf("expected %v opts, got %v", tt.expected, len(b.opts))
@@ -200,7 +200,7 @@ func TestBuilder_WithErrorTransformer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewBuilder[mockModel]().(*builder[mockModel])
+			b := New[mockModel]().(*builder[mockModel])
 			b.WithErrorTransformer(tt.errorTransformer)
 			if len(b.opts) != tt.expected {
 				t.Errorf("expected %v opts, got %v", tt.expected, len(b.opts))

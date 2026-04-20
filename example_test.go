@@ -41,15 +41,15 @@ func exampleRepo() gerpo.Repository[User] { return nil }
 // exampleAdapter returns a placeholder adapter for the same reason.
 func exampleAdapter() executor.DBAdapter { return nil }
 
-// ExampleNewBuilder shows the minimum chain to assemble a typed repository
+// ExampleNew shows the minimum chain to assemble a typed repository
 // against a pgx v5 pool.
-func ExampleNewBuilder() {
+func ExampleNew() {
 	pool, err := pgxpool.New(context.Background(), "postgres://localhost/db")
 	if err != nil {
 		panic(err)
 	}
 
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -158,7 +158,7 @@ func ExampleRepository_Delete() {
 func ExampleWithSoftDeletion() {
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -189,7 +189,7 @@ func ExampleWithErrorTransformer() {
 
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -246,7 +246,7 @@ func ExampleWithTracer() {
 
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -268,7 +268,7 @@ func ExampleWithCacheStorage() {
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 	cache := cachectx.New()
 
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(pgx5.NewPoolAdapter(pool), executor.WithCacheStorage(cache)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {

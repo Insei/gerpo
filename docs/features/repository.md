@@ -1,11 +1,11 @@
 # Repository builder
 
-A repository is assembled through the fluent `gerpo.NewBuilder[T]()`. The chain `DB → Table → Columns → Build` is mandatory. Everything else is optional `With*` steps between `Columns` and `Build`.
+A repository is assembled through the fluent `gerpo.New[T]()`. The chain `DB → Table → Columns → Build` is mandatory. Everything else is optional `With*` steps between `Columns` and `Build`.
 
 ## Minimal repository
 
 ```go
-repo, err := gerpo.NewBuilder[User]().
+repo, err := gerpo.New[User]().
     DB(adapter).
     Table("users").
     Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -20,7 +20,7 @@ repo, err := gerpo.NewBuilder[User]().
 ## Full chain of options
 
 ```go
-repo, err := gerpo.NewBuilder[User]().
+repo, err := gerpo.New[User]().
     DB(adapter, executor.WithCacheStorage(ctxCache)).      // (1) adapter + executor options
     Table("users").                                         // (2) table name
     Columns(colsFn).                                        // (3) column description

@@ -19,7 +19,7 @@ import (
 // newCachedPostRepo собирает Post-репозиторий, подключённый к Cache.
 func newCachedPostRepo(t *testing.T, ab adapterBundle, cache *cachectx.Cache) gerpo.Repository[Post] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[Post]().
+	repo, err := gerpo.New[Post]().
 		DB(ab.adapter, executor.WithCacheStorage(cache)).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
@@ -139,7 +139,7 @@ func TestCache_WriteOneRepoInvalidatesOther(t *testing.T) {
 		seed := defaultSeed(t)
 		shared := cachectx.New()
 
-		userRepo, err := gerpo.NewBuilder[User]().
+		userRepo, err := gerpo.New[User]().
 			DB(ab.adapter, executor.WithCacheStorage(shared)).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {

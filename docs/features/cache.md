@@ -15,7 +15,7 @@ import (
 
 c := cachectx.New() // one instance per repo
 
-repo, _ := gerpo.NewBuilder[User]().
+repo, _ := gerpo.New[User]().
     DB(adapter, executor.WithCacheStorage(c)).
     Table("users").
     Columns(/* … */).

@@ -7,7 +7,7 @@
 ```go
 var ErrUserNotFound = errors.New("user not found")
 
-repo, _ := gerpo.NewBuilder[User]().
+repo, _ := gerpo.New[User]().
     DB(adapter).
     Table("users").
     Columns(/* … */).
@@ -32,7 +32,7 @@ Now the hexagonal layer knows nothing about gerpo.
 ## What does **not**
 
 - The happy path — the transformer isn't invoked when `err == nil`.
-- Logic errors raised before any DB call (e.g. an empty `Build()` state) — they come out of `NewBuilder.Build()`, which is outside the transformer.
+- Logic errors raised before any DB call (e.g. an empty `Build()` state) — they come out of `gerpo.New[T]().…Build()`, which is outside the transformer.
 
 ## Passing back the wrapped error
 

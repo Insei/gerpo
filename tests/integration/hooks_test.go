@@ -27,7 +27,7 @@ type hookCounters struct {
 // из хука попадает в INSERT.
 func newPostRepoWithHooks(t *testing.T, ab adapterBundle, c *hookCounters) gerpo.Repository[Post] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[Post]().
+	repo, err := gerpo.New[Post]().
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, cb *gerpo.ColumnBuilder[Post]) {
@@ -149,7 +149,7 @@ func TestHooks_Stacking(t *testing.T) {
 		defer cancel()
 
 		var first, second int
-		repo, err := gerpo.NewBuilder[Post]().
+		repo, err := gerpo.New[Post]().
 			DB(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {

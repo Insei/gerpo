@@ -18,7 +18,7 @@ import (
 // newUserRepo, so any behavioral divergence indicates a regression.
 func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -48,7 +48,7 @@ func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[U
 // virtual column counts only the posts whose title matches titleLike.
 func newUserRepoComputeWithArgs(t *testing.T, ab adapterBundle, titleLike string) gerpo.Repository[User] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -76,7 +76,7 @@ func newUserRepoComputeWithArgs(t *testing.T, ab adapterBundle, titleLike string
 // condition on it must be rejected by the WhereBuilder guard.
 func newUserRepoAggregate(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 	t.Helper()
-	repo, err := gerpo.NewBuilder[User]().
+	repo, err := gerpo.New[User]().
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
@@ -166,7 +166,7 @@ func TestVirtual_NewAPI_AggregateRejectsAutoFilter(t *testing.T) {
 func TestVirtual_NewAPI_AggregateAcceptsExplicitFilter(t *testing.T) {
 	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
 		seed := defaultSeed(t)
-		repo, err := gerpo.NewBuilder[User]().
+		repo, err := gerpo.New[User]().
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
