@@ -12,25 +12,25 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-func (m *MockColumn) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
+func (m *MockColumn) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, []any, error), bool) {
 	if !m.allowedAction {
 		return nil, false
 	}
-	filters := map[types.Operation]func(ctx context.Context, value any) (string, bool, error){
-		types.OperationEQ: func(ctx context.Context, value any) (string, bool, error) {
+	filters := map[types.Operation]func(ctx context.Context, value any) (string, []any, error){
+		types.OperationEQ: func(ctx context.Context, value any) (string, []any, error) {
 			if value == nil {
-				return m.name + " IS NULL", false, nil
+				return m.name + " IS NULL", nil, nil
 			}
-			return m.name + " = ?", true, nil
+			return m.name + " = ?", []any{value}, nil
 		},
-		types.OperationNEQ: func(ctx context.Context, value any) (string, bool, error) {
+		types.OperationNEQ: func(ctx context.Context, value any) (string, []any, error) {
 			if value == nil {
-				return m.name + " IS NOT NULL", false, nil
+				return m.name + " IS NOT NULL", nil, nil
 			}
-			return m.name + " != ?", true, nil
+			return m.name + " != ?", []any{value}, nil
 		},
-		types.OperationGT: func(ctx context.Context, value any) (string, bool, error) {
-			return m.name + " > ?", true, nil
+		types.OperationGT: func(ctx context.Context, value any) (string, []any, error) {
+			return m.name + " > ?", []any{value}, nil
 		},
 	}
 	fn, ok := filters[operation]

@@ -16,14 +16,14 @@ type mockColumn struct {
 	hasName bool
 	sql     string
 	allowed bool
-	filters map[types.Operation]func(ctx context.Context, value any) (string, bool, error)
+	filters map[types.Operation]func(ctx context.Context, value any) (string, []any, error)
 }
 
 func (m *mockColumn) IsAllowedAction(types.SQLAction) bool { return m.allowed }
 func (m *mockColumn) ToSQL(context.Context) string         { return m.sql }
 func (m *mockColumn) Name() (string, bool)                 { return m.name, m.hasName }
 
-func (m *mockColumn) GetFilterFn(op types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
+func (m *mockColumn) GetFilterFn(op types.Operation) (func(ctx context.Context, value any) (string, []any, error), bool) {
 	fn, ok := m.filters[op]
 	return fn, ok
 }
@@ -82,13 +82,13 @@ func (m *mockWhere) AppendCondition(c types.Column, op types.Operation, val any)
 	if !ok {
 		return fmt.Errorf("no filter for %s", op)
 	}
-	sql, append, err := fn(context.Background(), val)
+	sql, args, err := fn(context.Background(), val)
 	if err != nil {
 		return err
 	}
 	m.fragments = append_(m.fragments, sql)
-	if append {
-		m.values = appendAny(m.values, val)
+	for _, a := range args {
+		m.values = appendAny(m.values, a)
 	}
 	return nil
 }

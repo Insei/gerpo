@@ -20,8 +20,8 @@ func TestPersistent_Apply_AllOpsForwarded(t *testing.T) {
 	m := &persistentModel{}
 	delCol := &mockColumn{
 		name: "deleted_at", hasName: true, sql: "deleted_at", allowed: true,
-		filters: map[types.Operation]func(ctx context.Context, val any) (string, bool, error){
-			types.OperationEQ: func(context.Context, any) (string, bool, error) { return "deleted_at IS NULL", false, nil },
+		filters: map[types.Operation]func(ctx context.Context, val any) (string, []any, error){
+			types.OperationEQ: func(context.Context, any) (string, []any, error) { return "deleted_at IS NULL", nil, nil },
 		},
 	}
 	idCol := &mockColumn{name: "id", hasName: true, sql: "id", allowed: true}

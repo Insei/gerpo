@@ -307,22 +307,45 @@ func (b *WhereBuilder) needANDBeforeCondition() bool {
 	return true
 }
 
+// columnSQLArgsProvider mirrors sqlstmt.columnArgsProvider so the where-builder
+// can prepend Compute-bound args without taking a dependency on the higher-level
+// sqlstmt package.
+type columnSQLArgsProvider interface {
+	SQLArgs() []any
+}
+
 func (b *WhereBuilder) AppendCondition(cl types.Column, operation types.Operation, val any) error {
+	if cl.IsAggregate() && !cl.HasFilterOverride(operation) {
+		return fmt.Errorf("aggregate virtual column %q cannot be filtered without an explicit Filter() override (op=%s)",
+			cl.GetField().GetStructPath(), operation)
+	}
 	filterFn, ok := cl.GetFilterFn(operation)
 	if !ok {
 		return fmt.Errorf("for field %s whereSQL %s option is not available", cl.GetField().GetStructPath(), operation)
 	}
-	sql, appendValue, err := filterFn(b.ctx, val)
+	sql, args, err := filterFn(b.ctx, val)
 	if err != nil {
 		return err
+	}
+	if sql == "" {
+		return nil
 	}
 	if b.needANDBeforeCondition() {
 		b.AND()
 	}
 	b.sql = append(b.sql, sql...)
-	if !appendValue {
-		return nil
+	// Auto-derived filters wrap the column expression as `(compute_sql) op ?`, so any
+	// bound args belonging to compute_sql must appear *before* the user value. Custom
+	// filter overrides own their SQL entirely and decide whether to include those args.
+	if !cl.HasFilterOverride(operation) {
+		if ap, ok := cl.(columnSQLArgsProvider); ok {
+			for _, a := range ap.SQLArgs() {
+				b.appendValue(a)
+			}
+		}
 	}
-	b.appendValue(val)
+	for _, a := range args {
+		b.appendValue(a)
+	}
 	return nil
 }

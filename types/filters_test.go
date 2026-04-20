@@ -33,10 +33,10 @@ func TestFilterManager_AddAndGetFilterFn(t *testing.T) {
 
 	fn, ok := m.GetFilterFn(OperationEQ)
 	require.True(t, ok)
-	sql, needValue, err := fn(context.Background(), "alice")
+	sql, args, err := fn(context.Background(), "alice")
 	require.NoError(t, err)
 	assert.Equal(t, "name = ?", sql)
-	assert.True(t, needValue)
+	assert.Equal(t, []any{"alice"}, args)
 
 	_, ok = m.GetFilterFn(OperationNEQ)
 	assert.False(t, ok, "unregistered operation → not found")
@@ -62,6 +62,20 @@ func TestFilterManager_TypeMismatchReturnsError(t *testing.T) {
 	require.Error(t, err, "string can't be assigned to int field")
 }
 
+func TestFilterManager_AddFilterFnArgs_PassesThrough(t *testing.T) {
+	m := NewFilterManagerForField(getField(t, "Name"))
+	m.AddFilterFnArgs(OperationEQ, func(_ context.Context, v any) (string, []any, error) {
+		return "name = ? AND tenant = ?", []any{v, "acme"}, nil
+	})
+
+	fn, ok := m.GetFilterFn(OperationEQ)
+	require.True(t, ok)
+	sql, args, err := fn(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Equal(t, "name = ? AND tenant = ?", sql)
+	assert.Equal(t, []any{"alice", "acme"}, args)
+}
+
 func TestFilterManager_NilForPointerField_OK(t *testing.T) {
 	m := NewFilterManagerForField(getField(t, "Email")) // *string
 	m.AddFilterFn(OperationEQ, func(context.Context, any) (string, bool) {
@@ -69,10 +83,10 @@ func TestFilterManager_NilForPointerField_OK(t *testing.T) {
 	})
 
 	fn, _ := m.GetFilterFn(OperationEQ)
-	sql, needVal, err := fn(context.Background(), nil)
+	sql, args, err := fn(context.Background(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, "email IS NULL", sql)
-	assert.False(t, needVal)
+	assert.Nil(t, args)
 }
 
 func TestFilterManager_SliceOfValues_OK(t *testing.T) {
@@ -80,10 +94,10 @@ func TestFilterManager_SliceOfValues_OK(t *testing.T) {
 	m.AddFilterFn(OperationIN, func(context.Context, any) (string, bool) { return "age IN (?)", true })
 
 	fn, _ := m.GetFilterFn(OperationIN)
-	sql, needVal, err := fn(context.Background(), []int{1, 2, 3})
+	sql, args, err := fn(context.Background(), []int{1, 2, 3})
 	require.NoError(t, err)
 	assert.Equal(t, "age IN (?)", sql)
-	assert.True(t, needVal)
+	assert.Len(t, args, 1, "args wraps the slice; WhereBuilder expands it on append")
 }
 
 func TestFilterManager_EmptySlice_NoOp(t *testing.T) {
@@ -91,8 +105,8 @@ func TestFilterManager_EmptySlice_NoOp(t *testing.T) {
 	m.AddFilterFn(OperationIN, func(context.Context, any) (string, bool) { return "never", true })
 
 	fn, _ := m.GetFilterFn(OperationIN)
-	sql, needVal, err := fn(context.Background(), []int{})
+	sql, args, err := fn(context.Background(), []int{})
 	require.NoError(t, err)
 	assert.Empty(t, sql)
-	assert.False(t, needVal)
+	assert.Nil(t, args)
 }

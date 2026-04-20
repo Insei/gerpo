@@ -18,6 +18,9 @@ func (m *MockColumn) IsAllowedAction(action types.SQLAction) bool {
 	return m.allowedAction
 }
 
+func (m *MockColumn) IsAggregate() bool                        { return false }
+func (m *MockColumn) HasFilterOverride(_ types.Operation) bool { return false }
+
 func (m *MockColumn) ToSQL(ctx context.Context) string {
 	return m.name
 }

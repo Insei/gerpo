@@ -22,7 +22,7 @@ func (c *column) IsAvailableFilterOperation(operation types.Operation) bool {
 	return c.base.Filters.IsAvailableFilterOperation(operation)
 }
 
-func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
+func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, []any, error), bool) {
 	return c.base.Filters.GetFilterFn(operation)
 }
 
@@ -51,6 +51,21 @@ func (c *column) Name() (string, bool) {
 
 func (c *column) Table() (string, bool) {
 	return "", false
+}
+
+func (c *column) IsAggregate() bool {
+	return c.base.IsAggregate()
+}
+
+func (c *column) HasFilterOverride(op types.Operation) bool {
+	return c.base.HasFilterOverride(op)
+}
+
+// SQLArgs returns the bound parameters declared via Compute(sql, args...). They
+// must be appended to the bound list whenever the column expression is referenced
+// in SELECT or in an auto-derived WHERE filter.
+func (c *column) SQLArgs() []any {
+	return c.base.SQLArgs
 }
 
 func New(field fmap.Field, opts ...Option) (types.Column, error) {

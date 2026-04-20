@@ -31,9 +31,26 @@ Each returns an empty string when it has nothing to emit, so the parent can unco
 
 ## Operator-to-SQL mapping
 
-`sqlstmt/sqlpart/where.go` holds one factory per operator (`genEQFn`, `genLTFn`, `genINFn`, …). Factories are invoked once per column at repository build time, producing `func(ctx, value) (string, bool)` closures cached inside the column object. At query time a WHERE condition looks up the matching factory by operator name and appends the resulting SQL fragment with the argument (if any).
+`sqlstmt/sqlpart/where.go` holds one factory per operator (`genEQFn`, `genLTFn`, `genINFn`, …). Factories are invoked once per column at repository build time, producing `func(ctx, value) (string, bool)` closures that `types.SQLFilterManager.AddFilterFn` adapts to the args-based shape `func(ctx, value) (string, []any, error)`. At query time `WhereBuilder.AppendCondition` looks up the matching factory by operator name and appends the resulting SQL fragment together with the bound-args slice.
+
+Custom filters registered through `virtual.Filter(op, spec)` plug into the same pipeline: the FilterSpec is compiled to the same args-based callback and registered via `AddFilterFnArgs`, so `WhereBuilder` does not need to know whether a filter is auto-derived or user-provided.
 
 The LIKE family wraps parameters in `CAST(? AS text)` so PostgreSQL can infer the parameter type inside `CONCAT(…)`.
+
+## Bound args from virtual columns (Compute)
+
+Virtual columns built with `Compute(sql, args...)` store those args on `types.ColumnBase.SQLArgs`. `sqlstmt.collectSelectArgs` walks the SELECT column list and accumulates these args in positional order — they are concatenated *before* JOIN and WHERE args when the final `[]any` is assembled, matching the order in which `?` placeholders appear in the generated SQL (SELECT → JOIN → WHERE).
+
+For WHERE, `WhereBuilder.AppendCondition` prepends the column's `SQLArgs()` before the filter's own args whenever the operator uses the auto-derived filter (which wraps the expression as `(compute_sql) op ?`). Custom `Filter` overrides own their SQL entirely and decide whether or not to include the compute args themselves.
+
+## Aggregate guard
+
+`types.Column` carries two additional flags for virtual aggregates:
+
+- `IsAggregate() bool` — set by `virtual.Aggregate()`.
+- `HasFilterOverride(op) bool` — true for any operator whose filter was registered through `virtual.Filter(op, spec)`.
+
+`WhereBuilder.AppendCondition` refuses to emit a condition when `IsAggregate() && !HasFilterOverride(op)`, returning an error that mentions the column path and the attempted operator. This prevents the common footgun of producing `WHERE COUNT(...) > ?`, which PostgreSQL rejects with a more cryptic message. `HAVING` is not auto-routed — if you need HAVING semantics, register a `Filter` that encodes the condition exactly the way your dialect expects.
 
 ## Object pooling
 

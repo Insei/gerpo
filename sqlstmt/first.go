@@ -69,5 +69,5 @@ func (f *GetFirst) SQL(_ ...Option) (string, []any, error) {
 	sb.WriteString(f.group.SQL())
 	sb.WriteString(f.order.SQL())
 	sb.WriteString(" LIMIT 1")
-	return sb.String(), mergeArgs(f.join.Values(), f.where.Values()), nil
+	return sb.String(), mergeArgs(collectSelectArgs(columns), f.join.Values(), f.where.Values()), nil
 }

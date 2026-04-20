@@ -21,8 +21,8 @@ func TestUpdate_Apply_HappyPath(t *testing.T) {
 	nameCol := &mockColumn{name: "name", hasName: true}
 	idCol := &mockColumn{
 		name: "id", hasName: true, sql: "id", allowed: true,
-		filters: map[types.Operation]func(ctx context.Context, val any) (string, bool, error){
-			types.OperationEQ: func(context.Context, any) (string, bool, error) { return "id = ?", true, nil },
+		filters: map[types.Operation]func(ctx context.Context, val any) (string, []any, error){
+			types.OperationEQ: func(_ context.Context, v any) (string, []any, error) { return "id = ?", []any{v}, nil },
 		},
 	}
 	a := newMockApplier()

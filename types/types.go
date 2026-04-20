@@ -41,6 +41,15 @@ type Column interface {
 
 	// Table returns the name of the table associated with the column and a boolean indicating success or failure of the retrieval.
 	Table() (string, bool)
+
+	// IsAggregate reports whether the column represents an aggregate expression (SUM, COUNT, ...).
+	// WhereBuilder rejects WHERE conditions on aggregate columns unless the operator has an explicit
+	// filter override (see HasFilterOverride).
+	IsAggregate() bool
+
+	// HasFilterOverride reports whether a custom filter was registered for the operation
+	// (typically through virtual.Filter). Auto-derived filters return false.
+	HasFilterOverride(op Operation) bool
 }
 
 // ColumnsGetter is an interface for retrieving a list of Column objects representing database table columns.
@@ -176,8 +185,16 @@ const (
 // This interface extends SQLFilterGetter for retrieving filter details and available operations.
 type SQLFilterManager interface {
 
-	// AddFilterFn registers a custom SQL generation function for a specific operation to handle filter generation logic.
+	// AddFilterFn registers a custom SQL generation function for a specific operation.
+	// The boolean return value indicates whether the user value should be appended as a single
+	// bound argument; for slice values, expansion is handled by the consumer (WhereBuilder).
+	// Internally adapts to the args-based shape used by GetFilterFn.
 	AddFilterFn(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, bool))
+
+	// AddFilterFnArgs registers a filter that returns the bound arguments explicitly.
+	// Used by callers that need to bind constants alongside (or instead of) the user value
+	// — e.g. virtual columns with Compute(sql, args...) or Filter(op, virtual.SQLArgs{...}).
+	AddFilterFnArgs(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, []any, error))
 	SQLFilterGetter
 }
 
@@ -185,7 +202,8 @@ type SQLFilterManager interface {
 type SQLFilterGetter interface {
 
 	// GetFilterFn retrieves a filter function for the specified operation and indicates its availability.
-	GetFilterFn(operation Operation) (func(ctx context.Context, value any) (string, bool, error), bool)
+	// The returned function yields the SQL fragment and the slice of bound arguments to append.
+	GetFilterFn(operation Operation) (func(ctx context.Context, value any) (string, []any, error), bool)
 
 	// GetAvailableFilterOperations retrieves a list of filter operations that are supported and available for use.
 	GetAvailableFilterOperations() []Operation

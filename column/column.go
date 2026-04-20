@@ -19,7 +19,7 @@ type column struct {
 	base  *types.ColumnBase
 }
 
-func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, bool, error), bool) {
+func (c *column) GetFilterFn(operation types.Operation) (func(ctx context.Context, value any) (string, []any, error), bool) {
 	return c.base.Filters.GetFilterFn(operation)
 }
 
@@ -57,6 +57,14 @@ func (c *column) GetAvailableFilterOperations() []types.Operation {
 
 func (c *column) IsAvailableFilterOperation(operation types.Operation) bool {
 	return c.base.Filters.IsAvailableFilterOperation(operation)
+}
+
+func (c *column) IsAggregate() bool {
+	return c.base.IsAggregate()
+}
+
+func (c *column) HasFilterOverride(op types.Operation) bool {
+	return c.base.HasFilterOverride(op)
 }
 
 func generateSQLColumnString(opt *options) string {

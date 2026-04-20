@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [Unreleased]
+
+### Features
+
+- `virtual`: new column API — `Compute(sql, args...)` replaces `WithSQL`; `Aggregate()` marks aggregate expressions; `Filter(op, spec)` registers per-operator overrides through the `FilterSpec` sum-type (`virtual.SQL`, `Bound`, `SQLArgs`, `Match`, `Func`).
+- `sqlstmt`: `WhereBuilder` refuses to build a WHERE condition on an aggregate virtual column without an explicit `Filter()` override and surfaces a clear error instead of emitting invalid SQL.
+- `sqlstmt`: Compute-bound args declared via `Compute(sql, args...)` are propagated through SELECT and auto-derived WHERE filters in positional order.
+
+### Refactor
+
+- `types`: `SQLFilterManager.GetFilterFn` now returns `func(ctx, value any) (string, []any, error)` so filters can carry bound arguments directly; the legacy `AddFilterFn(op, func) (string, bool)` keeps working as a thin adapter and `AddFilterFnArgs` exposes the new shape.
+- `types.Column`: adds `IsAggregate() bool` and `HasFilterOverride(op Operation) bool` (default `false` on regular columns) so the WHERE builder can enforce the aggregate guard uniformly.
+
+### Deprecations
+
+- `virtual.(*Builder).WithSQL` — use `Compute(sql, args...)`.
+- `virtual.(*Builder).WithBoolEqFilter` — use `Filter(types.OperationEQ, virtual.Match{...})`.
+
+Both still compile; the deprecation bracket is 1–2 minor releases.
+
 ## [0.9.5] - 2026-04-19
 
 ### Bug Fixes
