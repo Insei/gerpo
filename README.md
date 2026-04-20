@@ -130,6 +130,30 @@ string-only operator on non-string field, unresolved field pointer, and
 `//gerpolint:disable-next-line[=GPL001,…]`, or the
 `//gerpolint:disable` / `//gerpolint:enable` block pair.
 
+**Using gerpolint as a golangci-lint plugin.** Drop the repo's
+[`.custom-gcl.yml`](.custom-gcl.yml) into your project (pointing
+`module: github.com/insei/gerpo`, `import: github.com/insei/gerpo/gerpolintplugin`),
+add gerpolint to your linters config, and build a bespoke binary:
+
+```bash
+golangci-lint custom         # produces ./bin/custom-gcl with gerpolint embedded
+./bin/custom-gcl run ./...
+```
+
+```yaml
+# .golangci.yml
+linters:
+  enable: [gerpolint]
+  settings:
+    custom:
+      gerpolint:
+        type: module
+        settings:
+          unresolved-field: skip   # skip | warn | error
+          any-arg: warn            # skip | warn | error
+          disabled-rules: []       # [GPL001, GPL002, …]
+```
+
 ## Roadmap
 
 **1.0.0**

@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/golangci/plugin-module-register v0.1.2
 	github.com/google/uuid v1.6.0
 	github.com/insei/fmap/v3 v3.1.2
 	github.com/jackc/pgconn v1.14.3

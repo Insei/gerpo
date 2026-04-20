@@ -30,6 +30,14 @@ lint: ## Run golangci-lint v2
 lint-gerpolint: ## Run the built-in gerpolint static analyzer over ./...
 	go run ./cmd/gerpolint ./...
 
+.PHONY: custom-gcl
+custom-gcl: ## Build a golangci-lint binary with the gerpolint plugin embedded (./bin/custom-gcl)
+	golangci-lint custom
+
+.PHONY: lint-gerpolint-plugin
+lint-gerpolint-plugin: custom-gcl ## Build custom-gcl and run it over ./...
+	./bin/custom-gcl run ./...
+
 .PHONY: integration-up
 integration-up: ## Start the PostgreSQL container used by integration tests
 	$(COMPOSE) up -d

@@ -6,7 +6,7 @@ package main
 import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 
-	"github.com/insei/gerpo/internal/gerpolint"
+	"github.com/insei/gerpo/gerpolint"
 )
 
 func main() {

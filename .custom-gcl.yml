@@ -1,0 +1,7 @@
+version: v2.5.0
+name: custom-gcl
+destination: ./bin
+plugins:
+  - module: github.com/insei/gerpo
+    import: github.com/insei/gerpo/gerpolintplugin
+    path: .

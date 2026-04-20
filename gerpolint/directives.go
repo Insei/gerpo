@@ -151,4 +151,3 @@ func parseRules(s string) (*directiveSet, string) {
 	}
 	return set, ""
 }
-

@@ -14,9 +14,18 @@ linters:
     - misspell
     - staticcheck
     - unused
+    - gerpolint
   settings:
     misspell:
       locale: US
+    custom:
+      gerpolint:
+        type: module
+        description: Type-safe check of gerpo WHERE filter arguments.
+        original-url: https://github.com/insei/gerpo
+        settings:
+          unresolved-field: skip
+          any-arg: warn
   exclusions:
     rules:
       # Tests carry their own conventions and may shadow vars on purpose.

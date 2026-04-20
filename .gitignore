@@ -28,3 +28,6 @@ go.work
 *courses-api
 yetus-output
 logs
+
+# golangci-lint custom plugin binary
+/bin/
