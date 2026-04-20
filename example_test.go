@@ -233,25 +233,27 @@ func ExampleRepository_Tx() {
 }
 
 // ExampleWithTracer wires gerpo into an OpenTelemetry-style tracer without
-// pulling the OTel package into the gerpo dependency set.
+// pulling the OTel package into the gerpo dependency set. The tracer receives
+// SpanInfo with the operation name (e.g. "gerpo.GetFirst") and the bound table.
 func ExampleWithTracer() {
-	myTracer := func(ctx context.Context, op string) (context.Context, executor.SpanEnd) {
+	myTracer := func(ctx context.Context, span gerpo.SpanInfo) (context.Context, gerpo.SpanEnd) {
 		// Open a span using your tracer of choice. Here we just stub the call.
-		fmt.Println("start", op)
+		fmt.Println("start", span.Op, "table=", span.Table)
 		return ctx, func(err error) {
-			fmt.Println("end", op, err)
+			fmt.Println("end", span.Op, err)
 		}
 	}
 
 	pool, _ := pgxpool.New(context.Background(), "postgres://localhost/db")
 
 	repo, err := gerpo.NewBuilder[User]().
-		DB(pgx5.NewPoolAdapter(pool), executor.WithTracer(myTracer)).
+		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
 			c.Field(&m.ID).AsColumn().WithUpdateProtection()
 			c.Field(&m.Name).AsColumn()
 		}).
+		WithTracer(myTracer).
 		Build()
 	if err != nil {
 		panic(err)

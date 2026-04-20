@@ -132,3 +132,15 @@ func WithErrorTransformer[TModel any](fn func(err error) error) Option[TModel] {
 		return nil
 	})
 }
+
+// WithTracer installs a tracing hook called around every Repository operation.
+// Pass nil to disable tracing (this is the default). The hook receives a
+// SpanInfo with the operation name (prefixed with "gerpo.") and the bound
+// table, and returns a context to propagate plus a SpanEnd that observes the
+// terminal error.
+func WithTracer[TModel any](tracer Tracer) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) error {
+		o.tracer = tracer
+		return nil
+	})
+}

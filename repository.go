@@ -19,6 +19,9 @@ type repository[TModel any] struct {
 	afterSelect      func(ctx context.Context, models []*TModel)
 	errorTransformer func(err error) error
 
+	// Tracing — opt-in via WithTracer; nil means "no spans".
+	tracer Tracer
+
 	// Columns and fields
 	baseModel *TModel
 	table     string
@@ -29,6 +32,16 @@ type repository[TModel any] struct {
 	persistentQuery *query.Persistent[TModel]
 
 	deleteFn func(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error)
+}
+
+// startSpan opens a tracing span around a repository operation. When no Tracer
+// is configured, returns the original context and a no-op end function so the
+// callers stay branch-free.
+func (r *repository[TModel]) startSpan(ctx context.Context, op string) (context.Context, SpanEnd) {
+	if r.tracer == nil {
+		return ctx, noopSpanEnd
+	}
+	return r.tracer(ctx, SpanInfo{Op: op, Table: r.table})
 }
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
@@ -99,6 +112,9 @@ func (r *repository[TModel]) Tx(tx executor.Tx) Repository[TModel] {
 }
 
 func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TModel, h query.GetFirstHelper[TModel])) (model *TModel, err error) {
+	ctx, end := r.startSpan(ctx, "gerpo.GetFirst")
+	defer func() { end(err) }()
+
 	stmt := sqlstmt.NewGetFirst(ctx, r.table, r.columns)
 	defer stmt.Release()
 	err = r.persistentQuery.Apply(stmt)
@@ -123,6 +139,9 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 }
 
 func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel, h query.GetListHelper[TModel])) (models []*TModel, err error) {
+	ctx, end := r.startSpan(ctx, "gerpo.GetList")
+	defer func() { end(err) }()
+
 	stmt := sqlstmt.NewGetList(ctx, r.table, r.columns)
 	defer stmt.Release()
 	err = r.persistentQuery.Apply(stmt)
@@ -147,6 +166,9 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 }
 
 func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, h query.CountHelper[TModel])) (count uint64, err error) {
+	ctx, end := r.startSpan(ctx, "gerpo.Count")
+	defer func() { end(err) }()
+
 	stmt := sqlstmt.NewCount(ctx, r.table, r.columns)
 	defer stmt.Release()
 	err = r.persistentQuery.Apply(stmt)
@@ -170,6 +192,9 @@ func (r *repository[TModel]) Count(ctx context.Context, qFns ...func(m *TModel, 
 }
 
 func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertHelper[TModel])) (err error) {
+	ctx, end := r.startSpan(ctx, "gerpo.Insert")
+	defer func() { end(err) }()
+
 	r.beforeInsert(ctx, model)
 	stmt := sqlstmt.NewInsert(ctx, r.table, r.columns)
 	err = r.persistentQuery.Apply(stmt)
@@ -194,6 +219,9 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 }
 
 func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (count int64, err error) {
+	ctx, end := r.startSpan(ctx, "gerpo.Update")
+	defer func() { end(err) }()
+
 	r.beforeUpdate(ctx, model)
 	stmt := sqlstmt.NewUpdate(ctx, r.columns, r.table)
 	err = r.persistentQuery.Apply(stmt)
@@ -246,5 +274,8 @@ func (r *repository[TModel]) delete(ctx context.Context, qFns ...func(m *TModel,
 }
 
 func (r *repository[TModel]) Delete(ctx context.Context, qFns ...func(m *TModel, h query.DeleteHelper[TModel])) (count int64, err error) {
-	return r.deleteFn(ctx, qFns...)
+	ctx, end := r.startSpan(ctx, "gerpo.Delete")
+	defer func() { end(err) }()
+	count, err = r.deleteFn(ctx, qFns...)
+	return count, err
 }

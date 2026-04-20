@@ -99,6 +99,14 @@ func (b *builder[TModel]) WithErrorTransformer(fn func(err error) error) Builder
 	return b
 }
 
+// WithTracer installs a tracing hook called around every Repository operation.
+// The hook receives SpanInfo carrying the operation name and the bound table.
+// Pass nil to disable tracing (this is the default).
+func (b *builder[TModel]) WithTracer(tracer Tracer) Builder[TModel] {
+	b.opts = append(b.opts, WithTracer[TModel](tracer))
+	return b
+}
+
 // Build finalizes the builder configuration and returns a Repository instance or an error if essential elements are missing.
 func (b *builder[TModel]) Build() (Repository[TModel], error) {
 	if b.db == nil {
