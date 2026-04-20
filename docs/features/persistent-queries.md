@@ -8,7 +8,7 @@
 |---|---|
 | `Where()` | Filters inserted into every query |
 | `LeftJoinOn(table, on, args...)` / `InnerJoinOn(...)` | Parameter-bound JOINs |
-| `GroupBy(fields...)` | A single GROUP BY applied everywhere (required when a JOIN + aggregate shows up) |
+| `GroupBy(fields...)` | Override the auto GROUP BY (which kicks in for any aggregate virtual column) |
 | `Exclude(fields...)` | Hide a column from every SELECT |
 
 ## Hiding soft-deleted records
@@ -29,16 +29,20 @@ A real example from the integration tests — `User` has a virtual `PostCount` f
 .Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
     c.Field(&m.ID)
     c.Field(&m.Name)
-    c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
+    c.Field(&m.PostCount).AsVirtual().Aggregate().Compute("COALESCE(COUNT(posts.id), 0)")
 }).
 WithQuery(func(m *User, h query.PersistentHelper[User]) {
     h.LeftJoinOn("posts", "posts.user_id = users.id")
-    h.GroupBy(&m.ID, &m.Name)
     h.Where().Field(&m.DeletedAt).EQ(nil)
 })
 ```
 
 Now `PostCount` is automatically included in the SELECT of every request against `users`.
+
+!!! tip "Auto GROUP BY"
+    When at least one virtual column is marked with `.Aggregate()`, gerpo auto-fills GROUP BY with every non-aggregate column in SELECT. There is no more manual `h.GroupBy(...)` per repository — the type system already knows which columns are aggregates and which are not.
+
+    Manual `h.GroupBy(...)` still works and takes precedence — power users can override the auto choice when the default doesn't fit (HAVING constructs, GROUP BY of expressions that are not in SELECT, ROLLUP, ...).
 
 !!! note "InnerJoin vs LeftJoin"
     `InnerJoinOn` drops users who have no posts — handy when you only care about active ones. `LeftJoinOn` keeps them, the aggregate returns `0` for loners.

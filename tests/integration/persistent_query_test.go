@@ -13,6 +13,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestPersistent_AutoGroupBy_AggregateVirtual — when a virtual column is marked
+// Aggregate(), gerpo auto-fills GROUP BY with every non-aggregate SELECT column,
+// even if the user did not configure h.GroupBy(...). Without this auto-fill the
+// query would die with PostgreSQL's classic
+//
+//	"must appear in the GROUP BY clause or be used in an aggregate function".
+func TestPersistent_AutoGroupBy_AggregateVirtual(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		seed := defaultSeed(t)
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		repo, err := gerpo.NewBuilder[User]().
+			DB(ab.adapter).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).OmitOnUpdate()
+				c.Field(&m.Name)
+				c.Field(&m.Email)
+				c.Field(&m.Age)
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
+				c.Field(&m.PostCount).AsVirtual().
+					Aggregate().
+					Compute("COALESCE(COUNT(posts.id), 0)")
+			}).
+			WithQuery(func(m *User, h query.PersistentHelper[User]) {
+				h.LeftJoinOn("posts", "posts.user_id = users.id")
+				// Note: no h.GroupBy(...) — auto-fill must cover it.
+				h.Where().Field(&m.DeletedAt).EQ(nil)
+			}).
+			Build()
+		require.NoError(t, err)
+
+		got, err := repo.GetList(ctx, func(m *User, h query.GetListHelper[User]) {
+			h.OrderBy().Field(&m.Age).ASC()
+		})
+		require.NoError(t, err, "auto GROUP BY must let an aggregate-virtual repo run without manual GroupBy")
+		require.Len(t, got, len(seed.users))
+		for _, u := range got {
+			assert.Equal(t, 3, u.PostCount, "every seeded user owns 3 posts")
+		}
+	})
+}
+
 // TestPersistent_LeftJoin_VirtualColumn — persistent LeftJoin + virtual column (post_count).
 // Для каждого пользователя в seed'е по 3 поста, значит post_count=3 для всех.
 func TestPersistent_LeftJoin_VirtualColumn(t *testing.T) {

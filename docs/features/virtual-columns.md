@@ -48,12 +48,11 @@ c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 
 .WithQuery(func(m *User, h query.PersistentHelper[User]) {
     h.LeftJoinOn("posts", "posts.user_id = users.id")
-    h.GroupBy(&m.ID, &m.Name /*, every non-aggregate */)
 })
 ```
 
-!!! warning "GROUP BY"
-    When aggregates are in play, you must list every regular column that appears in SELECT in the `GroupBy`, otherwise PostgreSQL returns *"must appear in the GROUP BY clause or be used in an aggregate function"*.
+!!! tip "Auto GROUP BY"
+    When at least one virtual column is marked `.Aggregate()`, gerpo auto-fills GROUP BY with every non-aggregate column in SELECT — no need to mirror the column list in `h.GroupBy(...)` manually. Calling `h.GroupBy(...)` explicitly overrides the auto choice.
 
 ## Aggregate
 
