@@ -34,3 +34,4 @@ Reference of gerpo capabilities grouped by area.
 | [Cache](cache.md) | `Cache` — cache scoped to a request context |
 | [Tracing](tracing.md) | `WithTracer` hook — OpenTelemetry / Datadog / any tracer |
 | [Adapters](adapters.md) | pgx v5, pgx v4, database/sql, and custom adapters |
+| [Static analysis (gerpolint)](static-analysis.md) | `go vet`-time checker that catches `EQ("18")` on `int` fields, also ships as a golangci-lint plugin |

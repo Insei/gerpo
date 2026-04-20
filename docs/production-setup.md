@@ -324,6 +324,7 @@ Before rolling out to production:
 - [ ] `CacheMiddleware` wraps every HTTP entry point; background workers call `cachectx.WrapContext` explicitly at the start of each unit of work.
 - [ ] All multi-step writes go through `gerpo.RunInTx` — not a bare sequence of `repo.Insert`.
 - [ ] OTel exporter, logging and metrics are configured *outside* gerpo; gerpo only emits spans through the `Tracer` hook.
+- [ ] [gerpolint](features/static-analysis.md) is wired into CI (standalone or via the golangci-lint plugin) so that `EQ("18")` on an `int` column fails the build rather than the request.
 
 ## Related pages
 
@@ -332,3 +333,4 @@ Before rolling out to production:
 - [Transactions](features/transactions.md) — manual `BeginTx`, savepoints.
 - [Error transformer](features/error-transformer.md) — what flows through, what doesn't.
 - [Adapters](features/adapters.md) — writing custom wrappers (tracing, mocks).
+- [Static analysis (gerpolint)](features/static-analysis.md) — catch WHERE-filter type errors at `go vet` time.

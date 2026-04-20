@@ -96,6 +96,10 @@ Full runnable sample lives in [`examples/todo-api/`](https://github.com/Insei/ge
 
     A walkthrough of every repository capability: CRUD, filters, ordering, hooks, soft delete, virtual columns, cache, transactions, adapters.
 
+-   :material-shield-check-outline:{ .lg } **[Static analysis (gerpolint) →](features/static-analysis.md)**
+
+    Catch `EQ("18")` on an `int` field at `go vet` time. Ships as a standalone binary and as a golangci-lint v2 plugin.
+
 -   :material-sitemap:{ .lg } **[Architecture →](architecture/index.md)**
 
     How gerpo is built internally: layers, SQL generation, pointer-based field mapping via fmap, adapter implementations, Cache. For contributors.

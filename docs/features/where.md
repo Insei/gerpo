@@ -2,6 +2,9 @@
 
 All operators are built with `h.Where().Field(&m.X).<Op>(val)`. The result is an `ANDOR` that lets you keep chaining with `.AND()` / `.OR()`.
 
+!!! tip "Static type-check at `go vet` time"
+    Every operator on this page accepts `any`, so the compiler cannot catch `EQ("18")` on an `int` field. gerpo ships **[gerpolint](static-analysis.md)** — a `go/analysis` checker that flags these mismatches, either as a standalone binary or as a golangci-lint plugin.
+
 ## Comparison
 
 | Method | SQL | Works for |

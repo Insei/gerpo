@@ -88,6 +88,7 @@ nav:
       - Tracing: features/tracing.md
       - Error transformer: features/error-transformer.md
       - Adapters: features/adapters.md
+      - Static analysis (gerpolint): features/static-analysis.md
   - Architecture:
       - architecture/index.md
       - Ideology: architecture/ideology.md
