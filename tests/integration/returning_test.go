@@ -119,8 +119,8 @@ func TestReturning_Update_FillsTriggerColumn(t *testing.T) {
 		require.Nil(t, m.UpdatedAt, "no UpdatedAt before any UPDATE")
 
 		m.Title = "after"
-		n, err := repo.Update(ctx, m, func(_ *returningModel, h query.UpdateHelper[returningModel]) {
-			h.Where().Field(&m.ID).EQ(m.ID)
+		n, err := repo.Update(ctx, m, func(base *returningModel, h query.UpdateHelper[returningModel]) {
+			h.Where().Field(&base.ID).EQ(m.ID)
 		})
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), n)
@@ -140,8 +140,8 @@ func TestReturning_PerRequest_NarrowsList(t *testing.T) {
 		defer cancel()
 
 		m := &returningModel{Title: "narrow"}
-		require.NoError(t, repo.Insert(ctx, m, func(_ *returningModel, h query.InsertHelper[returningModel]) {
-			h.Returning(&m.ID)
+		require.NoError(t, repo.Insert(ctx, m, func(base *returningModel, h query.InsertHelper[returningModel]) {
+			h.Returning(&base.ID)
 		}))
 
 		assert.NotEqual(t, uuid.Nil, m.ID, "ID requested explicitly — must be filled")
@@ -161,7 +161,7 @@ func TestReturning_PerRequest_DisablesEntirely(t *testing.T) {
 
 		m := &returningModel{Title: "no-returning"}
 		require.NoError(t, repo.Insert(ctx, m, func(_ *returningModel, h query.InsertHelper[returningModel]) {
-			h.Returning() // disable
+			h.Returning() // disable — no pointer args, no base-model resolve needed
 		}))
 
 		assert.Equal(t, uuid.Nil, m.ID, "RETURNING disabled — ID must stay zero (server value not read back)")
