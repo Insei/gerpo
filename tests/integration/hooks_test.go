@@ -31,13 +31,13 @@ func newPostRepoWithHooks(t *testing.T, ab adapterBundle, c *hookCounters) gerpo
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, cb *gerpo.ColumnBuilder[Post]) {
-			cb.Field(&m.ID).AsColumn().WithUpdateProtection()
-			cb.Field(&m.UserID).AsColumn()
-			cb.Field(&m.Title).AsColumn()
-			cb.Field(&m.Content).AsColumn()
-			cb.Field(&m.Published).AsColumn()
-			cb.Field(&m.PublishedAt).AsColumn()
-			cb.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+			cb.Field(&m.ID).WithUpdateProtection()
+			cb.Field(&m.UserID)
+			cb.Field(&m.Title)
+			cb.Field(&m.Content)
+			cb.Field(&m.Published)
+			cb.Field(&m.PublishedAt)
+			cb.Field(&m.CreatedAt).WithUpdateProtection()
 		}).
 		WithBeforeInsert(func(ctx context.Context, m *Post) {
 			c.beforeInsert++
@@ -153,13 +153,13 @@ func TestHooks_Stacking(t *testing.T) {
 			DB(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
-				c.Field(&m.ID).AsColumn().WithUpdateProtection()
-				c.Field(&m.UserID).AsColumn()
-				c.Field(&m.Title).AsColumn()
-				c.Field(&m.Content).AsColumn()
-				c.Field(&m.Published).AsColumn()
-				c.Field(&m.PublishedAt).AsColumn()
-				c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.UserID)
+				c.Field(&m.Title)
+				c.Field(&m.Content)
+				c.Field(&m.Published)
+				c.Field(&m.PublishedAt)
+				c.Field(&m.CreatedAt).WithUpdateProtection()
 			}).
 			WithBeforeInsert(func(ctx context.Context, m *Post) { first++ }).
 			WithBeforeInsert(func(ctx context.Context, m *Post) { second++ }).

@@ -23,13 +23,13 @@ func newCachedPostRepo(t *testing.T, ab adapterBundle, cache *cachectx.CtxCache)
 		DB(ab.adapter, executor.WithCacheStorage(cache)).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.UserID).AsColumn()
-			c.Field(&m.Title).AsColumn()
-			c.Field(&m.Content).AsColumn()
-			c.Field(&m.Published).AsColumn()
-			c.Field(&m.PublishedAt).AsColumn()
-			c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.UserID)
+			c.Field(&m.Title)
+			c.Field(&m.Content)
+			c.Field(&m.Published)
+			c.Field(&m.PublishedAt)
+			c.Field(&m.CreatedAt).WithUpdateProtection()
 		}).
 		Build()
 	require.NoError(t, err)

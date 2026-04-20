@@ -2,6 +2,7 @@ package gerpo
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/insei/fmap/v3"
 	"github.com/insei/gerpo/column"
@@ -22,32 +23,31 @@ type ColumnBuilder[TModel any] struct {
 	errors        []error
 }
 
-type ColumnTypeSelector[TModel any] struct {
-	cb       *ColumnBuilder[TModel]
-	fieldPtr any
+// FieldConfig is what Field(ptr) returns. It embeds *column.Builder so the regular
+// column-shaping methods (WithUpdateProtection, WithAlias, WithColumnName, ...)
+// are callable directly on the result of Field. To configure a virtual column
+// instead, call AsVirtual — that swaps the registered column-builder for a
+// virtual-builder and returns the latter.
+type FieldConfig[TModel any] struct {
+	*column.Builder
+	cb    *ColumnBuilder[TModel]
+	field fmap.Field
 }
 
-// AsVirtual creates a new virtual column builder for the specified field and appends it to the list of column builders.
-func (s ColumnTypeSelector[TModel]) AsVirtual() *virtual.Builder {
-	field, err := s.cb.getFmapField(s.fieldPtr)
-	if err != nil {
-		s.cb.errors = append(s.cb.errors, err)
+// AsVirtual converts the field configuration into a virtual column.
+// The column-builder created by Field is removed from the registration list
+// and replaced with a fresh virtual.Builder; further configuration must happen
+// through the returned *virtual.Builder (Compute / Aggregate / Filter).
+func (f *FieldConfig[TModel]) AsVirtual() *virtual.Builder {
+	for i, b := range f.cb.builders {
+		if b == f.Builder {
+			f.cb.builders = slices.Delete(f.cb.builders, i, i+1)
+			break
+		}
 	}
-	vb := virtual.NewBuilder(field)
-	s.cb.builders = append(s.cb.builders, vb)
+	vb := virtual.NewBuilder(f.field)
+	f.cb.builders = append(f.cb.builders, vb)
 	return vb
-}
-
-// AsColumn initializes a column builder for the specified field and appends it to the column builder’s list of builders.
-func (s ColumnTypeSelector[TModel]) AsColumn() *column.Builder {
-	field, err := s.cb.getFmapField(s.fieldPtr)
-	if err != nil {
-		s.cb.errors = append(s.cb.errors, err)
-	}
-	b := column.NewBuilder(field)
-	b.WithTable(s.cb.table)
-	s.cb.builders = append(s.cb.builders, b)
-	return b
 }
 
 func newColumnBuilder[TModel any](table string, model *TModel, fields fmap.Storage) *ColumnBuilder[TModel] {
@@ -67,11 +67,22 @@ func (b *ColumnBuilder[TModel]) getFmapField(fieldPtr any) (fmap.Field, error) {
 	return field, nil
 }
 
-// Field initializes the building process for a specific field of the model and returns a ColumnTypeSelector for further configuration.
-func (b *ColumnBuilder[TModel]) Field(fieldPtr any) *ColumnTypeSelector[TModel] {
-	return &ColumnTypeSelector[TModel]{
-		cb:       b,
-		fieldPtr: fieldPtr,
+// Field registers a model field as a regular SQL column and returns a *FieldConfig
+// for chained configuration. Use the embedded *column.Builder methods to refine
+// the column (WithUpdateProtection, WithAlias, ...) or call AsVirtual() to turn
+// it into a virtual column instead.
+func (b *ColumnBuilder[TModel]) Field(fieldPtr any) *FieldConfig[TModel] {
+	field, err := b.getFmapField(fieldPtr)
+	if err != nil {
+		b.errors = append(b.errors, err)
+	}
+	cb := column.NewBuilder(field)
+	cb.WithTable(b.table)
+	b.builders = append(b.builders, cb)
+	return &FieldConfig[TModel]{
+		Builder: cb,
+		cb:      b,
+		field:   field,
 	}
 }
 

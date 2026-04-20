@@ -9,8 +9,8 @@ repo, err := gerpo.NewBuilder[User]().
     DB(adapter).
     Table("users").
     Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-        c.Field(&m.ID).AsColumn().WithUpdateProtection()
-        c.Field(&m.Name).AsColumn()
+        c.Field(&m.ID).WithUpdateProtection()
+        c.Field(&m.Name)
     }).
     Build()
 ```

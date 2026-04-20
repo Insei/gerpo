@@ -27,8 +27,8 @@ A real example from the integration tests — `User` has a virtual `PostCount` f
 
 ```go
 .Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-    c.Field(&m.ID).AsColumn()
-    c.Field(&m.Name).AsColumn()
+    c.Field(&m.ID)
+    c.Field(&m.Name)
     c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
         return "COALESCE(COUNT(posts.id), 0)"
     })

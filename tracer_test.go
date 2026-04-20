@@ -46,7 +46,7 @@ func TestRepository_Tracer_GetFirst(t *testing.T) {
 		},
 	}
 	repo, err := New[model](exec, "users", func(m *model, c *ColumnBuilder[model]) {
-		c.Field(&m.ID).AsColumn()
+		c.Field(&m.ID)
 	}, WithTracer[model](rec.tracer()))
 	require.NoError(t, err)
 
@@ -75,7 +75,7 @@ func TestRepository_Tracer_PropagatesError(t *testing.T) {
 		},
 	}
 	repo, err := New[model](exec, "users", func(m *model, c *ColumnBuilder[model]) {
-		c.Field(&m.ID).AsColumn()
+		c.Field(&m.ID)
 	}, WithTracer[model](rec.tracer()))
 	require.NoError(t, err)
 
@@ -103,7 +103,7 @@ func TestRepository_Tracer_AllOps(t *testing.T) {
 		DeleteFunc:      func(context.Context, executor.CountStmt) (int64, error) { return 1, nil },
 	}
 	repo, err := New[model](exec, "users", func(m *model, c *ColumnBuilder[model]) {
-		c.Field(&m.ID).AsColumn()
+		c.Field(&m.ID)
 	}, WithTracer[model](rec.tracer()))
 	require.NoError(t, err)
 
@@ -142,7 +142,7 @@ func TestRepository_Tracer_NoTracerNoOverhead(t *testing.T) {
 		GetOneFunc: func(context.Context, executor.Stmt) (*model, error) { return &model{ID: 1}, nil },
 	}
 	repo, err := New[model](exec, "users", func(m *model, c *ColumnBuilder[model]) {
-		c.Field(&m.ID).AsColumn()
+		c.Field(&m.ID)
 	})
 	require.NoError(t, err)
 

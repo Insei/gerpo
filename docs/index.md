@@ -44,11 +44,11 @@ func main() {
         DB(pgx5.NewPoolAdapter(pool)).
         Table("users").
         Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-            c.Field(&m.ID).AsColumn().WithUpdateProtection()
-            c.Field(&m.Name).AsColumn()
-            c.Field(&m.Email).AsColumn()
-            c.Field(&m.Age).AsColumn()
-            c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+            c.Field(&m.ID).WithUpdateProtection()
+            c.Field(&m.Name)
+            c.Field(&m.Email)
+            c.Field(&m.Age)
+            c.Field(&m.CreatedAt).WithUpdateProtection()
         }).
         Build()
     if err != nil {

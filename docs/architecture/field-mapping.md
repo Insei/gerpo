@@ -7,7 +7,7 @@ gerpo's pointer-based column binding is powered by [`github.com/insei/fmap/v3`](
 Classic reflection identifies a field by name or index. Both are brittle: renames silently shift indices, typos escape the compiler. gerpo wants code like
 
 ```go
-c.Field(&m.Email).AsColumn()
+c.Field(&m.Email)
 ```
 
 where `&m.Email` is the reference. That needs a trick: convert a pointer-to-field into a stable field identifier.

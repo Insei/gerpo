@@ -53,12 +53,12 @@ func ExampleNewBuilder() {
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.Name).AsColumn()
-			c.Field(&m.Email).AsColumn()
-			c.Field(&m.Age).AsColumn()
-			c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
-			c.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.Name)
+			c.Field(&m.Email)
+			c.Field(&m.Age)
+			c.Field(&m.CreatedAt).WithUpdateProtection()
+			c.Field(&m.UpdatedAt).WithInsertProtection()
 		}).
 		Build()
 	if err != nil {
@@ -162,9 +162,9 @@ func ExampleWithSoftDeletion() {
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.Name).AsColumn()
-			c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.Name)
+			c.Field(&m.DeletedAt).WithInsertProtection()
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
 			h.Where().Field(&m.DeletedAt).EQ(nil) // hide soft-deleted rows
@@ -193,8 +193,8 @@ func ExampleWithErrorTransformer() {
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.Name).AsColumn()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.Name)
 		}).
 		WithErrorTransformer(func(err error) error {
 			if errors.Is(err, gerpo.ErrNotFound) {
@@ -250,8 +250,8 @@ func ExampleWithTracer() {
 		DB(pgx5.NewPoolAdapter(pool)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.Name).AsColumn()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.Name)
 		}).
 		WithTracer(myTracer).
 		Build()
@@ -272,8 +272,8 @@ func ExampleWithCacheStorage() {
 		DB(pgx5.NewPoolAdapter(pool), executor.WithCacheStorage(cache)).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.Name).AsColumn()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.Name)
 		}).
 		Build()
 	if err != nil {

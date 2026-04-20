@@ -19,13 +19,13 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.Name).AsColumn()
-			c.Field(&m.Email).AsColumn()
-			c.Field(&m.Age).AsColumn()
-			c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
-			c.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
-			c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.Name)
+			c.Field(&m.Email)
+			c.Field(&m.Age)
+			c.Field(&m.CreatedAt).WithUpdateProtection()
+			c.Field(&m.UpdatedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).WithInsertProtection()
 			c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
 				return "COALESCE(COUNT(posts.id), 0)"
 			})
@@ -58,13 +58,13 @@ func newPostRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.UserID).AsColumn()
-			c.Field(&m.Title).AsColumn()
-			c.Field(&m.Content).AsColumn()
-			c.Field(&m.Published).AsColumn()
-			c.Field(&m.PublishedAt).AsColumn()
-			c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.UserID)
+			c.Field(&m.Title)
+			c.Field(&m.Content)
+			c.Field(&m.Published)
+			c.Field(&m.PublishedAt)
+			c.Field(&m.CreatedAt).WithUpdateProtection()
 		}).
 		Build()
 	if err != nil {
@@ -80,11 +80,11 @@ func newCommentRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Comment] {
 		DB(ab.adapter).
 		Table("comments").
 		Columns(func(m *Comment, c *gerpo.ColumnBuilder[Comment]) {
-			c.Field(&m.ID).AsColumn().WithUpdateProtection()
-			c.Field(&m.PostID).AsColumn()
-			c.Field(&m.UserID).AsColumn()
-			c.Field(&m.Body).AsColumn()
-			c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
+			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.PostID)
+			c.Field(&m.UserID)
+			c.Field(&m.Body)
+			c.Field(&m.CreatedAt).WithUpdateProtection()
 		}).
 		Build()
 	if err != nil {

@@ -4,7 +4,7 @@ Go has a healthy data-access ecosystem — full-blown ORMs, code generators, que
 
 ## The 30-second pitch
 
-- One **declarative configuration** per entity wires struct fields to columns through pointers — `c.Field(&m.Email).AsColumn()` — so renames are a refactor, not a search-and-replace through string tags.
+- One **declarative configuration** per entity wires struct fields to columns through pointers — `c.Field(&m.Email)` — so renames are a refactor, not a search-and-replace through string tags.
 - Six methods per repository (`GetFirst`, `GetList`, `Count`, `Insert`, `Update`, `Delete`) cover the everyday CRUD; everything else (joins, soft-delete, virtual columns, hooks, caching, tracing) is opt-in.
 - Three driver adapters (`pgx5`, `pgx4`, `database/sql`) all sit behind a 3-method `DBAdapter` interface — bring your own driver in ~50 lines.
 - **Not** an ORM. No migrations, no relations, no struct tags. Schema management is your problem (`golang-migrate`, `goose`, `atlas`, …).

@@ -6,8 +6,8 @@
 
 ```go
 .Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-    c.Field(&m.ID).AsColumn()
-    c.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+    c.Field(&m.ID)
+    c.Field(&m.DeletedAt).WithInsertProtection()
 }).
 WithSoftDeletion(func(m *User, b *gerpo.SoftDeletionBuilder[User]) {
     b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {

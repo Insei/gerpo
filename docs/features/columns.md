@@ -5,18 +5,17 @@ Columns are described inside `Columns(func(m *T, c *gerpo.ColumnBuilder[T]))`. T
 ## Two kinds of columns
 
 ```go
-c.Field(&m.Name).AsColumn()      // regular, read and written
-c.Field(&m.FullName).AsVirtual() // computed, read-only
-    .WithSQL(func(ctx context.Context) string { return "first_name || ' ' || last_name" })
+c.Field(&m.Name)                 // regular, read and written — the default
+c.Field(&m.FullName).AsVirtual().Compute("first_name || ' ' || last_name") // computed, read-only
 ```
 
-### `AsColumn` — regular column
+### Regular column (default)
 
-Maps to a physical table column. The default column name is `snake_case(field)` (e.g. `CreatedAt → created_at`). Override with `WithColumnName`.
+`Field(ptr)` registers a regular column right away — no extra step needed. The default SQL column name is `snake_case(field)` (e.g. `CreatedAt → created_at`); override with `WithColumnName`. All column-shaping methods (`WithUpdateProtection`, `WithAlias`, ...) are callable directly on the result of `Field`.
 
-### `AsVirtual` — virtual column
+### Virtual column
 
-Not stored in the table — computed by a SQL expression on the fly. Automatically protected from both INSERT and UPDATE. See [Virtual columns](virtual-columns.md).
+Call `.AsVirtual()` to switch the field into a virtual (computed) column. Virtual columns are read-only — gerpo automatically protects them from both INSERT and UPDATE. Continue the chain with `.Compute(sql, args...)` (or `.Aggregate()` / `.Filter(op, spec)` for advanced cases). See [Virtual columns](virtual-columns.md).
 
 ## Options on regular columns
 
@@ -33,7 +32,7 @@ Not stored in the table — computed by a SQL expression on the fly. Automatical
 ### PK with a database-side DEFAULT
 
 ```go
-c.Field(&m.ID).AsColumn().WithInsertProtection().WithUpdateProtection()
+c.Field(&m.ID).WithInsertProtection().WithUpdateProtection()
 ```
 
 `ID` appears only in WHERE and SELECT; it is never in INSERT, so the database generates it.
@@ -41,14 +40,14 @@ c.Field(&m.ID).AsColumn().WithInsertProtection().WithUpdateProtection()
 ### created_at / updated_at
 
 ```go
-c.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()  // inserted, never updated
-c.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()  // set by a trigger on UPDATE
+c.Field(&m.CreatedAt).WithUpdateProtection()  // inserted, never updated
+c.Field(&m.UpdatedAt).WithInsertProtection()  // set by a trigger on UPDATE
 ```
 
 ### Column from a JOIN
 
 ```go
-c.Field(&m.PostTitle).AsColumn().WithTable("posts")
+c.Field(&m.PostTitle).WithTable("posts")
 ```
 
 SELECT will read `posts.post_title`. The JOIN itself must be configured via [Persistent queries](persistent-queries.md).
@@ -61,7 +60,7 @@ Use a pointer type — `*string`, `*time.Time`, `*bool`. The `EQ(nil)` / `NEQ(ni
 type User struct {
     Email *string // nullable email
 }
-c.Field(&m.Email).AsColumn()
+c.Field(&m.Email)
 
 // Query:
 repo.Count(ctx, func(m *User, h query.CountHelper[User]) {

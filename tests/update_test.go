@@ -32,16 +32,16 @@ func TestUpdate(t *testing.T) {
 		DB(databasesql.NewAdapter(db)).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {
-			columns.Field(&m.ID).AsColumn().WithUpdateProtection()
-			columns.Field(&m.CreatedAt).AsColumn().WithUpdateProtection()
-			columns.Field(&m.UpdatedAt).AsColumn().WithInsertProtection()
-			columns.Field(&m.Name).AsColumn()
-			columns.Field(&m.DeletedAt).AsColumn().WithInsertProtection()
+			columns.Field(&m.ID).WithUpdateProtection()
+			columns.Field(&m.CreatedAt).WithUpdateProtection()
+			columns.Field(&m.UpdatedAt).WithInsertProtection()
+			columns.Field(&m.Name)
+			columns.Field(&m.DeletedAt).WithInsertProtection()
 			columns.Field(&m.VirtualString).AsVirtual().
 				WithSQL(func(ctx context.Context) string {
 					return `convert(varchar(25), getdate(), 120)`
 				}) //Check that not appends to update sql query
-			columns.Field(&m.AnotherTable).AsColumn().WithTable("<another_table>") // in real usage join should be configured in WithQuery, but now we simply drops this column
+			columns.Field(&m.AnotherTable).WithTable("<another_table>") // in real usage join should be configured in WithQuery, but now we simply drops this column
 		}).
 		WithSoftDeletion(func(m *User, softDeletion *gerpo.SoftDeletionBuilder[User]) {
 			softDeletion.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
