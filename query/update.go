@@ -9,22 +9,27 @@ import (
 )
 
 // UpdateHelper is the per-request helper for repo.Update. It composes the
-// small contracts from interfaces.go: filtering and narrowing the column set.
+// small contracts from interfaces.go: filtering, narrowing the column set,
+// and per-request RETURNING control.
 type UpdateHelper[TModel any] interface {
 	Filterable
 	Excludable
+	Returnable
 }
 
 type UpdateApplier interface {
 	ColumnsStorage() types.ColumnsStorage
 	Columns() types.ExecutionColumns
 	Where() sqlpart.Where
+	SetReturning(cols []types.Column)
 }
+
 type Update[TModel any] struct {
 	baseModel *TModel
 
-	excludeBuilder *linq.ExcludeBuilder
-	whereBuilder   *linq.WhereBuilder
+	excludeBuilder   *linq.ExcludeBuilder
+	whereBuilder     *linq.WhereBuilder
+	returningBuilder *linq.ReturningBuilder
 }
 
 func (h *Update[TModel]) Exclude(fieldsPtr ...any) {
@@ -33,6 +38,10 @@ func (h *Update[TModel]) Exclude(fieldsPtr ...any) {
 
 func (h *Update[TModel]) Only(fieldPointers ...any) {
 	h.excludeBuilder.Only(fieldPointers...)
+}
+
+func (h *Update[TModel]) Returning(fieldsPtr ...any) {
+	h.returningBuilder.Returning(fieldsPtr...)
 }
 
 func (h *Update[TModel]) Where() types.WhereTarget {
@@ -48,6 +57,9 @@ func (h *Update[TModel]) Apply(applier UpdateApplier) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrApplyWhereClause, err)
 	}
+	if err := h.returningBuilder.Apply(applier); err != nil {
+		return fmt.Errorf("%w: %w", ErrApplyReturningClause, err)
+	}
 	return nil
 }
 
@@ -61,7 +73,8 @@ func NewUpdate[TModel any](baseModel *TModel) *Update[TModel] {
 	return &Update[TModel]{
 		baseModel: baseModel,
 
-		excludeBuilder: linq.NewExcludeBuilder(baseModel),
-		whereBuilder:   linq.NewWhereBuilder(baseModel),
+		excludeBuilder:   linq.NewExcludeBuilder(baseModel),
+		whereBuilder:     linq.NewWhereBuilder(baseModel),
+		returningBuilder: linq.NewReturningBuilder(baseModel),
 	}
 }

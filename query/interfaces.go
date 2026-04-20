@@ -55,3 +55,16 @@ type Pageable[TModel any] interface {
 	// Size sets the maximum number of items to retrieve per page and returns the same GetListHelper instance.
 	Size(size uint64) GetListHelper[TModel]
 }
+
+// Returnable describes any helper that exposes per-request control over the
+// RETURNING clause. Insert and Update satisfy it.
+//
+// Default behavior: column-level markers (ReturnedOnInsert / ReturnedOnUpdate)
+// decide what's returned. Calling Returning(...) overrides for this request:
+// the listed fields become the returning set, replacing the defaults. Calling
+// Returning() with no arguments disables RETURNING for the request.
+type Returnable interface {
+	// Returning narrows the RETURNING clause for this request. Calling with no arguments disables RETURNING;
+	// calling with explicit fields replaces the repository's default returning set with exactly those columns.'
+	Returning(fieldsPtr ...any)
+}

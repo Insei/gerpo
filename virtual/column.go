@@ -68,6 +68,13 @@ func (c *column) SQLArgs() []any {
 	return c.base.SQLArgs
 }
 
+// IsReturned reports whether the column should appear in a RETURNING clause for
+// the given action. Virtual columns are SELECT-only, so the answer is always false
+// — including a virtual expression in RETURNING does not make sense.
+func (c *column) IsReturned(_ types.SQLAction) bool {
+	return false
+}
+
 func New(field fmap.Field, opts ...Option) (types.Column, error) {
 	if field == nil {
 		return nil, fmt.Errorf("field is nil")

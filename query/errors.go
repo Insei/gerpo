@@ -9,4 +9,5 @@ var (
 	ErrApplyJoinClause          = fmt.Errorf("failed to apply JOIN clause")
 	ErrApplyGroupByClause       = fmt.Errorf("failed to apply GROUP BY operator")
 	ErrApplyExcludeColumnRules  = fmt.Errorf("failed to apply exclude column rules")
+	ErrApplyReturningClause     = fmt.Errorf("failed to apply RETURNING clause")
 )

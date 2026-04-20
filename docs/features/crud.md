@@ -72,6 +72,22 @@ repo.Insert(ctx, u, func(m *User, h query.InsertHelper[User]) {
 })
 ```
 
+`Returning(fields...)` overrides the repo-level `RETURNING` set for this single
+call (default: columns marked with `ReturnedOnInsert()` — see
+[Columns → Server-generated values](columns.md#server-generated-values-returning)):
+
+```go
+// only the ID comes back, not CreatedAt
+repo.Insert(ctx, u, func(m *User, h query.InsertHelper[User]) {
+    h.Returning(&m.ID)
+})
+
+// disable RETURNING entirely for this call
+repo.Insert(ctx, u, func(m *User, h query.InsertHelper[User]) {
+    h.Returning()
+})
+```
+
 ## Update
 
 Updates records by WHERE. Returns the number of affected rows. When zero rows match, returns `gerpo.ErrNotFound`.
@@ -89,6 +105,17 @@ affected, err := repo.Update(ctx, u, func(m *User, h query.UpdateHelper[User]) {
 repo.Update(ctx, u, func(m *User, h query.UpdateHelper[User]) {
     h.Where().Field(&m.ID).EQ(u.ID)
     h.Only(&m.Name) // SET name = ?, and nothing else
+})
+```
+
+`Returning(fields...)` works on Update too — same semantics as on Insert
+(default: columns marked `ReturnedOnUpdate()`; explicit list narrows; empty
+call disables RETURNING for this call):
+
+```go
+repo.Update(ctx, u, func(m *User, h query.UpdateHelper[User]) {
+    h.Where().Field(&m.ID).EQ(u.ID)
+    h.Returning(&m.UpdatedAt) // bring back only the trigger-set timestamp
 })
 ```
 

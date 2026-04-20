@@ -27,6 +27,8 @@ Call `.AsVirtual()` to switch the field into a virtual (computed) column. Virtua
 | `OmitOnInsert()` | Exclude from INSERT (e.g. `UpdatedAt` set on UPDATE by a trigger/hook) |
 | `OmitOnUpdate()` | Exclude from UPDATE SET (e.g. `CreatedAt` — set once, never changes) |
 | `ReadOnly()` | Shortcut for `OmitOnInsert().OmitOnUpdate()` — SELECT-only |
+| `ReturnedOnInsert()` | Include in `INSERT … RETURNING …`; the value is scanned back into the model field |
+| `ReturnedOnUpdate()` | Include in `UPDATE … RETURNING …`; the value is scanned back into the model field |
 
 ## Common patterns
 
@@ -44,6 +46,36 @@ c.Field(&m.ID).ReadOnly()
 c.Field(&m.CreatedAt).OmitOnUpdate()  // inserted, never updated
 c.Field(&m.UpdatedAt).OmitOnInsert()  // set by a trigger or BeforeUpdate hook on UPDATE
 ```
+
+### Server-generated values: RETURNING
+
+Some columns get filled by the database — UUID PKs with `DEFAULT gen_random_uuid()`,
+timestamps with `DEFAULT NOW()`, version counters bumped by a trigger. Mark them
+with `ReturnedOnInsert()` / `ReturnedOnUpdate()` and gerpo emits a
+`RETURNING …` clause and scans the value back into the model field, in-place.
+
+```go
+c.Field(&m.ID).ReadOnly().ReturnedOnInsert()         // PK with DEFAULT gen_random_uuid()
+c.Field(&m.CreatedAt).ReadOnly().ReturnedOnInsert()  // DB DEFAULT NOW()
+c.Field(&m.UpdatedAt).OmitOnInsert().ReturnedOnUpdate() // trigger-managed
+c.Field(&m.Version).ReturnedOnInsert().ReturnedOnUpdate() // optimistic-lock counter
+```
+
+After `repo.Insert(ctx, &m)` the model carries the freshly generated ID,
+CreatedAt, etc. After `repo.Update(ctx, &m, …)` the model carries the
+trigger-bumped UpdatedAt / Version. There is no second SELECT round-trip and
+no UUID generation on the application side.
+
+For per-request control see [Insert](crud.md#insert) / [Update](crud.md#update)
+helpers — both expose `Returning(fields...)` to narrow or disable RETURNING for
+one call.
+
+!!! note "Database support"
+    `RETURNING` is a PostgreSQL-style feature; SQLite ≥3.35 and MariaDB ≥10.5
+    also support it. The bundled `pgx5`, `pgx4` and `databasesql` adapters all
+    target PostgreSQL-compatible databases. MySQL has no `RETURNING` — see
+    [TODO.md](https://github.com/insei/gerpo/blob/main/TODO.md) for the plan
+    around multi-dialect support.
 
 ### Column from a JOIN
 

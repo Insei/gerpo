@@ -11,6 +11,7 @@ type options struct {
 	alias           string
 	name            string
 	notAvailActions []types.SQLAction
+	returnedActions []types.SQLAction
 }
 
 type Option interface {
@@ -64,5 +65,25 @@ func WithOmitOnInsert() Option {
 func WithOmitOnUpdate() Option {
 	return columnOptionFn(func(c *options) {
 		c.notAvailActions = append(c.notAvailActions, types.SQLActionUpdate)
+	})
+}
+
+// WithReturnedOnInsert marks the column to appear in the INSERT ... RETURNING
+// clause. After the SQL runs, the value scanned from RETURNING lands back into
+// the model field — useful for server-generated PKs (DEFAULT gen_random_uuid()),
+// DB DEFAULTs (NOW()), or trigger-managed columns. Pair with WithOmitOnInsert
+// (or ReadOnly) when the column is fully DB-side.
+func WithReturnedOnInsert() Option {
+	return columnOptionFn(func(c *options) {
+		c.returnedActions = append(c.returnedActions, types.SQLActionInsert)
+	})
+}
+
+// WithReturnedOnUpdate marks the column to appear in the UPDATE ... RETURNING
+// clause. After the SQL runs, the scanned value lands back into the model
+// field — useful for trigger-updated columns (updated_at, version counters).
+func WithReturnedOnUpdate() Option {
+	return columnOptionFn(func(c *options) {
+		c.returnedActions = append(c.returnedActions, types.SQLActionUpdate)
 	})
 }

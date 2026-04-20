@@ -140,13 +140,14 @@ func (m *mockLimitOffset) GetLimit() uint64   { return m.limit }
 // --- Applier — implements every <Op>Applier interface of the query package --
 
 type mockApplier struct {
-	storage *mockColumnsStorage
-	cols    *mockExecCols
-	where   *mockWhere
-	order   *mockOrder
-	group   *mockGroup
-	join    *mockJoin
-	limit   *mockLimitOffset
+	storage      *mockColumnsStorage
+	cols         *mockExecCols
+	where        *mockWhere
+	order        *mockOrder
+	group        *mockGroup
+	join         *mockJoin
+	limit        *mockLimitOffset
+	returningSet []types.Column // captured by SetReturning, asserted by tests
 }
 
 func newMockApplier() *mockApplier {
@@ -173,3 +174,4 @@ func (m *mockApplier) Order() sqlpart.Order                 { return m.order }
 func (m *mockApplier) Group() sqlpart.Group                 { return m.group }
 func (m *mockApplier) Join() sqlpart.Join                   { return m.join }
 func (m *mockApplier) LimitOffset() sqlpart.LimitOffset     { return m.limit }
+func (m *mockApplier) SetReturning(cols []types.Column)     { m.returningSet = cols }

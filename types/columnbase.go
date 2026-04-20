@@ -42,6 +42,11 @@ type ColumnBase struct {
 	// (e.g. virtual.Filter(op, spec)), so the WHERE-builder can distinguish
 	// auto-derived filters from user-provided ones for aggregate gating.
 	FilterOverrides map[Operation]bool
+
+	// ReturnedActions lists the SQL actions whose statement should include this
+	// column in a RETURNING clause (server-generated PKs, DB DEFAULTs, trigger-
+	// updated columns). Populated via column.ReturnedOnInsert / .ReturnedOnUpdate.
+	ReturnedActions []SQLAction
 }
 
 // IsAllowedAction determines if a given SQLAction is allowed for the column.
@@ -60,4 +65,10 @@ func (c *ColumnBase) HasFilterOverride(op Operation) bool {
 		return false
 	}
 	return c.FilterOverrides[op]
+}
+
+// IsReturned reports whether the column should appear in the RETURNING clause
+// for the given action.
+func (c *ColumnBase) IsReturned(action SQLAction) bool {
+	return slices.Contains(c.ReturnedActions, action)
 }

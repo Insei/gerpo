@@ -63,6 +63,24 @@ func (b *Builder) ReadOnly() *Builder {
 	return b
 }
 
+// ReturnedOnInsert marks the column to appear in the INSERT ... RETURNING
+// clause; the value scanned from RETURNING is written back into the model
+// field. Typical pairing: ReadOnly().ReturnedOnInsert() for a UUID PK with
+// DEFAULT gen_random_uuid(), or OmitOnInsert().ReturnedOnInsert() for a
+// CreatedAt column with DB-side DEFAULT NOW().
+func (b *Builder) ReturnedOnInsert() *Builder {
+	b.opts = append(b.opts, WithReturnedOnInsert())
+	return b
+}
+
+// ReturnedOnUpdate marks the column to appear in the UPDATE ... RETURNING
+// clause; the value scanned from RETURNING is written back into the model
+// field. Typical use: trigger-managed columns (UpdatedAt, version counters).
+func (b *Builder) ReturnedOnUpdate() *Builder {
+	b.opts = append(b.opts, WithReturnedOnUpdate())
+	return b
+}
+
 // Build constructs and returns a types.Column instance based on the field and options configured in the Builder.
 func (b *Builder) Build() (types.Column, error) {
 	return New(b.field, b.opts...)

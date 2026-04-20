@@ -38,3 +38,11 @@ type Stmt interface {
 	CountStmt
 	Columns() types.ExecutionColumns
 }
+
+// ReturningStmt is an optional capability of write statements (Insert / Update)
+// that can emit a RETURNING clause. The returned slice lists the columns
+// scanned back into the caller's model after the SQL runs; an empty slice
+// disables the RETURNING path so the executor stays on ExecContext.
+type ReturningStmt interface {
+	ReturningColumns() []types.Column
+}

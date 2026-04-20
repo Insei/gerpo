@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/insei/gerpo/sqlstmt"
+	"github.com/insei/gerpo/types"
 )
 
 type executor[TModel any] struct {
@@ -91,6 +92,22 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 	if err != nil {
 		return fmt.Errorf("failed to get sql query from stmt: %w", err)
 	}
+	if returning := returningColumnsOf(stmt); len(returning) > 0 {
+		rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, values...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close() //nolint:errcheck
+		if !rows.Next() {
+			return ErrNoInsertedRows
+		}
+		ptrs := scanPointers(returning, model)
+		if err = rows.Scan(ptrs...); err != nil {
+			return err
+		}
+		clean(ctx, e.cacheSource)
+		return nil
+	}
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
 	if err != nil {
 		return err
@@ -111,6 +128,27 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get sql query from stmt: %w", err)
 	}
+	if returning := returningColumnsOf(stmt); len(returning) > 0 {
+		rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, values...)
+		if err != nil {
+			return 0, err
+		}
+		defer rows.Close() //nolint:errcheck
+		// Update with RETURNING: PG returns one row per affected row. We expect
+		// exactly one because the user-facing Update updates a single model.
+		var n int64
+		ptrs := scanPointers(returning, model)
+		for rows.Next() {
+			if err = rows.Scan(ptrs...); err != nil {
+				return n, err
+			}
+			n++
+		}
+		if n > 0 {
+			clean(ctx, e.cacheSource)
+		}
+		return n, nil
+	}
 	result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
 	if err != nil {
 		return 0, err
@@ -123,6 +161,26 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 		clean(ctx, e.cacheSource)
 	}
 	return updatedRows, nil
+}
+
+// returningColumnsOf extracts the RETURNING column list from stmt if it
+// supports the ReturningStmt capability; returns nil otherwise.
+func returningColumnsOf(stmt Stmt) []types.Column {
+	rs, ok := stmt.(ReturningStmt)
+	if !ok {
+		return nil
+	}
+	return rs.ReturningColumns()
+}
+
+// scanPointers builds the slice of *T field pointers that match the order of
+// the RETURNING columns, suitable for rows.Scan.
+func scanPointers(cols []types.Column, model any) []any {
+	ptrs := make([]any, len(cols))
+	for i, c := range cols {
+		ptrs[i] = c.GetPtr(model)
+	}
+	return ptrs
 }
 
 func (e *executor[TModel]) Count(ctx context.Context, stmt CountStmt) (count uint64, err error) {

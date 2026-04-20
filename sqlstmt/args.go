@@ -1,6 +1,10 @@
 package sqlstmt
 
-import "github.com/insei/gerpo/types"
+import (
+	"strings"
+
+	"github.com/insei/gerpo/types"
+)
 
 // mergeArgs concatenates positional argument slices in the order they appear
 // in the generated SQL. JOIN arguments are emitted before the WHERE clause,
@@ -29,6 +33,45 @@ func mergeArgs(slices ...[]any) []any {
 // with Compute(sql, args...)).
 type columnArgsProvider interface {
 	SQLArgs() []any
+}
+
+// collectReturning walks the full ColumnsStorage and returns columns that the
+// user marked as IsReturned(action) — those that should appear in a RETURNING
+// clause for the given write action (INSERT or UPDATE). Returning-eligible
+// columns may be omitted from the action's execution-columns set (e.g. a UUID
+// PK that is OmitOnInsert + ReturnedOnInsert), so we go through the storage
+// rather than the action's filtered ExecutionColumns.
+func collectReturning(storage types.ColumnsStorage, action types.SQLAction) []types.Column {
+	var out []types.Column
+	for _, c := range storage.AsSlice() {
+		if c.IsReturned(action) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// appendReturning writes ` RETURNING name1, name2` to sb when cols is non-empty.
+// Columns whose Name() is unset (e.g. virtual) are skipped — RETURNING needs
+// real column names, not expressions.
+func appendReturning(sb *strings.Builder, cols []types.Column) {
+	if len(cols) == 0 {
+		return
+	}
+	first := true
+	for _, c := range cols {
+		name, ok := c.Name()
+		if !ok || name == "" {
+			continue
+		}
+		if first {
+			sb.WriteString(" RETURNING ")
+			first = false
+		} else {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(name)
+	}
 }
 
 // collectSelectArgs walks the columns in their SELECT order and accumulates

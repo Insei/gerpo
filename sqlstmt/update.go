@@ -17,6 +17,7 @@ type Update struct {
 
 	colsStorage types.ColumnsStorage
 	columns     types.ExecutionColumns
+	returning   []types.Column
 	where       *sqlpart.WhereBuilder
 }
 
@@ -29,9 +30,23 @@ func NewUpdate(ctx context.Context, colStorage types.ColumnsStorage, table strin
 		table:       table,
 		vals:        newValues(columns),
 		columns:     columns,
+		returning:   collectReturning(colStorage, types.SQLActionUpdate),
 
 		where: sqlpart.NewWhereBuilder(ctx),
 	}
+}
+
+// ReturningColumns reports the columns that should be scanned back from a
+// RETURNING clause. Empty means the executor takes the plain ExecContext path.
+func (u *Update) ReturningColumns() []types.Column {
+	return u.returning
+}
+
+// SetReturning replaces the returning column set — used by the per-request
+// query.UpdateHelper.Returning(...) override. Pass nil/empty slice to disable
+// RETURNING for the call.
+func (u *Update) SetReturning(cols []types.Column) {
+	u.returning = cols
 }
 
 func (u *Update) ColumnsStorage() types.ColumnsStorage {
@@ -74,6 +89,7 @@ func (u *Update) SQL(opts ...Option) (string, []any, error) {
 		return "", nil, fmt.Errorf("columns set is not empty, but no one column is not allowed to set")
 	}
 	sb.WriteString(u.where.SQL())
+	appendReturning(&sb, u.returning)
 	for _, opt := range opts {
 		opt(u.vals)
 	}

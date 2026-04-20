@@ -67,6 +67,10 @@ func (c *column) HasFilterOverride(op types.Operation) bool {
 	return c.base.HasFilterOverride(op)
 }
 
+func (c *column) IsReturned(action types.SQLAction) bool {
+	return c.base.IsReturned(action)
+}
+
 func generateSQLColumnString(opt *options) string {
 	sql := opt.name
 	if opt.table != "" {
@@ -111,5 +115,6 @@ func New(field fmap.Field, opts ...Option) (types.Column, error) {
 	c.base.AllowedActions = slices.DeleteFunc(c.base.AllowedActions, func(action types.SQLAction) bool {
 		return slices.Contains(forOpts.notAvailActions, action)
 	})
+	c.base.ReturnedActions = forOpts.returnedActions
 	return c, nil
 }

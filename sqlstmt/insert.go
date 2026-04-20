@@ -10,9 +10,10 @@ import (
 type Insert struct {
 	ctx context.Context
 
-	table   string
-	columns types.ExecutionColumns
-	storage types.ColumnsStorage
+	table     string
+	columns   types.ExecutionColumns
+	storage   types.ColumnsStorage
+	returning []types.Column
 
 	vals *values
 }
@@ -20,9 +21,10 @@ type Insert struct {
 func NewInsert(ctx context.Context, table string, colStorage types.ColumnsStorage) *Insert {
 	columns := colStorage.NewExecutionColumns(ctx, types.SQLActionInsert)
 	return &Insert{
-		ctx:     ctx,
-		columns: columns,
-		storage: colStorage,
+		ctx:       ctx,
+		columns:   columns,
+		storage:   colStorage,
+		returning: collectReturning(colStorage, types.SQLActionInsert),
 
 		vals:  newValues(columns),
 		table: table,
@@ -35,6 +37,20 @@ func (i *Insert) Columns() types.ExecutionColumns {
 
 func (i *Insert) ColumnsStorage() types.ColumnsStorage {
 	return i.storage
+}
+
+// ReturningColumns reports the columns that should be scanned back from a
+// RETURNING clause. Empty slice means the executor takes the plain ExecContext
+// path (no rows returned).
+func (i *Insert) ReturningColumns() []types.Column {
+	return i.returning
+}
+
+// SetReturning replaces the returning column set — used by the per-request
+// query.InsertHelper.Returning(...) override. Pass nil/empty slice to disable
+// RETURNING for the call.
+func (i *Insert) SetReturning(cols []types.Column) {
+	i.returning = cols
 }
 
 func (i *Insert) SQL(opts ...Option) (string, []any, error) {
@@ -69,5 +85,6 @@ func (i *Insert) SQL(opts ...Option) (string, []any, error) {
 	sb.WriteString(") VALUES (")
 	valuesSQLTemplate := strings.Repeat("?,", valuesCount)
 	sb.WriteString(valuesSQLTemplate[:len(valuesSQLTemplate)-1] + ")")
+	appendReturning(&sb, i.returning)
 	return sb.String(), i.vals.values, nil
 }

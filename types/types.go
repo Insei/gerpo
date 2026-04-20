@@ -50,6 +50,11 @@ type Column interface {
 	// HasFilterOverride reports whether a custom filter was registered for the operation
 	// (typically through virtual.Filter). Auto-derived filters return false.
 	HasFilterOverride(op Operation) bool
+
+	// IsReturned reports whether the column should appear in a RETURNING clause
+	// for the given action. Today only SQLActionInsert and SQLActionUpdate make
+	// sense — other actions return false.
+	IsReturned(action SQLAction) bool
 }
 
 // ColumnsGetter is an interface for retrieving a list of Column objects representing database table columns.
