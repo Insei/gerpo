@@ -26,6 +26,10 @@ test: ## Unit tests with the race detector
 lint: ## Run golangci-lint v2
 	golangci-lint run ./...
 
+.PHONY: lint-gerpolint
+lint-gerpolint: ## Run the built-in gerpolint static analyzer over ./...
+	go run ./cmd/gerpolint ./...
+
 .PHONY: integration-up
 integration-up: ## Start the PostgreSQL container used by integration tests
 	$(COMPOSE) up -d

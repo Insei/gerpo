@@ -110,6 +110,26 @@ Reads and Delete-on-miss come out at roughly +10 % latency. `INSERT` / `UPDATE` 
 
 **Against a mock adapter** (IO = 0, `make bench-report`) the ratios are larger — the framework cost is no longer amortised by network. Per-op absolute cost stays in the 0.5–1.5 µs band, which is what survives on real traffic.
 
+## Static analysis — gerpolint
+
+WHERE operators (`EQ`, `In`, `Contains`, …) take `any`, so the compiler cannot
+catch `h.Where().Field(&m.Age).EQ("18")` — field is `int`, argument is a
+string — until runtime. gerpo ships a `go/analysis` checker that catches
+these mismatches at `go vet` time.
+
+```bash
+go install github.com/insei/gerpo/cmd/gerpolint@latest
+gerpolint ./...
+# …or from a clone:
+make lint-gerpolint
+```
+
+Rules (`GPL001`..`GPL005`): scalar type mismatch, variadic element mismatch,
+string-only operator on non-string field, unresolved field pointer, and
+`any`-typed argument. Silence specific lines with `//gerpolint:disable-line`,
+`//gerpolint:disable-next-line[=GPL001,…]`, or the
+`//gerpolint:disable` / `//gerpolint:enable` block pair.
+
 ## Roadmap
 
 **1.0.0**
