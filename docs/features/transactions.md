@@ -77,4 +77,15 @@ If atomicity matters — wrap in one `tx` and inject through `gerpo.WithTx`.
 
 ## Partial rollback: savepoints
 
-gerpo does not expose a `SAVEPOINT` API. If you need nested rollbacks, issue them via `tx.ExecContext(ctx, "SAVEPOINT sp")` / `RELEASE SAVEPOINT` / `ROLLBACK TO SAVEPOINT`.
+gerpo does not expose a dedicated `SAVEPOINT` API today. If you need nested rollbacks, issue them via raw SQL on the tx:
+
+```go
+_, _ = tx.ExecContext(ctx, "SAVEPOINT sp_one")
+// ... some work that may fail ...
+_, _ = tx.ExecContext(ctx, "ROLLBACK TO SAVEPOINT sp_one")
+// or on success:
+_, _ = tx.ExecContext(ctx, "RELEASE SAVEPOINT sp_one")
+```
+
+!!! info "Roadmap"
+    A first-class savepoint API is listed in [`TODO.md`](https://github.com/insei/gerpo/blob/main/TODO.md). If you need it — please [open an issue](https://github.com/insei/gerpo/issues) describing your use case so we can shape the API around real requirements.

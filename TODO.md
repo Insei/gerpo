@@ -109,3 +109,42 @@ considering when we see real workloads pushing the path hard:
 - **Per-row overrides.** Today `Exclude`/`Only`/`Returning` apply uniformly to
   every row in the batch. Per-row shaping would double the generated-SQL
   complexity without a clear user win — defer until a real use case shows up.
+
+---
+
+## Savepoints — first-class API
+
+gerpo does not wrap `SAVEPOINT` / `ROLLBACK TO SAVEPOINT` / `RELEASE SAVEPOINT`
+today. Users who need nested rollbacks fall back to raw SQL on the tx:
+
+```go
+_, _ = tx.ExecContext(ctx, "SAVEPOINT sp")
+_, _ = tx.ExecContext(ctx, "ROLLBACK TO SAVEPOINT sp")
+```
+
+That works but is fiddly — naming, RELEASE on success, error handling and
+nesting must be hand-rolled every time.
+
+Design questions to settle before shipping:
+
+- **Shape.** `tx.Savepoint(name)` returning a `Savepoint` value with
+  `Commit()` / `Rollback()` — symmetric to `Tx`. Alternatively a
+  `gerpo.RunInSavepoint(ctx, name, fn)` mirror of `RunInTx`, which handles
+  RELEASE/ROLLBACK from the returned error. `RunInSavepoint` is probably the
+  90% case.
+- **Naming.** Auto-generate unique names (counter inside the `Tx` wrapper) or
+  require the caller to pass one. Auto is friendlier; explicit names help when
+  reading logs.
+- **Dialect coverage.** PostgreSQL / SQLite / MySQL 8+ / MS SQL Server all
+  support `SAVEPOINT`, but `RELEASE SAVEPOINT` semantics differ slightly on
+  MSSQL (where `RELEASE` does not exist — savepoints are auto-released on
+  COMMIT). Since gerpo is PG-only today this is deferred to the multi-dialect
+  work above.
+- **Nesting.** Allow `Savepoint` on a `Savepoint`? Trivial to support since
+  PostgreSQL handles it natively, but the state machine in
+  `executor/adapters/internal/base.go` is currently two levels deep
+  (Adapter → transaction) — would need a third.
+
+Deferred until someone asks. If you have a use case, please
+[open an issue](https://github.com/insei/gerpo/issues) describing it so the
+API is shaped around real requirements rather than speculation.
