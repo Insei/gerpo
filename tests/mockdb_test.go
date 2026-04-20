@@ -8,7 +8,7 @@ import (
 )
 
 type mockDB struct {
-	executor.DBAdapter
+	executor.Adapter
 	ExecContextFn  func(ctx context.Context, query string, args ...any) (extypes.Result, error)
 	QueryContextFn func(ctx context.Context, query string, args ...any) (extypes.Rows, error)
 	BeginTxFn      func(ctx context.Context) (extypes.Tx, error)

@@ -9,7 +9,7 @@ import (
 )
 
 type builder[TModel any] struct {
-	db              executor.DBAdapter
+	db              executor.Adapter
 	executorOptions []executor.Option
 	table           string
 	opts            []Option[TModel]
@@ -21,7 +21,7 @@ type TableChooser[TModel any] interface {
 }
 
 type ExecutorChooser[TModel any] interface {
-	DB(db executor.DBAdapter, opts ...executor.Option) TableChooser[TModel]
+	DB(db executor.Adapter, opts ...executor.Option) TableChooser[TModel]
 }
 
 type ColumnsAppender[TModel any] interface {
@@ -42,7 +42,7 @@ func (b *builder[TModel]) Table(table string) ColumnsAppender[TModel] {
 }
 
 // DB sets the database connection to be used for the builder and returns a TableChooser for further configuration.
-func (b *builder[TModel]) DB(db executor.DBAdapter, opts ...executor.Option) TableChooser[TModel] {
+func (b *builder[TModel]) DB(db executor.Adapter, opts ...executor.Option) TableChooser[TModel] {
 	b.db = db
 	b.executorOptions = opts
 	return b

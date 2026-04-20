@@ -22,20 +22,20 @@ import (
 type Backend interface {
 	Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error)
 	Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error)
-	BeginTx(ctx context.Context) (TxBackend, error)
+	BeginTx(ctx context.Context) (TxDriver, error)
 }
 
-// TxBackend mirrors Backend minus BeginTx, plus Commit / Rollback. The wrapping
+// TxDriver mirrors Backend minus BeginTx, plus Commit / Rollback. The wrapping
 // transaction owns the committed / rollbackUnlessCommittedNeeded flags so
 // drivers do not need to reimplement them.
-type TxBackend interface {
+type TxDriver interface {
 	Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error)
 	Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error)
 	Commit() error
 	Rollback() error
 }
 
-// Adapter is the executor.types.DBAdapter implementation shared by every
+// Adapter is the executor.types.Adapter implementation shared by every
 // bundled driver. It rewrites placeholders before each driver call and wraps
 // transactions in a state machine that makes RollbackUnlessCommitted safe to
 // use as a defer.
@@ -46,7 +46,7 @@ type Adapter struct {
 
 // New constructs an Adapter that runs every SQL statement through the given
 // placeholder format before handing it over to the backend.
-func New(backend Backend, p placeholder.PlaceholderFormat) extypes.DBAdapter {
+func New(backend Backend, p placeholder.PlaceholderFormat) extypes.Adapter {
 	return &Adapter{backend: backend, placeholder: p}
 }
 
@@ -79,7 +79,7 @@ func (a *Adapter) BeginTx(ctx context.Context) (extypes.Tx, error) {
 }
 
 type transaction struct {
-	inner                         TxBackend
+	inner                         TxDriver
 	placeholder                   placeholder.PlaceholderFormat
 	committed                     bool
 	rollbackUnlessCommittedNeeded bool

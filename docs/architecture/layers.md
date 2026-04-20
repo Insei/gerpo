@@ -80,7 +80,7 @@ Source: `executor/adapters/{pgx5,pgx4,databasesql,placeholder}/*.go`.
 
 Three things live here:
 
-- `NewPoolAdapter` / `NewAdapter` constructors producing a `DBAdapter`.
+- `NewPoolAdapter` / `NewAdapter` constructors producing a `Adapter`.
 - `poolWrap` / `dbWrap` that translate the interface into driver-specific calls and rewrite placeholders.
 - `txWrap` implementing `Tx` on top of the driver's own transaction type.
 

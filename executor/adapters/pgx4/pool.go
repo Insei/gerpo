@@ -11,7 +11,7 @@ import (
 	extypes "github.com/insei/gerpo/executor/types"
 )
 
-// poolBackend implements internal.Backend on top of a pgx v4 connection pool.
+// poolBackend implements internal.Driver on top of a pgx v4 connection pool.
 type poolBackend struct {
 	pool *pgxpool.Pool
 }
@@ -32,7 +32,7 @@ func (b *poolBackend) Query(ctx context.Context, sql string, args ...any) (extyp
 	return &rowsWrap{rows: rows}, nil
 }
 
-func (b *poolBackend) BeginTx(ctx context.Context) (internal.TxBackend, error) {
+func (b *poolBackend) BeginTx(ctx context.Context) (internal.TxDriver, error) {
 	tx, err := b.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (b *poolBackend) BeginTx(ctx context.Context) (internal.TxBackend, error) {
 	return &txBackend{tx: tx}, nil
 }
 
-// txBackend implements internal.TxBackend on top of pgx.Tx.
+// txBackend implements internal.TxDriver on top of pgx.Tx.
 type txBackend struct {
 	tx pgx.Tx
 }
@@ -66,6 +66,6 @@ func (t *txBackend) Rollback() error { return t.tx.Rollback(context.Background()
 
 // NewPoolAdapter wraps a pgx v4 pool with the gerpo DB adapter contract.
 // SQL placeholders are rewritten from `?` to PostgreSQL's `$1, $2, …` form.
-func NewPoolAdapter(pool *pgxpool.Pool) extypes.DBAdapter {
+func NewPoolAdapter(pool *pgxpool.Pool) extypes.Adapter {
 	return internal.New(&poolBackend{pool: pool}, placeholder.Dollar)
 }

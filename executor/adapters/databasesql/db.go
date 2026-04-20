@@ -9,7 +9,7 @@ import (
 	extypes "github.com/insei/gerpo/executor/types"
 )
 
-// dbBackend implements internal.Backend on top of a standard *sql.DB.
+// dbBackend implements internal.Driver on top of a standard *sql.DB.
 // *sql.Result and *sql.Rows already satisfy executor/types.Result and
 // executor/types.Rows respectively, so no extra wrapper types are needed.
 type dbBackend struct {
@@ -24,7 +24,7 @@ func (b *dbBackend) Query(ctx context.Context, sql string, args ...any) (extypes
 	return b.db.QueryContext(ctx, sql, args...)
 }
 
-func (b *dbBackend) BeginTx(ctx context.Context) (internal.TxBackend, error) {
+func (b *dbBackend) BeginTx(ctx context.Context) (internal.TxDriver, error) {
 	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (b *dbBackend) BeginTx(ctx context.Context) (internal.TxBackend, error) {
 	return &txBackend{tx: tx}, nil
 }
 
-// txBackend implements internal.TxBackend on top of *sql.Tx.
+// txBackend implements internal.TxDriver on top of *sql.Tx.
 type txBackend struct {
 	tx *sql.Tx
 }
@@ -56,7 +56,7 @@ type adapterConfig struct {
 // NewAdapter wraps a database/sql DB with the gerpo DB adapter contract.
 // The placeholder format defaults to `?` (MySQL); use WithPlaceholder to
 // switch to `$1, $2, …` for PostgreSQL.
-func NewAdapter(db *sql.DB, opts ...Option) extypes.DBAdapter {
+func NewAdapter(db *sql.DB, opts ...Option) extypes.Adapter {
 	cfg := adapterConfig{placeholder: placeholder.Question}
 	for _, opt := range opts {
 		opt.apply(&cfg)

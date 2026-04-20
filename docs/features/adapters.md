@@ -1,6 +1,6 @@
 # Adapters
 
-gerpo never talks to a specific driver directly — it communicates through the `executor.DBAdapter` interface. Three implementations ship in the box.
+gerpo never talks to a specific driver directly — it communicates through the `executor.Adapter` interface. Three implementations ship in the box.
 
 ## Bundled adapters
 
@@ -49,12 +49,12 @@ db, _ := sql.Open("pgx", dsn)
 adapter := databasesql.NewAdapter(db, databasesql.WithPlaceholder(placeholder.Dollar))
 ```
 
-## The `DBAdapter` interface
+## The `Adapter` interface
 
 To write a custom adapter — implement three methods:
 
 ```go
-type DBAdapter interface {
+type Adapter interface {
     ExecContext(ctx context.Context, query string, args ...any) (Result, error)
     QueryContext(ctx context.Context, query string, args ...any) (Rows, error)
     BeginTx(ctx context.Context) (Tx, error)
@@ -92,7 +92,7 @@ A small tracing wrapper:
 
 ```go
 type tracingAdapter struct {
-    inner executor.DBAdapter
+    inner executor.Adapter
     tr    trace.Tracer
 }
 

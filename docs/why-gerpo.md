@@ -6,7 +6,7 @@ Go has a healthy data-access ecosystem — full-blown ORMs, code generators, que
 
 - One **declarative configuration** per entity wires struct fields to columns through pointers — `c.Field(&m.Email)` — so renames are a refactor, not a search-and-replace through string tags.
 - Six methods per repository (`GetFirst`, `GetList`, `Count`, `Insert`, `Update`, `Delete`) cover the everyday CRUD; everything else (joins, soft-delete, virtual columns, hooks, caching, tracing) is opt-in.
-- Three driver adapters (`pgx5`, `pgx4`, `database/sql`) all sit behind a 3-method `DBAdapter` interface — bring your own driver in ~50 lines.
+- Three driver adapters (`pgx5`, `pgx4`, `database/sql`) all sit behind a 3-method `Adapter` interface — bring your own driver in ~50 lines.
 - **Not** an ORM. No migrations, no relations, no struct tags. Schema management is your problem (`golang-migrate`, `goose`, `atlas`, …).
 
 ## When to pick gerpo
@@ -56,7 +56,7 @@ The "Lines of code" row is rough but conveys the shape: gerpo is closer to sqlx 
 
 - **Pointer-based mapping is refactor-proof.** Rename a field — the compiler tells you everywhere it's wired into a column. Tag-based schemas only break at runtime.
 - **No surprise SQL.** Every JOIN, GROUP BY, virtual column and persistent filter is in one `WithQuery(...)` block per repository. There is no hidden auto-load that spawns a second query behind your back.
-- **Three adapters, one base.** Driver-specific code is a `Backend{Exec,Query,BeginTx}` + `TxBackend{…}` pair (a few dozen lines). The placeholder rewrite, the transaction state machine and `RollbackUnlessCommitted` semantics live once in `executor/adapters/internal`.
+- **Three adapters, one base.** Driver-specific code is a `Driver{Exec,Query,BeginTx}` + `TxDriver{…}` pair (a few dozen lines). The placeholder rewrite, the transaction state machine and `RollbackUnlessCommitted` semantics live once in `executor/adapters/internal`.
 - **Cache and tracing are first-class but opt-in.** `WithCacheStorage` and `WithTracer` take small interfaces — implement them with whatever your stack already uses (Redis, OTel, Datadog, …) without dragging dependencies into gerpo.
 - **Pre-1.0 already battle-tested in CI.** Every PR runs lint, race-detector unit tests, integration tests against a real PostgreSQL service container on three drivers, and a [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) overhead diff. See [Contributing](architecture/contributing.md).
 

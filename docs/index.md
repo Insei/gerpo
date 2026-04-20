@@ -107,4 +107,4 @@ Full runnable samples live in [`examples/`](https://github.com/Insei/gerpo/tree/
 | pgx v4 | `executor/adapters/pgx4` | `$1, $2, …` |
 | database/sql | `executor/adapters/databasesql` | `?` or `$1` (configurable) |
 
-You can wrap any driver of your own — just implement the `executor.DBAdapter` interface (three methods: `ExecContext`, `QueryContext`, `BeginTx`). See [Adapters](features/adapters.md).
+You can wrap any driver of your own — just implement the `executor.Adapter` interface (three methods: `ExecContext`, `QueryContext`, `BeginTx`). See [Adapters](features/adapters.md).

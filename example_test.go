@@ -39,7 +39,7 @@ type User struct {
 func exampleRepo() gerpo.Repository[User] { return nil }
 
 // exampleAdapter returns a placeholder adapter for the same reason.
-func exampleAdapter() executor.DBAdapter { return nil }
+func exampleAdapter() executor.Adapter { return nil }
 
 // ExampleNew shows the minimum chain to assemble a typed repository
 // against a pgx v5 pool.

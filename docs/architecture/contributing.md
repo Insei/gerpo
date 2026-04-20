@@ -46,7 +46,7 @@ a requirement.
 ## Code style
 
 - Package names are lowercase and short.
-- Interfaces end in `-er` / `-or` when they describe behaviour (`DBAdapter`, `WhereTarget`, `Operation`).
+- Interfaces end in `-er` / `-or` when they describe behaviour (`Adapter`, `WhereTarget`, `Operation`).
 - Every public API ships with godoc — keep the tone concise.
 - Generic parameter for the model is `[TModel any]`, consistently.
 

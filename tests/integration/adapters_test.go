@@ -12,11 +12,11 @@ import (
 	"github.com/insei/gerpo/executor/adapters/placeholder"
 )
 
-// adapterBundle содержит один из поддерживаемых gerpo DBAdapter и его имя.
+// adapterBundle содержит один из поддерживаемых gerpo Adapter и его имя.
 // Тесты получают bundle через forEachAdapter и не знают, какая реализация внутри.
 type adapterBundle struct {
 	name    string
-	adapter executor.DBAdapter
+	adapter executor.Adapter
 }
 
 // allAdapters возвращает конструкторы для всех трёх поддерживаемых адаптеров.

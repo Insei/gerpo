@@ -14,7 +14,7 @@ var ErrNoRows = fmt.Errorf("executor: no rows in result set")
 
 type Tx = extypes.Tx
 type ExecQuery = extypes.ExecQuery
-type DBAdapter extypes.DBAdapter
+type Adapter extypes.Adapter
 
 type Executor[TModel any] interface {
 	GetOne(ctx context.Context, stmt Stmt) (*TModel, error)

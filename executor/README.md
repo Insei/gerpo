@@ -50,7 +50,7 @@ sequenceDiagram
 
 ## Executor examples
 ```go
-    var dbAdapter executor.DBAdapter // already initialized db adapter
+    var dbAdapter executor.Adapter // already initialized db adapter
     // Caching ctx
 	// ctx.New
 	// Bundle

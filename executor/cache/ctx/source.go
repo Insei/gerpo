@@ -34,7 +34,7 @@ func (s *Cache) getStorage(ctx context.Context) (*cacheStorage, error) {
 	storage, ok := ctx.Value(ctxCacheKey).(*cacheStorage)
 	if !ok || storage == nil {
 		s.log.Ctx(ctx).Warn("not found",
-			logger.String("driver", "ctx"),
+			logger.String("engine", "ctx"),
 			logger.String("details", "missing storage in context, miss middleware?"))
 		return nil, types.ErrWrongConfiguration
 	}

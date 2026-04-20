@@ -8,13 +8,13 @@ import (
 )
 
 type executor[TModel any] struct {
-	db                   DBAdapter
+	db                   Adapter
 	getExecQueryReplaced func(ctx context.Context) ExecQuery
 
 	options
 }
 
-func New[TModel any](db DBAdapter, opts ...Option) Executor[TModel] {
+func New[TModel any](db Adapter, opts ...Option) Executor[TModel] {
 	o := &options{}
 	for _, opt := range opts {
 		opt.apply(o)

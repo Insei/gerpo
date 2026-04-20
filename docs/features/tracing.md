@@ -108,6 +108,6 @@ If you don't pass `WithTracer`, the Repository short-circuits on a nil tracer �
 
 ## Logs and metrics
 
-Logging and per-op metrics are not exposed as dedicated hooks today. The recommended pattern is to wrap your `executor.DBAdapter` with a thin `tracingAdapter` (see [Adapters → Tracing wrapper](adapters.md#why-write-a-custom-adapter)) that captures duration and SQL text, then emits whatever your stack expects.
+Logging and per-op metrics are not exposed as dedicated hooks today. The recommended pattern is to wrap your `executor.Adapter` with a thin `tracingAdapter` (see [Adapters → Tracing wrapper](adapters.md#why-write-a-custom-adapter)) that captures duration and SQL text, then emits whatever your stack expects.
 
 A natural extension would be `WithLogger` / `WithMetrics` callbacks similar to `WithTracer`. They are intentionally absent for now — open an issue if you have a concrete need.

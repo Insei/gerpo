@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// fakeBackend records every call and lets tests choose what to return.
-type fakeBackend struct {
+// fakeDriver records every call and lets tests choose what to return.
+type fakeDriver struct {
 	execCalls  []callRecord
 	queryCalls []callRecord
 	beginErr   error
@@ -29,17 +29,17 @@ type callRecord struct {
 	args []any
 }
 
-func (b *fakeBackend) Exec(_ context.Context, sql string, args ...any) (extypes.Result, error) {
+func (b *fakeDriver) Exec(_ context.Context, sql string, args ...any) (extypes.Result, error) {
 	b.execCalls = append(b.execCalls, callRecord{sql: sql, args: args})
 	return b.execResult, b.execErr
 }
 
-func (b *fakeBackend) Query(_ context.Context, sql string, args ...any) (extypes.Rows, error) {
+func (b *fakeDriver) Query(_ context.Context, sql string, args ...any) (extypes.Rows, error) {
 	b.queryCalls = append(b.queryCalls, callRecord{sql: sql, args: args})
 	return b.queryRows, b.queryErr
 }
 
-func (b *fakeBackend) BeginTx(_ context.Context) (TxBackend, error) {
+func (b *fakeDriver) BeginTx(_ context.Context) (TxDriver, error) {
 	if b.beginErr != nil {
 		return nil, b.beginErr
 	}
@@ -85,7 +85,7 @@ func (t *fakeTx) Rollback() error {
 // TestAdapter_RewritesQuestionToDollar — placeholders are converted before
 // reaching the backend. Drives the real placeholder.Dollar transformation.
 func TestAdapter_RewritesQuestionToDollar(t *testing.T) {
-	b := &fakeBackend{}
+	b := &fakeDriver{}
 	a := New(b, placeholder.Dollar)
 
 	_, err := a.ExecContext(context.Background(), "INSERT INTO t(a, b) VALUES (?, ?)", "x", 1)
@@ -102,7 +102,7 @@ func TestAdapter_RewritesQuestionToDollar(t *testing.T) {
 
 // TestAdapter_QuestionPlaceholder_NoOp — Question format leaves SQL alone.
 func TestAdapter_QuestionPlaceholder_NoOp(t *testing.T) {
-	b := &fakeBackend{}
+	b := &fakeDriver{}
 	a := New(b, placeholder.Question)
 
 	_, err := a.ExecContext(context.Background(), "INSERT INTO t(a) VALUES (?)", "x")
@@ -113,7 +113,7 @@ func TestAdapter_QuestionPlaceholder_NoOp(t *testing.T) {
 // TestTransaction_Commit_FlipsCommittedFlag — Commit sets the internal flag so
 // subsequent RollbackUnlessCommitted is a no-op.
 func TestTransaction_Commit_FlipsCommittedFlag(t *testing.T) {
-	b := &fakeBackend{}
+	b := &fakeDriver{}
 	a := New(b, placeholder.Question)
 
 	tx, err := a.BeginTx(context.Background())
@@ -130,7 +130,7 @@ func TestTransaction_Commit_FlipsCommittedFlag(t *testing.T) {
 // TestTransaction_RollbackUnlessCommitted_WithoutCommit_RollsBack — happy path
 // for the safety net.
 func TestTransaction_RollbackUnlessCommitted_WithoutCommit_RollsBack(t *testing.T) {
-	b := &fakeBackend{}
+	b := &fakeDriver{}
 	a := New(b, placeholder.Question)
 
 	tx, err := a.BeginTx(context.Background())
@@ -147,7 +147,7 @@ func TestTransaction_RollbackUnlessCommitted_WithoutCommit_RollsBack(t *testing.
 // TestTransaction_ExplicitRollback_ClearsSafetyNet — Rollback by itself also
 // blocks the deferred RollbackUnlessCommitted.
 func TestTransaction_ExplicitRollback_ClearsSafetyNet(t *testing.T) {
-	b := &fakeBackend{}
+	b := &fakeDriver{}
 	a := New(b, placeholder.Question)
 
 	tx, err := a.BeginTx(context.Background())
@@ -162,7 +162,7 @@ func TestTransaction_ExplicitRollback_ClearsSafetyNet(t *testing.T) {
 // stays false so RollbackUnlessCommitted will still try to roll back.
 func TestTransaction_CommitError_DoesNotMarkCommitted(t *testing.T) {
 	commitFail := errors.New("commit failed")
-	b := &fakeBackend{tx: &fakeTx{commitErr: commitFail}}
+	b := &fakeDriver{tx: &fakeTx{commitErr: commitFail}}
 	a := New(b, placeholder.Question)
 
 	tx, err := a.BeginTx(context.Background())
@@ -176,7 +176,7 @@ func TestTransaction_CommitError_DoesNotMarkCommitted(t *testing.T) {
 // TestTransaction_ExecAndQuery_RewritePlaceholders — transactional
 // Exec/Query also pass through the placeholder rewriter.
 func TestTransaction_ExecAndQuery_RewritePlaceholders(t *testing.T) {
-	b := &fakeBackend{}
+	b := &fakeDriver{}
 	a := New(b, placeholder.Dollar)
 
 	tx, err := a.BeginTx(context.Background())
@@ -195,7 +195,7 @@ func TestTransaction_ExecAndQuery_RewritePlaceholders(t *testing.T) {
 // caller as-is.
 func TestAdapter_BeginTxError_Propagates(t *testing.T) {
 	beginFail := errors.New("begin failed")
-	b := &fakeBackend{beginErr: beginFail}
+	b := &fakeDriver{beginErr: beginFail}
 	a := New(b, placeholder.Question)
 
 	tx, err := a.BeginTx(context.Background())

@@ -1,12 +1,12 @@
 # Adapter internals
 
-An adapter turns `executor.DBAdapter` calls into driver-specific calls. The placeholder rewrite, the transaction state machine and the `RollbackUnlessCommitted` semantics live once in the unexported `executor/adapters/internal` package; every bundled adapter (pgx v5, pgx v4, database/sql) only contributes a tiny `Backend` plus result/rows wrappers.
+An adapter turns `executor.Adapter` calls into driver-specific calls. The placeholder rewrite, the transaction state machine and the `RollbackUnlessCommitted` semantics live once in the unexported `executor/adapters/internal` package; every bundled adapter (pgx v5, pgx v4, database/sql) only contributes a tiny `Driver` plus result/rows wrappers.
 
 ## Anatomy of a driver package
 
 ```
 executor/adapters/<driver>/
-    pool.go    — Backend / TxBackend implementations + the public NewPoolAdapter / NewAdapter
+    pool.go    — Driver / TxDriver implementations + the public NewPoolAdapter / NewAdapter
     rows.go    — rowsWrap adapting driver rows to types.Rows (only when the driver's Rows
                  type doesn't already satisfy the interface)
     result.go  — resultWrap adapting driver result to types.Result (same caveat)
@@ -16,24 +16,24 @@ executor/adapters/<driver>/
 
 ## The shared base — `internal.Adapter`
 
-`internal.New(backend Backend, p placeholder.PlaceholderFormat) extypes.DBAdapter` returns the public adapter. It owns:
+`internal.New(driver Driver, p placeholder.PlaceholderFormat) extypes.Adapter` returns the public adapter. It owns:
 
 - placeholder rewrite for every `ExecContext` / `QueryContext`;
-- creation of a `transaction` wrapping the backend's `TxBackend`;
+- creation of a `transaction` wrapping the driver's `TxDriver`;
 - the transaction state machine (`committed`, `rollbackUnlessCommittedNeeded`).
 
 Drivers never reimplement that logic.
 
-## The two backend interfaces
+## The two driver interfaces
 
 ```go
-type Backend interface {
+type Driver interface {
     Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error)
     Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error)
-    BeginTx(ctx context.Context) (TxBackend, error)
+    BeginTx(ctx context.Context) (TxDriver, error)
 }
 
-type TxBackend interface {
+type TxDriver interface {
     Exec(ctx context.Context, sql string, args ...any) (extypes.Result, error)
     Query(ctx context.Context, sql string, args ...any) (extypes.Rows, error)
     Commit() error
@@ -45,7 +45,7 @@ A driver implements both with a few lines of delegation. `Commit` / `Rollback` a
 
 ## Placeholder rewriting
 
-gerpo emits `?` placeholders. The shared adapter rewrites them exactly once before delegating to the backend:
+gerpo emits `?` placeholders. The shared adapter rewrites them exactly once before delegating to the driver:
 
 ```go
 sql, err := a.placeholder.ReplacePlaceholders(query)
@@ -62,7 +62,7 @@ sql, err := a.placeholder.ReplacePlaceholders(query)
 
 ```go
 type transaction struct {
-    inner                         TxBackend
+    inner                         TxDriver
     placeholder                   placeholder.PlaceholderFormat
     committed                     bool
     rollbackUnlessCommittedNeeded bool
@@ -83,11 +83,11 @@ All three are pointer-receiver methods on the shared type, so state mutations ac
 
 ## Writing your own driver
 
-1. Implement `internal.Backend` (three methods) and `internal.TxBackend` (four methods) for your driver.
+1. Implement `internal.Driver` (three methods) and `internal.TxDriver` (four methods) for your driver.
 2. Pick a placeholder format. Most non-PostgreSQL drivers keep `?` (`placeholder.Question`).
 3. Wrap your driver's `Rows`/`Result` types only if their methods don't already satisfy the interfaces in `executor/types`.
 4. Return `internal.New(yourBackend, yourPlaceholder)` from the public constructor.
 
 A good smoke test is `TestSmoke` in `tests/integration/` — `forEachAdapter` will pick up your new bundle as soon as you add it to `allAdapters()`.
 
-For unit-level coverage of the shared logic see `executor/adapters/internal/base_test.go` — it drives the adapter with a fake backend and exercises every transaction-lifecycle path.
+For unit-level coverage of the shared logic see `executor/adapters/internal/base_test.go` — it drives the adapter with a fake driver and exercises every transaction-lifecycle path.

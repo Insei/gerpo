@@ -41,7 +41,7 @@ func TestBuilder_DB(t *testing.T) {
 	mockDB := &sql.DB{}
 	tests := []struct {
 		name string
-		db   executor.DBAdapter
+		db   executor.Adapter
 	}{
 		{"valid_db", databasesql.NewAdapter(mockDB)},
 		{"nil_db", nil},
