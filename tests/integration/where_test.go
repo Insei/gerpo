@@ -142,18 +142,18 @@ func TestWhere_LIKE_Operators(t *testing.T) {
 			op   func(m *Post, h query.CountHelper[Post])
 			want uint64
 		}{
-			// CT("1") cot совпадает с: 1, 10..19, 21 → 12 записей.
-			{"CT '1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).CT("1") }, 12},
-			// NCT("1") — все кроме тех 12 → 18.
-			{"NCT '1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).NCT("1") }, 18},
-			// BW("Post 1") — префикс "Post 1": "Post 1", "Post 10..19" = 11.
-			{"BW 'Post 1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).BW("Post 1") }, 11},
-			// NBW("Post 1") — 30 - 11 = 19.
-			{"NBW 'Post 1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).NBW("Post 1") }, 19},
-			// EW("9") — "Post 9", "Post 19", "Post 29" = 3.
-			{"EW '9'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).EW("9") }, 3},
-			// NEW("9") — 30 - 3 = 27.
-			{"NEW '9'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).NEW("9") }, 27},
+			// Contains("1") совпадает с: 1, 10..19, 21 → 12 записей.
+			{"Contains '1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).Contains("1") }, 12},
+			// NotContains("1") — все кроме тех 12 → 18.
+			{"NotContains '1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).NotContains("1") }, 18},
+			// StartsWith("Post 1") — префикс "Post 1": "Post 1", "Post 10..19" = 11.
+			{"StartsWith 'Post 1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).StartsWith("Post 1") }, 11},
+			// NotStartsWith("Post 1") — 30 - 11 = 19.
+			{"NotStartsWith 'Post 1'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).NotStartsWith("Post 1") }, 19},
+			// EndsWith("9") — "Post 9", "Post 19", "Post 29" = 3.
+			{"EndsWith '9'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).EndsWith("9") }, 3},
+			// NotEndsWith("9") — 30 - 3 = 27.
+			{"NotEndsWith '9'", func(m *Post, h query.CountHelper[Post]) { h.Where().Field(&m.Title).NotEndsWith("9") }, 27},
 		}
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
@@ -174,16 +174,16 @@ func TestWhere_LIKE_IgnoreCase(t *testing.T) {
 		defer cancel()
 
 		caseSensitive, err := repo.Count(ctx, func(m *Post, h query.CountHelper[Post]) {
-			h.Where().Field(&m.Title).CT("post")
+			h.Where().Field(&m.Title).Contains("post")
 		})
 		require.NoError(t, err)
-		assert.Equal(t, uint64(0), caseSensitive, "CT is case-sensitive by default")
+		assert.Equal(t, uint64(0), caseSensitive, "Contains is case-sensitive by default")
 
 		caseInsensitive, err := repo.Count(ctx, func(m *Post, h query.CountHelper[Post]) {
-			h.Where().Field(&m.Title).CT("post", true)
+			h.Where().Field(&m.Title).Contains("post", true)
 		})
 		require.NoError(t, err)
-		assert.Equal(t, uint64(30), caseInsensitive, "CT(…, true) matches regardless of case")
+		assert.Equal(t, uint64(30), caseInsensitive, "Contains(…, true) matches regardless of case")
 	})
 }
 

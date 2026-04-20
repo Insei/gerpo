@@ -224,7 +224,7 @@ func TestBuilder_Filter_OverridesSingleOperator(t *testing.T) {
 	assert.Equal(t, "lower_name = ?", sql, "override replaces auto-derived EQ")
 	assert.Equal(t, []any{"abc"}, args)
 
-	fn, ok = col.GetFilterFn(types.OperationCT_IC)
+	fn, ok = col.GetFilterFn(types.OperationContainsIgnoreCase)
 	require.True(t, ok, "non-overridden operators stay auto-derived")
 	sql, _, err = fn(context.Background(), "x")
 	require.NoError(t, err)

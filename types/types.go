@@ -131,46 +131,46 @@ const (
 	// OperationNIN is a constant of type Operation that represents the operation where the field is not in the specified values.
 	OperationNIN = Operation("nin")
 
-	// Strings filter operations
+	// String filter operations.
 
-	// OperationCT is a constant of type Operation that represents the operation where the field contains the value string.
-	OperationCT = Operation("ct")
+	// OperationContains matches rows whose field contains the value as a substring (LIKE '%value%').
+	OperationContains = Operation("contains")
 
-	// OperationNCT is a constant of type Operation that represents the operation where the field not contains the value string.
-	OperationNCT = Operation("nct")
+	// OperationNotContains matches rows whose field does not contain the value as a substring.
+	OperationNotContains = Operation("not_contains")
 
-	// OperationEW is a constant of type Operation that represents the operation where the field ends with the value string.
-	OperationEW = Operation("ew")
+	// OperationStartsWith matches rows whose field begins with the value (LIKE 'value%').
+	OperationStartsWith = Operation("starts_with")
 
-	// OperationNEW is a constant of type Operation. It represents the operation where the field not ends with the value string.
-	OperationNEW = Operation("new")
+	// OperationNotStartsWith matches rows whose field does not begin with the value.
+	OperationNotStartsWith = Operation("not_starts_with")
 
-	// OperationBW is a constant of type Operation. It represents the operation where the field begins with the value string.
-	OperationBW = Operation("bw")
+	// OperationEndsWith matches rows whose field ends with the value (LIKE '%value').
+	OperationEndsWith = Operation("ends_with")
 
-	// OperationNBW is a constant of type Operation that represents the operation where the field begins with the value string.
-	OperationNBW = Operation("nbw")
+	// OperationNotEndsWith matches rows whose field does not end with the value.
+	OperationNotEndsWith = Operation("not_ends_with")
 
-	// Case-insensitive strings filter operations.
-	// Names keep the underscore for backwards compatibility with the public API.
+	// Case-insensitive variants of the string filter operations.
+	// They are selected automatically by WhereOperation methods when ignoreCase=true is passed.
 
-	// OperationCT_IC represents a case-insensitive "contains" operation for filtering or comparison logic.
-	OperationCT_IC = Operation("ct_ic") //nolint:revive // public API name kept for backwards compatibility
+	// OperationContainsIgnoreCase is the case-insensitive form of OperationContains.
+	OperationContainsIgnoreCase = Operation("contains_ic")
 
-	// OperationNCT_IC represents a case-insensitive "not contains" operation for evaluating string-based conditions.
-	OperationNCT_IC = Operation("nct_ic") //nolint:revive // public API name kept for backwards compatibility
+	// OperationNotContainsIgnoreCase is the case-insensitive form of OperationNotContains.
+	OperationNotContainsIgnoreCase = Operation("not_contains_ic")
 
-	// OperationEW_IC represents a case-insensitive "ends with" operation for string comparison.
-	OperationEW_IC = Operation("ew_ic") //nolint:revive // public API name kept for backwards compatibility
+	// OperationStartsWithIgnoreCase is the case-insensitive form of OperationStartsWith.
+	OperationStartsWithIgnoreCase = Operation("starts_with_ic")
 
-	// OperationNEW_IC represents a case-insensitive "ends with" operation for string comparison.
-	OperationNEW_IC = Operation("new_ic") //nolint:revive // public API name kept for backwards compatibility
+	// OperationNotStartsWithIgnoreCase is the case-insensitive form of OperationNotStartsWith.
+	OperationNotStartsWithIgnoreCase = Operation("not_starts_with_ic")
 
-	// OperationBW_IC represents a case-insensitive "begins with" operation for string comparison.
-	OperationBW_IC = Operation("bw_ic") //nolint:revive // public API name kept for backwards compatibility
+	// OperationEndsWithIgnoreCase is the case-insensitive form of OperationEndsWith.
+	OperationEndsWithIgnoreCase = Operation("ends_with_ic")
 
-	// OperationNBW_IC represents a case-insensitive "not begins" operation used for string comparison.
-	OperationNBW_IC = Operation("nbw_ic") //nolint:revive // public API name kept for backwards compatibility
+	// OperationNotEndsWithIgnoreCase is the case-insensitive form of OperationNotEndsWith.
+	OperationNotEndsWithIgnoreCase = Operation("not_ends_with_ic")
 )
 
 type OrderDirection string
@@ -224,23 +224,23 @@ type WhereOperation interface {
 	// It returns an ANDOR interface to chain further logical conditions.
 	NEQ(val any) ANDOR
 
-	// CT applies a "contains" condition on the field with the provided value and returns an ANDOR for chaining.
-	CT(val any, ignoreCase ...bool) ANDOR
+	// Contains applies a "contains" condition on the field with the provided value and returns an ANDOR for chaining.
+	Contains(val any, ignoreCase ...bool) ANDOR
 
-	// NCT applies a "not contains" condition on the field with the provided value and returns an ANDOR for chaining.
-	NCT(val any, ignoreCase ...bool) ANDOR
+	// NotContains applies a "not contains" condition on the field with the provided value and returns an ANDOR for chaining.
+	NotContains(val any, ignoreCase ...bool) ANDOR
 
-	// BW applies a "begins with" condition on the field with the provided value and returns an ANDOR for chaining.
-	BW(val any, ignoreCase ...bool) ANDOR
+	// StartsWith applies a "begins with" condition on the field with the provided value and returns an ANDOR for chaining.
+	StartsWith(val any, ignoreCase ...bool) ANDOR
 
-	// NBW applies a "not begins with" condition on the field with the provided value and returns an ANDOR for chaining.
-	NBW(val any, ignoreCase ...bool) ANDOR
+	// NotStartsWith applies a "not begins with" condition on the field with the provided value and returns an ANDOR for chaining.
+	NotStartsWith(val any, ignoreCase ...bool) ANDOR
 
-	// EW applies "ends with" condition on the field with the provided value and returns an ANDOR for chaining.
-	EW(val any, ignoreCase ...bool) ANDOR
+	// EndsWith applies an "ends with" condition on the field with the provided value and returns an ANDOR for chaining.
+	EndsWith(val any, ignoreCase ...bool) ANDOR
 
-	// NEW applies "not ends with" condition on the field with the provided value and returns an ANDOR for chaining.
-	NEW(val any, ignoreCase ...bool) ANDOR
+	// NotEndsWith applies a "not ends with" condition on the field with the provided value and returns an ANDOR for chaining.
+	NotEndsWith(val any, ignoreCase ...bool) ANDOR
 
 	// GT applies a greater-than (>) condition on the field with the provided value and returns an ANDOR for chaining.
 	GT(val any) ANDOR

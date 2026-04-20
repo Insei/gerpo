@@ -82,70 +82,70 @@ func genNINFn(query string) func(ctx context.Context, value any) (string, bool) 
 // вывести тип параметра в CONCAT-контексте. CAST(? AS text) работает одинаково
 // в PostgreSQL и MySQL, поэтому переносимость сохраняется.
 
-func genCTFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genContainsFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return query + " LIKE CONCAT('%', CAST(? AS text), '%')", true
 	}
 }
-func genNCTFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotContainsFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return query + " NOT LIKE CONCAT('%', CAST(? AS text), '%')", true
 	}
 }
 
-func genBWFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genStartsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return query + " LIKE CONCAT(CAST(? AS text), '%')", true
 	}
 }
 
-func genNBWFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotStartsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return query + " NOT LIKE CONCAT(CAST(? AS text), '%')", true
 	}
 }
 
-func genEWFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genEndsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return query + " LIKE CONCAT('%', CAST(? AS text))", true
 	}
 }
 
-func genNEWFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotEndsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return query + " NOT LIKE CONCAT('%', CAST(? AS text))", true
 	}
 }
 
-func genCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genContainsICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
 	}
 }
-func genNCTICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotContainsICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
 	}
 }
 
-func genBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genStartsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
 	}
 }
-func genNBWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotStartsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
 	}
 }
 
-func genEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genEndsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
 	}
 }
 
-func genNEWICFn(query string) func(ctx context.Context, value any) (string, bool) {
+func genNotEndsWithICFn(query string) func(ctx context.Context, value any) (string, bool) {
 	return func(ctx context.Context, value any) (string, bool) {
 		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
 	}
@@ -168,18 +168,18 @@ func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Ope
 		filters[types.OperationNEQ] = genNEQFn(sqlColumnString)
 		filters[types.OperationIN] = genINFn(sqlColumnString)
 		filters[types.OperationNIN] = genNINFn(sqlColumnString)
-		filters[types.OperationCT_IC] = genCTICFn(sqlColumnString)
-		filters[types.OperationNCT_IC] = genNCTICFn(sqlColumnString)
-		filters[types.OperationBW_IC] = genBWICFn(sqlColumnString)
-		filters[types.OperationNBW_IC] = genNBWICFn(sqlColumnString)
-		filters[types.OperationEW_IC] = genEWICFn(sqlColumnString)
-		filters[types.OperationNEW_IC] = genNEWICFn(sqlColumnString)
-		filters[types.OperationCT] = genCTFn(sqlColumnString)
-		filters[types.OperationNCT] = genNCTFn(sqlColumnString)
-		filters[types.OperationBW] = genBWFn(sqlColumnString)
-		filters[types.OperationNBW] = genNBWFn(sqlColumnString)
-		filters[types.OperationEW] = genEWFn(sqlColumnString)
-		filters[types.OperationNEW] = genNEWFn(sqlColumnString)
+		filters[types.OperationContainsIgnoreCase] = genContainsICFn(sqlColumnString)
+		filters[types.OperationNotContainsIgnoreCase] = genNotContainsICFn(sqlColumnString)
+		filters[types.OperationStartsWithIgnoreCase] = genStartsWithICFn(sqlColumnString)
+		filters[types.OperationNotStartsWithIgnoreCase] = genNotStartsWithICFn(sqlColumnString)
+		filters[types.OperationEndsWithIgnoreCase] = genEndsWithICFn(sqlColumnString)
+		filters[types.OperationNotEndsWithIgnoreCase] = genNotEndsWithICFn(sqlColumnString)
+		filters[types.OperationContains] = genContainsFn(sqlColumnString)
+		filters[types.OperationNotContains] = genNotContainsFn(sqlColumnString)
+		filters[types.OperationStartsWith] = genStartsWithFn(sqlColumnString)
+		filters[types.OperationNotStartsWith] = genNotStartsWithFn(sqlColumnString)
+		filters[types.OperationEndsWith] = genEndsWithFn(sqlColumnString)
+		filters[types.OperationNotEndsWith] = genNotEndsWithFn(sqlColumnString)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:

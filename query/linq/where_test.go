@@ -14,8 +14,8 @@ func TestWithCaseInsensitive(t *testing.T) {
 	}{
 		{
 			name: "Convert",
-			op:   types.OperationCT,
-			want: types.OperationCT_IC,
+			op:   types.OperationContains,
+			want: types.OperationContainsIgnoreCase,
 		},
 		{
 			name: "Stay the same",

@@ -96,7 +96,9 @@ func (q *WhereBuilder) Group(f func(t types.WhereTarget)) types.ANDOR {
 // withIgnoreCase returns a case-insensitive variant of the provided operation if applicable, otherwise returns the original operation.
 func withIgnoreCase(op types.Operation) types.Operation {
 	switch op {
-	case types.OperationCT, types.OperationNCT, types.OperationEW, types.OperationNEW, types.OperationBW, types.OperationNBW:
+	case types.OperationContains, types.OperationNotContains,
+		types.OperationStartsWith, types.OperationNotStartsWith,
+		types.OperationEndsWith, types.OperationNotEndsWith:
 		return op + "_ic"
 	default:
 		return op
@@ -150,23 +152,23 @@ func resolveIgnoreCase(base types.Operation, ignoreCase []bool) types.Operation 
 	return base
 }
 
-func (o *whereOperation) BW(val any, ignoreCase ...bool) types.ANDOR {
-	return o.push(resolveIgnoreCase(types.OperationBW, ignoreCase), val)
+func (o *whereOperation) StartsWith(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationStartsWith, ignoreCase), val)
 }
-func (o *whereOperation) NBW(val any, ignoreCase ...bool) types.ANDOR {
-	return o.push(resolveIgnoreCase(types.OperationNBW, ignoreCase), val)
+func (o *whereOperation) NotStartsWith(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationNotStartsWith, ignoreCase), val)
 }
-func (o *whereOperation) EW(val any, ignoreCase ...bool) types.ANDOR {
-	return o.push(resolveIgnoreCase(types.OperationEW, ignoreCase), val)
+func (o *whereOperation) EndsWith(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationEndsWith, ignoreCase), val)
 }
-func (o *whereOperation) NEW(val any, ignoreCase ...bool) types.ANDOR {
-	return o.push(resolveIgnoreCase(types.OperationNEW, ignoreCase), val)
+func (o *whereOperation) NotEndsWith(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationNotEndsWith, ignoreCase), val)
 }
-func (o *whereOperation) CT(val any, ignoreCase ...bool) types.ANDOR {
-	return o.push(resolveIgnoreCase(types.OperationCT, ignoreCase), val)
+func (o *whereOperation) Contains(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationContains, ignoreCase), val)
 }
-func (o *whereOperation) NCT(val any, ignoreCase ...bool) types.ANDOR {
-	return o.push(resolveIgnoreCase(types.OperationNCT, ignoreCase), val)
+func (o *whereOperation) NotContains(val any, ignoreCase ...bool) types.ANDOR {
+	return o.push(resolveIgnoreCase(types.OperationNotContains, ignoreCase), val)
 }
 func (o *whereOperation) OP(operation types.Operation, val any) types.ANDOR {
 	return o.push(operation, val)

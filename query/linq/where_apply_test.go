@@ -68,12 +68,12 @@ func TestWhereBuilder_Column_AllOperators(t *testing.T) {
 	b.Column(col).LTE(1)
 	b.Column(col).IN(1, 2)
 	b.Column(col).NIN(1, 2)
-	b.Column(col).CT("a")
-	b.Column(col).NCT("a")
-	b.Column(col).BW("a", true)
-	b.Column(col).NBW("a", true)
-	b.Column(col).EW("a", true)
-	b.Column(col).NEW("a", true)
+	b.Column(col).Contains("a")
+	b.Column(col).NotContains("a")
+	b.Column(col).StartsWith("a", true)
+	b.Column(col).NotStartsWith("a", true)
+	b.Column(col).EndsWith("a", true)
+	b.Column(col).NotEndsWith("a", true)
 	b.Column(col).OP(types.OperationEQ, 1)
 
 	w := &fakeWhere{}
@@ -150,17 +150,17 @@ func TestWhereBuilder_Apply_ConditionErrorPropagates(t *testing.T) {
 }
 
 func TestResolveIgnoreCase(t *testing.T) {
-	got := resolveIgnoreCase(types.OperationCT, []bool{true})
-	assert.Equal(t, types.OperationCT_IC, got)
+	got := resolveIgnoreCase(types.OperationContains, []bool{true})
+	assert.Equal(t, types.OperationContainsIgnoreCase, got)
 
-	got = resolveIgnoreCase(types.OperationCT, []bool{false, true})
-	assert.Equal(t, types.OperationCT_IC, got)
+	got = resolveIgnoreCase(types.OperationContains, []bool{false, true})
+	assert.Equal(t, types.OperationContainsIgnoreCase, got)
 
-	got = resolveIgnoreCase(types.OperationCT, []bool{false})
-	assert.Equal(t, types.OperationCT, got)
+	got = resolveIgnoreCase(types.OperationContains, []bool{false})
+	assert.Equal(t, types.OperationContains, got)
 
-	got = resolveIgnoreCase(types.OperationCT, nil)
-	assert.Equal(t, types.OperationCT, got)
+	got = resolveIgnoreCase(types.OperationContains, nil)
+	assert.Equal(t, types.OperationContains, got)
 }
 
 var _ = context.Background // keep context import — fakeWhere may grow

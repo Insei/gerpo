@@ -36,17 +36,17 @@ h.Where().Field(&m.ID).IN(ids...) // if ids is []uuid.UUID
 
 | Method | SQL | Case-insensitive variant |
 |---|---|---|
-| `CT(v)` | `LIKE CONCAT('%', CAST(? AS text), '%')` | `CT(v, true)` → `LOWER(col) LIKE LOWER(…)` |
-| `NCT(v)` | `NOT LIKE CONCAT('%', …, '%')` | `NCT(v, true)` |
-| `BW(v)` | `LIKE CONCAT(CAST(? AS text), '%')` | `BW(v, true)` |
-| `NBW(v)` | `NOT LIKE CONCAT(…, '%')` | `NBW(v, true)` |
-| `EW(v)` | `LIKE CONCAT('%', CAST(? AS text))` | `EW(v, true)` |
-| `NEW(v)` | `NOT LIKE CONCAT('%', …)` | `NEW(v, true)` |
+| `Contains(v)` | `LIKE CONCAT('%', CAST(? AS text), '%')` | `Contains(v, true)` → `LOWER(col) LIKE LOWER(…)` |
+| `NotContains(v)` | `NOT LIKE CONCAT('%', …, '%')` | `NotContains(v, true)` |
+| `StartsWith(v)` | `LIKE CONCAT(CAST(? AS text), '%')` | `StartsWith(v, true)` |
+| `NotStartsWith(v)` | `NOT LIKE CONCAT(…, '%')` | `NotStartsWith(v, true)` |
+| `EndsWith(v)` | `LIKE CONCAT('%', CAST(? AS text))` | `EndsWith(v, true)` |
+| `NotEndsWith(v)` | `NOT LIKE CONCAT('%', …)` | `NotEndsWith(v, true)` |
 
 ```go
-h.Where().Field(&m.Title).CT("go", true)       // case-insensitive contains
-h.Where().Field(&m.Email).BW("admin@")         // starts with
-h.Where().Field(&m.Path).EW(".log", true)      // ends with, case-insensitive
+h.Where().Field(&m.Title).Contains("go", true)   // case-insensitive contains
+h.Where().Field(&m.Email).StartsWith("admin@")    // starts with
+h.Where().Field(&m.Path).EndsWith(".log", true)   // ends with, case-insensitive
 ```
 
 !!! note "CAST(? AS text)"

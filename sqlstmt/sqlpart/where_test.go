@@ -651,7 +651,7 @@ func TestGenCTICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genCTICFn(tc.query)
+			fn := genContainsICFn(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, needAppendValues)
@@ -680,7 +680,7 @@ func TestGenNCTICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNCTICFn(tc.query)
+			fn := genNotContainsICFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -709,7 +709,7 @@ func TestGenBWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genBWICFn(tc.query)
+			fn := genStartsWithICFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -738,7 +738,7 @@ func TestGenNBWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNBWICFn(tc.query)
+			fn := genNotStartsWithICFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -767,7 +767,7 @@ func TestGenEWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genEWICFn(tc.query)
+			fn := genEndsWithICFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -796,7 +796,7 @@ func TestGenNEWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNEWICFn(tc.query)
+			fn := genNotEndsWithICFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -825,7 +825,7 @@ func TestGenCTFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genCTFn(tc.query)
+			fn := genContainsFn(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, needAppendValues)
@@ -854,7 +854,7 @@ func TestGenNCTFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNCTFn(tc.query)
+			fn := genNotContainsFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -883,7 +883,7 @@ func TestGenBWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genBWFn(tc.query)
+			fn := genStartsWithFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -912,7 +912,7 @@ func TestGenNBWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNBWFn(tc.query)
+			fn := genNotStartsWithFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -941,7 +941,7 @@ func TestGenEWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genEWFn(tc.query)
+			fn := genEndsWithFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -970,7 +970,7 @@ func TestGenNEWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNEWFn(tc.query)
+			fn := genNotEndsWithFn(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -1002,18 +1002,18 @@ func TestGetDefaultTypeFilters(t *testing.T) {
 				types.OperationNEQ,
 				types.OperationIN,
 				types.OperationNIN,
-				types.OperationCT,
-				types.OperationNCT,
-				types.OperationBW,
-				types.OperationNBW,
-				types.OperationEW,
-				types.OperationNEW,
-				types.OperationCT_IC,
-				types.OperationNCT_IC,
-				types.OperationBW_IC,
-				types.OperationNBW_IC,
-				types.OperationEW_IC,
-				types.OperationNEW_IC,
+				types.OperationContains,
+				types.OperationNotContains,
+				types.OperationStartsWith,
+				types.OperationNotStartsWith,
+				types.OperationEndsWith,
+				types.OperationNotEndsWith,
+				types.OperationContainsIgnoreCase,
+				types.OperationNotContainsIgnoreCase,
+				types.OperationStartsWithIgnoreCase,
+				types.OperationNotStartsWithIgnoreCase,
+				types.OperationEndsWithIgnoreCase,
+				types.OperationNotEndsWithIgnoreCase,
 			},
 		},
 		{
