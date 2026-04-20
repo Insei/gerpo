@@ -58,6 +58,10 @@ err := gerpo.RunInTx(ctx, adapter, func(ctx context.Context) error {
 
 Isolation is controlled by the driver; gerpo does not set a level. PostgreSQL defaults to Read Committed. For SERIALIZABLE/REPEATABLE READ, open the transaction directly via the adapter's `ExecContext` (`BEGIN ISOLATION LEVEL …`), or pass options via the driver's `BeginTx` (pgx accepts `pgx.TxOptions`).
 
+## Cascading related rows
+
+Combining a transaction with an `AfterInsert`/`AfterUpdate` hook is how gerpo lets you express user-land one-to-many relations — the hook inserts children through their own repository, both the parent and the children land in the same tx, any failure rolls everything back. The pattern lives in the hooks page: [Hooks → Cascading related rows](hooks.md#cascading-related-rows-user-land-one-to-many).
+
 ## Common pitfall: multiple calls without a transaction
 
 ```go

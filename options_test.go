@@ -14,20 +14,20 @@ type exampleModel struct {
 func TestWithBeforeInsert(t *testing.T) {
 	tests := []struct {
 		name          string
-		existingFn    func(ctx context.Context, m *exampleModel)
-		newFn         func(ctx context.Context, m *exampleModel)
+		existingFn    func(ctx context.Context, m *exampleModel) error
+		newFn         func(ctx context.Context, m *exampleModel) error
 		expectWrapped bool
 	}{
 		{
 			name:          "Nil existing, non-nil new",
 			existingFn:    nil,
-			newFn:         func(ctx context.Context, m *exampleModel) {},
+			newFn:         func(ctx context.Context, m *exampleModel) error { return nil },
 			expectWrapped: false,
 		},
 		{
 			name:          "Non-nil existing, non-nil new",
-			existingFn:    func(ctx context.Context, m *exampleModel) {},
-			newFn:         func(ctx context.Context, m *exampleModel) {},
+			existingFn:    func(ctx context.Context, m *exampleModel) error { return nil },
+			newFn:         func(ctx context.Context, m *exampleModel) error { return nil },
 			expectWrapped: true,
 		},
 	}
@@ -48,20 +48,20 @@ func TestWithBeforeInsert(t *testing.T) {
 func TestWithBeforeUpdate(t *testing.T) {
 	tests := []struct {
 		name          string
-		existingFn    func(ctx context.Context, m *exampleModel)
-		newFn         func(ctx context.Context, m *exampleModel)
+		existingFn    func(ctx context.Context, m *exampleModel) error
+		newFn         func(ctx context.Context, m *exampleModel) error
 		expectWrapped bool
 	}{
 		{
 			name:          "Nil existing, non-nil new",
 			existingFn:    nil,
-			newFn:         func(ctx context.Context, m *exampleModel) {},
+			newFn:         func(ctx context.Context, m *exampleModel) error { return nil },
 			expectWrapped: false,
 		},
 		{
 			name:          "Non-nil existing, non-nil new",
-			existingFn:    func(ctx context.Context, m *exampleModel) {},
-			newFn:         func(ctx context.Context, m *exampleModel) {},
+			existingFn:    func(ctx context.Context, m *exampleModel) error { return nil },
+			newFn:         func(ctx context.Context, m *exampleModel) error { return nil },
 			expectWrapped: true,
 		},
 	}
@@ -82,18 +82,18 @@ func TestWithBeforeUpdate(t *testing.T) {
 func TestWithAfterSelect(t *testing.T) {
 	tests := []struct {
 		name       string
-		existingFn func(ctx context.Context, m []*exampleModel)
-		newFn      func(ctx context.Context, m []*exampleModel)
+		existingFn func(ctx context.Context, m []*exampleModel) error
+		newFn      func(ctx context.Context, m []*exampleModel) error
 	}{
 		{
 			name:       "Nil existing, non-nil new",
 			existingFn: nil,
-			newFn:      func(ctx context.Context, m []*exampleModel) {},
+			newFn:      func(ctx context.Context, m []*exampleModel) error { return nil },
 		},
 		{
 			name:       "Non-nil existing, non-nil new",
-			existingFn: func(ctx context.Context, m []*exampleModel) {},
-			newFn:      func(ctx context.Context, m []*exampleModel) {},
+			existingFn: func(ctx context.Context, m []*exampleModel) error { return nil },
+			newFn:      func(ctx context.Context, m []*exampleModel) error { return nil },
 		},
 	}
 	for _, tt := range tests {
@@ -113,18 +113,18 @@ func TestWithAfterSelect(t *testing.T) {
 func TestWithAfterInsert(t *testing.T) {
 	tests := []struct {
 		name       string
-		existingFn func(ctx context.Context, m *exampleModel)
-		newFn      func(ctx context.Context, m *exampleModel)
+		existingFn func(ctx context.Context, m *exampleModel) error
+		newFn      func(ctx context.Context, m *exampleModel) error
 	}{
 		{
 			name:       "Nil existing, non-nil new",
 			existingFn: nil,
-			newFn:      func(ctx context.Context, m *exampleModel) {},
+			newFn:      func(ctx context.Context, m *exampleModel) error { return nil },
 		},
 		{
 			name:       "Non-nil existing, non-nil new",
-			existingFn: func(ctx context.Context, m *exampleModel) {},
-			newFn:      func(ctx context.Context, m *exampleModel) {},
+			existingFn: func(ctx context.Context, m *exampleModel) error { return nil },
+			newFn:      func(ctx context.Context, m *exampleModel) error { return nil },
 		},
 	}
 	for _, tt := range tests {
@@ -144,18 +144,18 @@ func TestWithAfterInsert(t *testing.T) {
 func TestWithAfterUpdate(t *testing.T) {
 	tests := []struct {
 		name       string
-		existingFn func(ctx context.Context, m *exampleModel)
-		newFn      func(ctx context.Context, m *exampleModel)
+		existingFn func(ctx context.Context, m *exampleModel) error
+		newFn      func(ctx context.Context, m *exampleModel) error
 	}{
 		{
 			name:       "Nil existing, non-nil new",
 			existingFn: nil,
-			newFn:      func(ctx context.Context, m *exampleModel) {},
+			newFn:      func(ctx context.Context, m *exampleModel) error { return nil },
 		},
 		{
 			name:       "Non-nil existing, non-nil new",
-			existingFn: func(ctx context.Context, m *exampleModel) {},
-			newFn:      func(ctx context.Context, m *exampleModel) {},
+			existingFn: func(ctx context.Context, m *exampleModel) error { return nil },
+			newFn:      func(ctx context.Context, m *exampleModel) error { return nil },
 		},
 	}
 	for _, tt := range tests {

@@ -11,12 +11,15 @@ import (
 )
 
 type repository[TModel any] struct {
-	// Callbacks and Hooks
-	beforeInsert     func(ctx context.Context, model *TModel)
-	beforeUpdate     func(ctx context.Context, model *TModel)
-	afterInsert      func(ctx context.Context, model *TModel)
-	afterUpdate      func(ctx context.Context, model *TModel)
-	afterSelect      func(ctx context.Context, models []*TModel)
+	// Callbacks and Hooks. Every hook returns error; a non-nil return aborts
+	// the operation — Before-hooks skip the SQL, After-hooks surface the error
+	// to the caller after the SQL already ran (letting the caller decide
+	// whether to roll back an ambient transaction).
+	beforeInsert     func(ctx context.Context, model *TModel) error
+	beforeUpdate     func(ctx context.Context, model *TModel) error
+	afterInsert      func(ctx context.Context, model *TModel) error
+	afterUpdate      func(ctx context.Context, model *TModel) error
+	afterSelect      func(ctx context.Context, models []*TModel) error
 	errorTransformer func(err error) error
 
 	// Tracing — opt-in via WithTracer; nil means "no spans".
@@ -46,19 +49,19 @@ func (r *repository[TModel]) startSpan(ctx context.Context, op string) (context.
 
 func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	if repo.beforeInsert == nil {
-		repo.beforeInsert = func(_ context.Context, _ *TModel) {}
+		repo.beforeInsert = func(_ context.Context, _ *TModel) error { return nil }
 	}
 	if repo.beforeUpdate == nil {
-		repo.beforeUpdate = func(_ context.Context, _ *TModel) {}
+		repo.beforeUpdate = func(_ context.Context, _ *TModel) error { return nil }
 	}
 	if repo.afterInsert == nil {
-		repo.afterInsert = func(_ context.Context, _ *TModel) {}
+		repo.afterInsert = func(_ context.Context, _ *TModel) error { return nil }
 	}
 	if repo.afterUpdate == nil {
-		repo.afterUpdate = func(_ context.Context, _ *TModel) {}
+		repo.afterUpdate = func(_ context.Context, _ *TModel) error { return nil }
 	}
 	if repo.afterSelect == nil {
-		repo.afterSelect = func(_ context.Context, _ []*TModel) {}
+		repo.afterSelect = func(_ context.Context, _ []*TModel) error { return nil }
 	}
 	if repo.errorTransformer == nil {
 		repo.errorTransformer = func(err error) error { return err }
@@ -131,7 +134,9 @@ func (r *repository[TModel]) GetFirst(ctx context.Context, qFns ...func(m *TMode
 		return nil, r.errorTransformer(err)
 	}
 
-	r.afterSelect(ctx, []*TModel{model})
+	if err = r.afterSelect(ctx, []*TModel{model}); err != nil {
+		return model, r.errorTransformer(err)
+	}
 	return model, nil
 }
 
@@ -158,7 +163,9 @@ func (r *repository[TModel]) GetList(ctx context.Context, qFns ...func(m *TModel
 		return nil, r.errorTransformer(err)
 	}
 
-	r.afterSelect(ctx, models)
+	if err = r.afterSelect(ctx, models); err != nil {
+		return models, r.errorTransformer(err)
+	}
 	return models, nil
 }
 
@@ -192,7 +199,9 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 	ctx, end := r.startSpan(ctx, "gerpo.Insert")
 	defer func() { end(err) }()
 
-	r.beforeInsert(ctx, model)
+	if err = r.beforeInsert(ctx, model); err != nil {
+		return r.errorTransformer(err)
+	}
 	stmt := sqlstmt.NewInsert(ctx, r.table, r.columns)
 	err = r.persistentQuery.Apply(stmt)
 	if err != nil {
@@ -211,7 +220,9 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 		return r.errorTransformer(err)
 	}
 
-	r.afterInsert(ctx, model)
+	if err = r.afterInsert(ctx, model); err != nil {
+		return r.errorTransformer(err)
+	}
 	return nil
 }
 
@@ -219,7 +230,9 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	ctx, end := r.startSpan(ctx, "gerpo.Update")
 	defer func() { end(err) }()
 
-	r.beforeUpdate(ctx, model)
+	if err = r.beforeUpdate(ctx, model); err != nil {
+		return 0, r.errorTransformer(err)
+	}
 	stmt := sqlstmt.NewUpdate(ctx, r.columns, r.table)
 	err = r.persistentQuery.Apply(stmt)
 	if err != nil {
@@ -241,7 +254,9 @@ func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...
 	if updatedCount < 1 {
 		return updatedCount, r.errorTransformer(fmt.Errorf("nothing to update: %w", ErrNotFound))
 	}
-	r.afterUpdate(ctx, model)
+	if err = r.afterUpdate(ctx, model); err != nil {
+		return updatedCount, r.errorTransformer(err)
+	}
 	return updatedCount, nil
 }
 

@@ -66,31 +66,39 @@ func (b *builder[TModel]) WithQuery(queryFn func(m *TModel, h query.PersistentHe
 }
 
 // WithBeforeInsert registers a function that is executed before performing an insert operation on the model in the database.
-func (b *builder[TModel]) WithBeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+// Returning a non-nil error aborts the INSERT — the SQL does not run.
+func (b *builder[TModel]) WithBeforeInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel] {
 	b.opts = append(b.opts, WithBeforeInsert[TModel](fn))
 	return b
 }
 
 // WithBeforeUpdate registers a function to be executed before performing an update operation on the model in the database.
-func (b *builder[TModel]) WithBeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+// Returning a non-nil error aborts the UPDATE — the SQL does not run.
+func (b *builder[TModel]) WithBeforeUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel] {
 	b.opts = append(b.opts, WithBeforeUpdate[TModel](fn))
 	return b
 }
 
-// WithAfterSelect registers a callback function to be executed after models are retrieved through a select operation.
-func (b *builder[TModel]) WithAfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel] {
+// WithAfterSelect registers a callback executed after GetFirst/GetList with the
+// scanned models. A non-nil error is surfaced to the caller after the rows are
+// already fetched.
+func (b *builder[TModel]) WithAfterSelect(fn func(ctx context.Context, models []*TModel) error) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterSelect[TModel](fn))
 	return b
 }
 
-// WithAfterUpdate registers a callback function to be executed after an update operation is performed on the model.
-func (b *builder[TModel]) WithAfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+// WithAfterUpdate registers a callback executed after a successful UPDATE. A
+// non-nil error is surfaced after the row was already modified — the caller
+// decides whether to roll back an ambient transaction.
+func (b *builder[TModel]) WithAfterUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterUpdate[TModel](fn))
 	return b
 }
 
-// WithAfterInsert registers a callback function to be executed after an insert operation is performed on the model.
-func (b *builder[TModel]) WithAfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel] {
+// WithAfterInsert registers a callback executed after a successful INSERT. A
+// non-nil error is surfaced after the row was already written — the caller
+// decides whether to roll back an ambient transaction.
+func (b *builder[TModel]) WithAfterInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterInsert[TModel](fn))
 	return b
 }

@@ -51,8 +51,9 @@ func TestUpdate(t *testing.T) {
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
 			h.Where().Field(&m.DeletedAt).EQ(nil) // Check soft deletion where appending
 		}).
-		WithBeforeUpdate(func(ctx context.Context, m *User) {
+		WithBeforeUpdate(func(ctx context.Context, m *User) error {
 			m.UpdatedAt = &dateAt
+			return nil
 		}).
 		Build()
 	if err != nil {

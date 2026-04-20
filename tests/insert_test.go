@@ -42,13 +42,14 @@ func TestInsert(t *testing.T) {
 				}) //Check that not appends to update sql query
 			columns.Field(&m.AnotherTable).WithTable("<another_table>") // in real usage join should be configured in WithQuery, but now we simply drops this column
 		}).
-		WithBeforeInsert(func(ctx context.Context, m *User) {
+		WithBeforeInsert(func(ctx context.Context, m *User) error {
 			id, err := uuid.NewV7()
 			if err != nil {
 				id = uuid.New()
 			}
 			m.ID = id
 			m.CreatedAt = dateAt
+			return nil
 		}).
 		Build()
 	if err != nil {

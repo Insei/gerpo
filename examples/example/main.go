@@ -57,12 +57,14 @@ func main() {
 					b.AddTrueSQLFn(func(ctx context.Context) string { return "tests.created_at < now()" })
 				})
 		}).
-		WithBeforeInsert(func(ctx context.Context, m *test) {
+		WithBeforeInsert(func(ctx context.Context, m *test) error {
 			m.CreatedAt = time.Now()
+			return nil
 		}).
-		WithBeforeUpdate(func(ctx context.Context, m *test) {
+		WithBeforeUpdate(func(ctx context.Context, m *test) error {
 			updAt := time.Now()
 			m.UpdatedAt = &updAt
+			return nil
 		}).
 		WithQuery(func(m *test, h query.PersistentHelper[test]) {
 			h.Where().Field(&m.ID).LT(7)

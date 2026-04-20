@@ -18,96 +18,126 @@ func (f optionFn[TModel]) apply(c *repository[TModel]) error { //nolint:unused /
 	return f(c)
 }
 
-// WithBeforeInsert sets a function to be executed before inserting a model into the repository.
-// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
-func WithBeforeInsert[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
+// WithBeforeInsert registers a callback invoked right before a row is inserted.
+// Returning a non-nil error from the callback aborts the Insert — the SQL is
+// NOT executed and the error is returned to the caller (after passing through
+// WithErrorTransformer, if any).
+//
+// Multiple registrations are chained in the order they were added; the first
+// non-nil error stops the chain and becomes the returned value.
+func WithBeforeInsert[TModel any](fn func(ctx context.Context, model *TModel) error) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) error {
-		if fn != nil {
-			if o.beforeInsert == nil {
-				o.beforeInsert = fn
-				return nil
+		if fn == nil {
+			return nil
+		}
+		if o.beforeInsert == nil {
+			o.beforeInsert = fn
+			return nil
+		}
+		wrap := o.beforeInsert
+		o.beforeInsert = func(ctx context.Context, model *TModel) error {
+			if err := wrap(ctx, model); err != nil {
+				return err
 			}
-			wrap := o.beforeInsert
-			o.beforeInsert = func(ctx context.Context, model *TModel) {
-				wrap(ctx, model)
-				fn(ctx, model)
-			}
+			return fn(ctx, model)
 		}
 		return nil
 	})
 }
 
-// WithBeforeUpdate registers a function to be invoked before the update operation on the specified model in the repository.
-// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
-func WithBeforeUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
+// WithBeforeUpdate registers a callback invoked right before a row is updated.
+// Returning a non-nil error aborts the Update — the SQL does NOT run.
+// Chaining semantics match WithBeforeInsert.
+func WithBeforeUpdate[TModel any](fn func(ctx context.Context, model *TModel) error) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) error {
-		if fn != nil {
-			if o.beforeUpdate == nil {
-				o.beforeUpdate = fn
-				return nil
+		if fn == nil {
+			return nil
+		}
+		if o.beforeUpdate == nil {
+			o.beforeUpdate = fn
+			return nil
+		}
+		wrap := o.beforeUpdate
+		o.beforeUpdate = func(ctx context.Context, model *TModel) error {
+			if err := wrap(ctx, model); err != nil {
+				return err
 			}
-			wrap := o.beforeUpdate
-			o.beforeUpdate = func(ctx context.Context, model *TModel) {
-				wrap(ctx, model)
-				fn(ctx, model)
-			}
+			return fn(ctx, model)
 		}
 		return nil
 	})
 }
 
-// WithAfterSelect returns an Option that appends or assigns a callback executed after select queries in the repository.
-// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
-func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel)) Option[TModel] {
+// WithAfterSelect registers a callback invoked after GetFirst / GetList with
+// the freshly scanned models. Returning a non-nil error surfaces it to the
+// caller AFTER the rows have already been fetched — use this for cascade
+// reads or context-level bookkeeping, not for validation.
+func WithAfterSelect[TModel any](fn func(ctx context.Context, models []*TModel) error) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) error {
-		if fn != nil {
-			if o.afterSelect == nil {
-				o.afterSelect = fn
-				return nil
+		if fn == nil {
+			return nil
+		}
+		if o.afterSelect == nil {
+			o.afterSelect = fn
+			return nil
+		}
+		wrap := o.afterSelect
+		o.afterSelect = func(ctx context.Context, models []*TModel) error {
+			if err := wrap(ctx, models); err != nil {
+				return err
 			}
-			wrap := o.afterSelect
-			o.afterSelect = func(ctx context.Context, models []*TModel) {
-				wrap(ctx, models)
-				fn(ctx, models)
-			}
+			return fn(ctx, models)
 		}
 		return nil
 	})
 }
 
-// WithAfterInsert creates an option to set a callback function that is executed after an insert operation in the repository.
-// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
-func WithAfterInsert[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
+// WithAfterInsert registers a callback invoked after a successful Insert.
+// Returning a non-nil error surfaces it to the caller AFTER the row was
+// already written. The row is NOT automatically rolled back — the caller
+// decides whether to roll back an ambient transaction based on the error.
+//
+// Typical use: cascade related rows, emit an audit entry, publish an event
+// in the same ctx-bound tx. See docs/features/hooks.md for the
+// cascade-related-rows pattern.
+func WithAfterInsert[TModel any](fn func(ctx context.Context, model *TModel) error) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) error {
-		if fn != nil {
-			if o.afterInsert == nil {
-				o.afterInsert = fn
-				return nil
+		if fn == nil {
+			return nil
+		}
+		if o.afterInsert == nil {
+			o.afterInsert = fn
+			return nil
+		}
+		wrap := o.afterInsert
+		o.afterInsert = func(ctx context.Context, model *TModel) error {
+			if err := wrap(ctx, model); err != nil {
+				return err
 			}
-			wrap := o.afterInsert
-			o.afterInsert = func(ctx context.Context, model *TModel) {
-				wrap(ctx, model)
-				fn(ctx, model)
-			}
+			return fn(ctx, model)
 		}
 		return nil
 	})
 }
 
-// WithAfterUpdate creates an Option to set or append a callback function that triggers after an update operation on the model.
-// If an existing function is already set, the new function will wrap the existing one, executing both in sequence.
-func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel)) Option[TModel] {
+// WithAfterUpdate registers a callback invoked after a successful Update.
+// Returning a non-nil error surfaces it to the caller AFTER the row was
+// already modified — same contract as WithAfterInsert.
+func WithAfterUpdate[TModel any](fn func(ctx context.Context, model *TModel) error) Option[TModel] {
 	return optionFn[TModel](func(o *repository[TModel]) error {
-		if fn != nil {
-			if o.afterUpdate == nil {
-				o.afterUpdate = fn
-				return nil
+		if fn == nil {
+			return nil
+		}
+		if o.afterUpdate == nil {
+			o.afterUpdate = fn
+			return nil
+		}
+		wrap := o.afterUpdate
+		o.afterUpdate = func(ctx context.Context, model *TModel) error {
+			if err := wrap(ctx, model); err != nil {
+				return err
 			}
-			wrap := o.afterUpdate
-			o.afterUpdate = func(ctx context.Context, model *TModel) {
-				wrap(ctx, model)
-				fn(ctx, model)
-			}
+			return fn(ctx, model)
 		}
 		return nil
 	})

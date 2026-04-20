@@ -136,10 +136,11 @@ func TestRepository_GetFirst(t *testing.T) {
 			repoCasted := repo.(*repository[model])
 			repoCasted.executor = tt.executor
 			if tt.setupSelect != nil {
-				repoCasted.afterSelect = func(ctx context.Context, models []*model) {
+				repoCasted.afterSelect = func(ctx context.Context, models []*model) error {
 					for _, m := range models {
 						tt.setupSelect(ctx, m)
 					}
+					return nil
 				}
 			}
 
@@ -169,7 +170,7 @@ func TestRepository_GetList(t *testing.T) {
 		qFns         []func(m *model, h query.GetListHelper[model])
 		expectedList []*model
 		expectedErr  error
-		afterSelect  func(ctx context.Context, models []*model)
+		afterSelect  func(ctx context.Context, models []*model) error
 	}{
 		{
 			name: "Successful retrieval",
@@ -220,10 +221,11 @@ func TestRepository_GetList(t *testing.T) {
 				{ID: 1, Name: "Modified Alice", Email: "alice@example.com"},
 			},
 			expectedErr: nil,
-			afterSelect: func(ctx context.Context, models []*model) {
+			afterSelect: func(ctx context.Context, models []*model) error {
 				for _, m := range models {
 					m.Name = "Modified " + m.Name
 				}
+				return nil
 			},
 		},
 	}
@@ -414,8 +416,8 @@ func TestRepository_Insert(t *testing.T) {
 		model        *model
 		qFns         []func(m *model, h query.InsertHelper[model])
 		expectedErr  error
-		beforeInsert func(ctx context.Context, model *model)
-		afterInsert  func(ctx context.Context, model *model)
+		beforeInsert func(ctx context.Context, model *model) error
+		afterInsert  func(ctx context.Context, model *model) error
 	}{
 		{
 			name: "Successful insert",
@@ -427,11 +429,13 @@ func TestRepository_Insert(t *testing.T) {
 			},
 			model:       &model{Name: "John Doe", Email: "john@example.com"},
 			expectedErr: nil,
-			beforeInsert: func(ctx context.Context, model *model) {
+			beforeInsert: func(ctx context.Context, model *model) error {
 				model.Name = "WithBeforeInsert Name"
+				return nil
 			},
-			afterInsert: func(ctx context.Context, model *model) {
+			afterInsert: func(ctx context.Context, model *model) error {
 				model.Name = "WithAfterInsert Name"
+				return nil
 			},
 		},
 		{
@@ -456,8 +460,9 @@ func TestRepository_Insert(t *testing.T) {
 			},
 			model:       &model{Name: "Original Name", Email: "test@example.com"},
 			expectedErr: nil,
-			beforeInsert: func(ctx context.Context, model *model) {
+			beforeInsert: func(ctx context.Context, model *model) error {
 				model.Name = "Modified Name"
+				return nil
 			},
 		},
 		{
@@ -469,8 +474,9 @@ func TestRepository_Insert(t *testing.T) {
 			},
 			model:       &model{Name: "After Insert Test", Email: "after_test@example.com"},
 			expectedErr: nil,
-			afterInsert: func(ctx context.Context, model *model) {
+			afterInsert: func(ctx context.Context, model *model) error {
 				model.ID = 42
+				return nil
 			},
 		},
 	}
@@ -519,8 +525,8 @@ func TestRepository_Update(t *testing.T) {
 		model        *model
 		qFns         []func(m *model, h query.UpdateHelper[model])
 		expectedErr  error
-		beforeUpdate func(ctx context.Context, model *model)
-		afterUpdate  func(ctx context.Context, model *model)
+		beforeUpdate func(ctx context.Context, model *model) error
+		afterUpdate  func(ctx context.Context, model *model) error
 	}{
 		{
 			name: "Successful update",
@@ -531,11 +537,13 @@ func TestRepository_Update(t *testing.T) {
 			},
 			model:       &model{ID: 1, Name: "Updated Name", Email: "updated@example.com"},
 			expectedErr: nil,
-			beforeUpdate: func(ctx context.Context, model *model) {
+			beforeUpdate: func(ctx context.Context, model *model) error {
 				model.Name = "WithBeforeUpdate Name"
+				return nil
 			},
-			afterUpdate: func(ctx context.Context, model *model) {
+			afterUpdate: func(ctx context.Context, model *model) error {
 				model.Name = "WithAfterUpdate Name"
+				return nil
 			},
 		},
 		{

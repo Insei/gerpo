@@ -145,10 +145,10 @@ func TestBuilder_WithQuery(t *testing.T) {
 }
 
 func TestBuilder_BeforeInsert(t *testing.T) {
-	mockBeforeInsertFn := func(ctx context.Context, m *mockModel) {}
+	mockBeforeInsertFn := func(ctx context.Context, m *mockModel) error { return nil }
 	tests := []struct {
 		name           string
-		beforeInsertFn func(context.Context, *mockModel)
+		beforeInsertFn func(context.Context, *mockModel) error
 		expected       int
 	}{
 		{"valid_before_insert", mockBeforeInsertFn, 1},
@@ -166,10 +166,10 @@ func TestBuilder_BeforeInsert(t *testing.T) {
 }
 
 func TestBuilder_AfterInsert(t *testing.T) {
-	mockAfterInsertFn := func(ctx context.Context, m *mockModel) {}
+	mockAfterInsertFn := func(ctx context.Context, m *mockModel) error { return nil }
 	tests := []struct {
 		name          string
-		afterInsertFn func(context.Context, *mockModel)
+		afterInsertFn func(context.Context, *mockModel) error
 		expected      int
 	}{
 		{"valid_after_insert", mockAfterInsertFn, 1},

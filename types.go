@@ -37,16 +37,24 @@ type Repository[TModel any] interface {
 type Builder[TModel any] interface {
 	// WithQuery applies a persistent query function to customize the query process for the model.
 	WithQuery(queryFn func(m *TModel, h query.PersistentHelper[TModel])) Builder[TModel]
-	// WithBeforeInsert registers a function to modify the model before insert operations.
-	WithBeforeInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	// WithBeforeUpdate registers a function to modify the model before update operations.
-	WithBeforeUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	// WithAfterSelect registers a function to process or transform models after selection operations.
-	WithAfterSelect(fn func(ctx context.Context, models []*TModel)) Builder[TModel]
-	// WithAfterInsert registers a function to process or transform the model after insert operations.
-	WithAfterInsert(fn func(ctx context.Context, m *TModel)) Builder[TModel]
-	// WithAfterUpdate registers a function to process or transform the model after update operations.
-	WithAfterUpdate(fn func(ctx context.Context, m *TModel)) Builder[TModel]
+	// WithBeforeInsert registers a hook called before the INSERT SQL. Returning a
+	// non-nil error aborts the call; the SQL does not run.
+	WithBeforeInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
+	// WithBeforeUpdate registers a hook called before the UPDATE SQL. Returning a
+	// non-nil error aborts the call; the SQL does not run.
+	WithBeforeUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
+	// WithAfterSelect registers a hook called after GetFirst/GetList with the
+	// scanned models. A non-nil error is surfaced after the rows are already
+	// fetched.
+	WithAfterSelect(fn func(ctx context.Context, models []*TModel) error) Builder[TModel]
+	// WithAfterInsert registers a hook called after a successful INSERT.
+	// A non-nil error is surfaced after the row has been written — use for
+	// cascade inserts in the same ctx-bound transaction; the caller decides
+	// whether to roll back.
+	WithAfterInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
+	// WithAfterUpdate registers a hook called after a successful UPDATE.
+	// Same error contract as WithAfterInsert.
+	WithAfterUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
 	// WithErrorTransformer allows customizing or wrapping errors during repository operations.
 	WithErrorTransformer(fn func(err error) error) Builder[TModel]
 	// WithTracer installs a tracing hook called around every Repository operation.
