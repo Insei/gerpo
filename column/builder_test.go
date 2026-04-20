@@ -51,7 +51,7 @@ func TestBuilderWithColumnName(t *testing.T) {
 	}
 }
 
-func TestBuilderWithInsertProtection(t *testing.T) {
+func TestBuilderOmitOnInsert(t *testing.T) {
 	fields, _ := fmap.Get[TestModel]()
 	field := fields.MustFind("Age")
 
@@ -59,13 +59,13 @@ func TestBuilderWithInsertProtection(t *testing.T) {
 		field: field,
 	}
 
-	builder = builder.WithInsertProtection()
+	builder = builder.OmitOnInsert()
 	if len(builder.opts) == 0 {
 		t.Errorf("Expected opts to be set")
 	}
 }
 
-func TestBuilderWithUpdateProtection(t *testing.T) {
+func TestBuilderOmitOnUpdate(t *testing.T) {
 	fields, _ := fmap.Get[TestModel]()
 	field := fields.MustFind("Age")
 
@@ -73,7 +73,7 @@ func TestBuilderWithUpdateProtection(t *testing.T) {
 		field: field,
 	}
 
-	builder = builder.WithUpdateProtection()
+	builder = builder.OmitOnUpdate()
 	if len(builder.opts) == 0 {
 		t.Errorf("Expected opts to be set")
 	}

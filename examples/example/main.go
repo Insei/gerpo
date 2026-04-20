@@ -41,12 +41,12 @@ func main() {
 		DB(dbWrap).
 		Table("tests").
 		Columns(func(m *test, columns *gerpo.ColumnBuilder[test]) {
-			columns.Field(&m.ID).WithInsertProtection().WithUpdateProtection()
-			columns.Field(&m.CreatedAt).WithUpdateProtection()
-			columns.Field(&m.UpdatedAt).WithInsertProtection()
+			columns.Field(&m.ID).OmitOnInsert().OmitOnUpdate()
+			columns.Field(&m.CreatedAt).OmitOnUpdate()
+			columns.Field(&m.UpdatedAt).OmitOnInsert()
 			columns.Field(&m.Name)
 			columns.Field(&m.Age)
-			columns.Field(m.DeletedAt).WithUpdateProtection().WithInsertProtection()
+			columns.Field(m.DeletedAt).OmitOnUpdate().OmitOnInsert()
 
 			columns.Field(&m.Bool).AsVirtual().
 				WithSQL(func(ctx context.Context) string {

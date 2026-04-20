@@ -52,11 +52,11 @@ func newBenchRepo(b *testing.B, db *mockDB) gerpo.Repository[benchUser] {
 		DB(db).
 		Table("users").
 		Columns(func(m *benchUser, c *gerpo.ColumnBuilder[benchUser]) {
-			c.Field(&m.ID).WithUpdateProtection()
-			c.Field(&m.CreatedAt).WithUpdateProtection()
-			c.Field(&m.UpdatedAt).WithInsertProtection()
+			c.Field(&m.ID).OmitOnUpdate()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
+			c.Field(&m.UpdatedAt).OmitOnInsert()
 			c.Field(&m.Name)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		Build()
 	if err != nil {

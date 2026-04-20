@@ -94,13 +94,13 @@ func TestWithColumnName(t *testing.T) {
 	}
 }
 
-func TestWithInsertProtection(t *testing.T) {
+func TestWithOmitOnInsert(t *testing.T) {
 	testCases := []struct {
 		name     string
 		expected options
 	}{
 		{
-			name:     "WithInsertProtection",
+			name:     "WithOmitOnInsert",
 			expected: options{notAvailActions: []types.SQLAction{types.SQLActionInsert}},
 		},
 	}
@@ -108,19 +108,19 @@ func TestWithInsertProtection(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			opt := options{}
-			WithInsertProtection().apply(&opt)
+			WithOmitOnInsert().apply(&opt)
 			assert.Equal(t, tc.expected, opt)
 		})
 	}
 }
 
-func TestWithUpdateProtection(t *testing.T) {
+func TestWithOmitOnUpdate(t *testing.T) {
 	testCases := []struct {
 		name     string
 		expected options
 	}{
 		{
-			name:     "WithUpdateProtection",
+			name:     "WithOmitOnUpdate",
 			expected: options{notAvailActions: []types.SQLAction{types.SQLActionUpdate}},
 		},
 	}
@@ -128,7 +128,7 @@ func TestWithUpdateProtection(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			opt := options{}
-			WithUpdateProtection().apply(&opt)
+			WithOmitOnUpdate().apply(&opt)
 			assert.Equal(t, tc.expected, opt)
 		})
 	}

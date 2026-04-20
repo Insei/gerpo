@@ -50,13 +50,18 @@ func WithColumnName(name string) Option {
 	})
 }
 
-func WithInsertProtection() Option {
+// WithOmitOnInsert excludes the column from every INSERT statement. Use cases:
+// values the application never supplies on create (UpdatedAt set by a trigger
+// or hook on UPDATE, DeletedAt set by soft-delete).
+func WithOmitOnInsert() Option {
 	return columnOptionFn(func(c *options) {
 		c.notAvailActions = append(c.notAvailActions, types.SQLActionInsert)
 	})
 }
 
-func WithUpdateProtection() Option {
+// WithOmitOnUpdate excludes the column from every UPDATE SET clause. Use cases:
+// immutable values set once on create (CreatedAt, the PK after insertion).
+func WithOmitOnUpdate() Option {
 	return columnOptionFn(func(c *options) {
 		c.notAvailActions = append(c.notAvailActions, types.SQLActionUpdate)
 	})

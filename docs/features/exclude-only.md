@@ -49,4 +49,4 @@ repo.Update(ctx, u, func(m *User, h query.UpdateHelper[User]) {
 
 ## Interaction with `With*Protection`
 
-Protected columns are **always** excluded from the matching operation, regardless of helpers. For example, `WithUpdateProtection()` on `ID` means `ID` never enters the SET — even if you explicitly pass it into `Only`. That's a schema property; `Only`/`Exclude` is a query property.
+Protected columns are **always** excluded from the matching operation, regardless of helpers. For example, `OmitOnUpdate()` on `ID` means `ID` never enters the SET — even if you explicitly pass it into `Only`. That's a schema property; `Only`/`Exclude` is a query property.

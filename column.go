@@ -24,7 +24,7 @@ type ColumnBuilder[TModel any] struct {
 }
 
 // FieldConfig is what Field(ptr) returns. It embeds *column.Builder so the regular
-// column-shaping methods (WithUpdateProtection, WithAlias, WithColumnName, ...)
+// column-shaping methods (WithOmitOnUpdate, WithAlias, WithColumnName, ...)
 // are callable directly on the result of Field. To configure a virtual column
 // instead, call AsVirtual — that swaps the registered column-builder for a
 // virtual-builder and returns the latter.
@@ -69,7 +69,7 @@ func (b *ColumnBuilder[TModel]) getFmapField(fieldPtr any) (fmap.Field, error) {
 
 // Field registers a model field as a regular SQL column and returns a *FieldConfig
 // for chained configuration. Use the embedded *column.Builder methods to refine
-// the column (WithUpdateProtection, WithAlias, ...) or call AsVirtual() to turn
+// the column (WithOmitOnUpdate, WithAlias, ...) or call AsVirtual() to turn
 // it into a virtual column instead.
 func (b *ColumnBuilder[TModel]) Field(fieldPtr any) *FieldConfig[TModel] {
 	field, err := b.getFmapField(fieldPtr)
@@ -98,7 +98,7 @@ func (b *ColumnBuilder[TModel]) build() (types.ColumnsStorage, error) {
 		// Makes virtual/joined columns read only
 		if table, ok := cl.Table(); !ok || table == "" || table != b.table {
 			if cbCasted, ok := cb.(*column.Builder); ok {
-				cbCasted.WithInsertProtection().WithUpdateProtection()
+				cbCasted.OmitOnInsert().OmitOnUpdate()
 				cl, err = cbCasted.Build()
 				if err != nil {
 					return nil, fmt.Errorf("failed to build column from builder: %w", err)

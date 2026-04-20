@@ -11,7 +11,7 @@ c.Field(&m.FullName).AsVirtual().Compute("first_name || ' ' || last_name") // co
 
 ### Regular column (default)
 
-`Field(ptr)` registers a regular column right away — no extra step needed. The default SQL column name is `snake_case(field)` (e.g. `CreatedAt → created_at`); override with `WithColumnName`. All column-shaping methods (`WithUpdateProtection`, `WithAlias`, ...) are callable directly on the result of `Field`.
+`Field(ptr)` registers a regular column right away — no extra step needed. The default SQL column name is `snake_case(field)` (e.g. `CreatedAt → created_at`); override with `WithColumnName`. All column-shaping methods (`OmitOnUpdate`, `WithAlias`, ...) are callable directly on the result of `Field`.
 
 ### Virtual column
 
@@ -24,24 +24,25 @@ Call `.AsVirtual()` to switch the field into a virtual (computed) column. Virtua
 | `WithColumnName(string)` | SQL column name (defaults to snake_case of the field name) |
 | `WithTable(string)` | Table name — useful for columns coming from a JOIN |
 | `WithAlias(string)` | Alias in SELECT |
-| `WithInsertProtection()` | Exclude from INSERT (e.g. for a PK with DEFAULT) |
-| `WithUpdateProtection()` | Exclude from UPDATE SET (e.g. for `created_at`) |
+| `OmitOnInsert()` | Exclude from INSERT (e.g. `UpdatedAt` set on UPDATE by a trigger/hook) |
+| `OmitOnUpdate()` | Exclude from UPDATE SET (e.g. `CreatedAt` — set once, never changes) |
+| `ReadOnly()` | Shortcut for `OmitOnInsert().OmitOnUpdate()` — SELECT-only |
 
 ## Common patterns
 
 ### PK with a database-side DEFAULT
 
 ```go
-c.Field(&m.ID).WithInsertProtection().WithUpdateProtection()
+c.Field(&m.ID).ReadOnly()
 ```
 
-`ID` appears only in WHERE and SELECT; it is never in INSERT, so the database generates it.
+`ID` appears only in WHERE and SELECT; it is never in INSERT, so the database generates it, and never in UPDATE, so it cannot be moved.
 
 ### created_at / updated_at
 
 ```go
-c.Field(&m.CreatedAt).WithUpdateProtection()  // inserted, never updated
-c.Field(&m.UpdatedAt).WithInsertProtection()  // set by a trigger on UPDATE
+c.Field(&m.CreatedAt).OmitOnUpdate()  // inserted, never updated
+c.Field(&m.UpdatedAt).OmitOnInsert()  // set by a trigger or BeforeUpdate hook on UPDATE
 ```
 
 ### Column from a JOIN

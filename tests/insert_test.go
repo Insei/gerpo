@@ -31,11 +31,11 @@ func TestInsert(t *testing.T) {
 		DB(databasesql.NewAdapter(db)).
 		Table("users").
 		Columns(func(m *User, columns *gerpo.ColumnBuilder[User]) {
-			columns.Field(&m.ID).WithUpdateProtection()
-			columns.Field(&m.CreatedAt).WithUpdateProtection()
-			columns.Field(&m.UpdatedAt).WithInsertProtection()
+			columns.Field(&m.ID).OmitOnUpdate()
+			columns.Field(&m.CreatedAt).OmitOnUpdate()
+			columns.Field(&m.UpdatedAt).OmitOnInsert()
 			columns.Field(&m.Name)
-			columns.Field(&m.DeletedAt).WithInsertProtection()
+			columns.Field(&m.DeletedAt).OmitOnInsert()
 			columns.Field(&m.VirtualString).AsVirtual().
 				WithSQL(func(ctx context.Context) string {
 					return `convert(varchar(25), getdate(), 120)`

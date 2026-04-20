@@ -7,7 +7,7 @@
 ```go
 .Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
     c.Field(&m.ID)
-    c.Field(&m.DeletedAt).WithInsertProtection()
+    c.Field(&m.DeletedAt).OmitOnInsert()
 }).
 WithSoftDeletion(func(m *User, b *gerpo.SoftDeletionBuilder[User]) {
     b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -22,7 +22,7 @@ WithQuery(func(m *User, h query.PersistentHelper[User]) {
 
 Three required pieces:
 
-1. **Marker column** (`DeletedAt`). Typically nullable — `*time.Time`. Add `WithInsertProtection` so it can't be accidentally written at INSERT time.
+1. **Marker column** (`DeletedAt`). Typically nullable — `*time.Time`. Add `OmitOnInsert` so it can't be accidentally written at INSERT time.
 2. **`WithSoftDeletion`** — describes the value to write on "delete". The function runs on every `Delete` call and receives the context (useful for user/clock/tenant).
 3. **`WithQuery` with a filter** — so soft-deleted records don't leak into SELECTs. Without it they show up in listings.
 

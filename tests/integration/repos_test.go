@@ -19,13 +19,13 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.Name)
 			c.Field(&m.Email)
 			c.Field(&m.Age)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
-			c.Field(&m.UpdatedAt).WithInsertProtection()
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
+			c.Field(&m.UpdatedAt).OmitOnInsert()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 			c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
 				return "COALESCE(COUNT(posts.id), 0)"
 			})
@@ -58,13 +58,13 @@ func newPostRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Post] {
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.UserID)
 			c.Field(&m.Title)
 			c.Field(&m.Content)
 			c.Field(&m.Published)
 			c.Field(&m.PublishedAt)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
 		}).
 		Build()
 	if err != nil {
@@ -80,11 +80,11 @@ func newCommentRepo(t *testing.T, ab adapterBundle) gerpo.Repository[Comment] {
 		DB(ab.adapter).
 		Table("comments").
 		Columns(func(m *Comment, c *gerpo.ColumnBuilder[Comment]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.PostID)
 			c.Field(&m.UserID)
 			c.Field(&m.Body)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
 		}).
 		Build()
 	if err != nil {

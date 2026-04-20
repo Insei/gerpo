@@ -23,13 +23,13 @@ func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[U
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.Name)
 			c.Field(&m.Email)
 			c.Field(&m.Age)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
-			c.Field(&m.UpdatedAt).WithInsertProtection()
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
+			c.Field(&m.UpdatedAt).OmitOnInsert()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 			c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
@@ -55,13 +55,13 @@ func newUserRepoComputeWithArgs(t *testing.T, ab adapterBundle, titleLike string
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.Name)
 			c.Field(&m.Email)
 			c.Field(&m.Age)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
-			c.Field(&m.UpdatedAt).WithInsertProtection()
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
+			c.Field(&m.UpdatedAt).OmitOnInsert()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 			c.Field(&m.PostCount).AsVirtual().Compute(
 				"SELECT count(*) FROM posts WHERE posts.user_id = users.id AND posts.title LIKE ?",
 				titleLike,
@@ -83,13 +83,13 @@ func newUserRepoAggregate(t *testing.T, ab adapterBundle) gerpo.Repository[User]
 		DB(ab.adapter).
 		Table("users").
 		Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.Name)
 			c.Field(&m.Email)
 			c.Field(&m.Age)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
-			c.Field(&m.UpdatedAt).WithInsertProtection()
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
+			c.Field(&m.UpdatedAt).OmitOnInsert()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 			c.Field(&m.PostCount).AsVirtual().
 				Aggregate().
 				Compute("COALESCE(COUNT(posts.id), 0)")
@@ -175,13 +175,13 @@ func TestVirtual_NewAPI_AggregateAcceptsExplicitFilter(t *testing.T) {
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.ID).OmitOnUpdate()
 				c.Field(&m.Name)
 				c.Field(&m.Email)
 				c.Field(&m.Age)
-				c.Field(&m.CreatedAt).WithUpdateProtection()
-				c.Field(&m.UpdatedAt).WithInsertProtection()
-				c.Field(&m.DeletedAt).WithInsertProtection()
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
 				c.Field(&m.PostCount).AsVirtual().
 					Aggregate().
 					Compute("COALESCE(COUNT(posts.id), 0)").

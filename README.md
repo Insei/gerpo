@@ -33,11 +33,11 @@ repo, err := gerpo.NewBuilder[User]().
     DB(pgx5.NewPoolAdapter(pool)).
     Table("users").
     Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-        c.Field(&m.ID).WithUpdateProtection()
+        c.Field(&m.ID).OmitOnUpdate()
         c.Field(&m.Name)
         c.Field(&m.Email)
         c.Field(&m.Age)
-        c.Field(&m.CreatedAt).WithUpdateProtection()
+        c.Field(&m.CreatedAt).OmitOnUpdate()
     }).
     Build()
 

@@ -111,13 +111,13 @@ func TestPersistent_InnerJoin(t *testing.T) {
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.ID).OmitOnUpdate()
 				c.Field(&m.Name)
 				c.Field(&m.Email)
 				c.Field(&m.Age)
-				c.Field(&m.CreatedAt).WithUpdateProtection()
-				c.Field(&m.UpdatedAt).WithInsertProtection()
-				c.Field(&m.DeletedAt).WithInsertProtection()
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
 			}).
 			WithQuery(func(m *User, h query.PersistentHelper[User]) {
 				h.InnerJoin(func(ctx context.Context) string { return "posts ON posts.user_id = users.id" })
@@ -153,13 +153,13 @@ func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.ID).OmitOnUpdate()
 				c.Field(&m.Name)
 				c.Field(&m.Email)
 				c.Field(&m.Age)
-				c.Field(&m.CreatedAt).WithUpdateProtection()
-				c.Field(&m.UpdatedAt).WithInsertProtection()
-				c.Field(&m.DeletedAt).WithInsertProtection()
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
 				c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
 					return "COALESCE(COUNT(posts.id), 0)"
 				})
@@ -214,13 +214,13 @@ func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.ID).OmitOnUpdate()
 				c.Field(&m.Name)
 				c.Field(&m.Email)
 				c.Field(&m.Age)
-				c.Field(&m.CreatedAt).WithUpdateProtection()
-				c.Field(&m.UpdatedAt).WithInsertProtection()
-				c.Field(&m.DeletedAt).WithInsertProtection()
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
 				c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
 					return "COALESCE(COUNT(posts.id), 0)"
 				})
@@ -294,13 +294,13 @@ func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
 			DB(ab.adapter).
 			Table("users").
 			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
-				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.ID).OmitOnUpdate()
 				c.Field(&m.Name)
 				c.Field(&m.Email)
 				c.Field(&m.Age)
-				c.Field(&m.CreatedAt).WithUpdateProtection()
-				c.Field(&m.UpdatedAt).WithInsertProtection()
-				c.Field(&m.DeletedAt).WithInsertProtection()
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
 			}).
 			WithQuery(func(m *User, h query.PersistentHelper[User]) {
 				h.InnerJoinOn(

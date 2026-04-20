@@ -25,13 +25,13 @@ func newPostRepoWithErrorTransformer(t *testing.T, ab adapterBundle) gerpo.Repos
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
-			c.Field(&m.ID).WithUpdateProtection()
+			c.Field(&m.ID).OmitOnUpdate()
 			c.Field(&m.UserID)
 			c.Field(&m.Title)
 			c.Field(&m.Content)
 			c.Field(&m.Published)
 			c.Field(&m.PublishedAt)
-			c.Field(&m.CreatedAt).WithUpdateProtection()
+			c.Field(&m.CreatedAt).OmitOnUpdate()
 		}).
 		WithErrorTransformer(func(err error) error {
 			if errors.Is(err, gerpo.ErrNotFound) {

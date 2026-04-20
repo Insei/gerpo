@@ -41,7 +41,7 @@ func TestWithSoftDeletion_TypeMismatch_FailsAtBuild(t *testing.T) {
 	_, err := newSoftRepoBuilder().
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			// time.Time is NOT assignable to *time.Time — must be flagged.
@@ -64,7 +64,7 @@ func TestWithSoftDeletion_NilForPointer_OK(t *testing.T) {
 	_, err := newSoftRepoBuilder().
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -84,7 +84,7 @@ func TestWithSoftDeletion_PanicInProbe_BecomesError(t *testing.T) {
 	_, err := newSoftRepoBuilder().
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -106,7 +106,7 @@ func TestWithSoftDeletion_HappyPath(t *testing.T) {
 	_, err := newSoftRepoBuilder().
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -151,7 +151,7 @@ func TestWithSoftDeletion_Delete_ExecutesUpdate(t *testing.T) {
 		Table("soft_users").
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -193,7 +193,7 @@ func TestWithSoftDeletion_Delete_NoRows_ReturnsNotFound(t *testing.T) {
 		Table("soft_users").
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithInsertProtection()
+			c.Field(&m.DeletedAt).OmitOnInsert()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {
@@ -214,12 +214,12 @@ func TestWithSoftDeletion_Delete_NoRows_ReturnsNotFound(t *testing.T) {
 }
 
 // TestWithSoftDeletion_DisallowedField_FailsAtBuild keeps the prior contract
-// alive: marking a column with WithUpdateProtection makes it ineligible.
+// alive: marking a column with WithOmitOnUpdate makes it ineligible.
 func TestWithSoftDeletion_DisallowedField_FailsAtBuild(t *testing.T) {
 	_, err := newSoftRepoBuilder().
 		Columns(func(m *softModel, c *ColumnBuilder[softModel]) {
 			c.Field(&m.ID)
-			c.Field(&m.DeletedAt).WithUpdateProtection()
+			c.Field(&m.DeletedAt).OmitOnUpdate()
 		}).
 		WithSoftDeletion(func(m *softModel, b *SoftDeletionBuilder[softModel]) {
 			b.Field(&m.DeletedAt).SetValueFn(func(ctx context.Context) any {

@@ -31,13 +31,13 @@ func newPostRepoWithHooks(t *testing.T, ab adapterBundle, c *hookCounters) gerpo
 		DB(ab.adapter).
 		Table("posts").
 		Columns(func(m *Post, cb *gerpo.ColumnBuilder[Post]) {
-			cb.Field(&m.ID).WithUpdateProtection()
+			cb.Field(&m.ID).OmitOnUpdate()
 			cb.Field(&m.UserID)
 			cb.Field(&m.Title)
 			cb.Field(&m.Content)
 			cb.Field(&m.Published)
 			cb.Field(&m.PublishedAt)
-			cb.Field(&m.CreatedAt).WithUpdateProtection()
+			cb.Field(&m.CreatedAt).OmitOnUpdate()
 		}).
 		WithBeforeInsert(func(ctx context.Context, m *Post) {
 			c.beforeInsert++
@@ -153,13 +153,13 @@ func TestHooks_Stacking(t *testing.T) {
 			DB(ab.adapter).
 			Table("posts").
 			Columns(func(m *Post, c *gerpo.ColumnBuilder[Post]) {
-				c.Field(&m.ID).WithUpdateProtection()
+				c.Field(&m.ID).OmitOnUpdate()
 				c.Field(&m.UserID)
 				c.Field(&m.Title)
 				c.Field(&m.Content)
 				c.Field(&m.Published)
 				c.Field(&m.PublishedAt)
-				c.Field(&m.CreatedAt).WithUpdateProtection()
+				c.Field(&m.CreatedAt).OmitOnUpdate()
 			}).
 			WithBeforeInsert(func(ctx context.Context, m *Post) { first++ }).
 			WithBeforeInsert(func(ctx context.Context, m *Post) { second++ }).

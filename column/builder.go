@@ -38,15 +38,28 @@ func (b *Builder) WithColumnName(column string) *Builder {
 	return b
 }
 
-// WithInsertProtection appends an option to prevent the column from being included in SQL INSERT actions.
-func (b *Builder) WithInsertProtection() *Builder {
-	b.opts = append(b.opts, WithInsertProtection())
+// OmitOnInsert excludes the column from every INSERT statement. Pair with a
+// hook or a DB-side trigger if the value has to be set elsewhere. Typical use:
+// UpdatedAt / DeletedAt columns managed by triggers or BeforeUpdate hooks.
+func (b *Builder) OmitOnInsert() *Builder {
+	b.opts = append(b.opts, WithOmitOnInsert())
 	return b
 }
 
-// WithUpdateProtection appends an option to prevent the column from being included in SQL UPDATE actions.
-func (b *Builder) WithUpdateProtection() *Builder {
-	b.opts = append(b.opts, WithUpdateProtection())
+// OmitOnUpdate excludes the column from every UPDATE SET clause. Typical use:
+// CreatedAt, or a primary key that must never be moved after insert.
+func (b *Builder) OmitOnUpdate() *Builder {
+	b.opts = append(b.opts, WithOmitOnUpdate())
+	return b
+}
+
+// ReadOnly makes the column invisible to both INSERT and UPDATE — SELECT-only.
+// Equivalent to chaining OmitOnInsert and OmitOnUpdate. Use it for columns
+// whose value is always produced by the database (PK with DEFAULT
+// gen_random_uuid(), identity columns, virtual-style expressions declared
+// outside the virtual column API).
+func (b *Builder) ReadOnly() *Builder {
+	b.opts = append(b.opts, WithOmitOnInsert(), WithOmitOnUpdate())
 	return b
 }
 
