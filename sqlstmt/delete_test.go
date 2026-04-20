@@ -86,9 +86,7 @@ func TestDelete_SQL(t *testing.T) {
 		{
 			name: "Generate SQL with JOIN",
 			setup: func(deleteStmt *Delete) {
-				deleteStmt.join.JOIN(func(ctx context.Context) string {
-					return "INNER JOIN orders ON users.id = orders.user_id"
-				})
+				deleteStmt.join.JOINOn("INNER JOIN orders ON users.id = orders.user_id")
 			},
 			expectedSQL:    "DELETE FROM users INNER JOIN orders ON users.id = orders.user_id",
 			expectedValues: []any{},
@@ -96,9 +94,7 @@ func TestDelete_SQL(t *testing.T) {
 		{
 			name: "Generate SQL with WHERE and JOIN",
 			setup: func(deleteStmt *Delete) {
-				deleteStmt.join.JOIN(func(ctx context.Context) string {
-					return "INNER JOIN orders ON users.id = orders.user_id"
-				})
+				deleteStmt.join.JOINOn("INNER JOIN orders ON users.id = orders.user_id")
 				deleteStmt.where.AppendSQLWithValues("orders.amount > ?", true, 100)
 			},
 			expectedSQL:    "DELETE FROM users INNER JOIN orders ON users.id = orders.user_id WHERE orders.amount > ?",

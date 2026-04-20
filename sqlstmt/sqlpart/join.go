@@ -8,12 +8,6 @@ import (
 // Join is the interface gerpo's query layer talks to when adding JOIN clauses
 // to a SELECT/UPDATE/DELETE statement.
 type Join interface {
-	// JOIN registers a callback whose returned text is inlined verbatim into
-	// the SQL. The callback receives the request context. Values are NOT
-	// parameterised — anything interpolated through the body lands in the SQL
-	// as text. Prefer JOINOn when bound parameters are needed.
-	JOIN(joinFn func(ctx context.Context) string)
-
 	// JOINOn registers a JOIN whose text is fixed and whose parameters are
 	// bound through the driver's placeholder mechanism, identical to WHERE
 	// arguments. The provided sql must already start with the JOIN keyword
@@ -22,10 +16,8 @@ type Join interface {
 }
 
 type joinPart struct {
-	fn    func(ctx context.Context) string
-	sql   string
-	args  []any
-	bound bool
+	sql  string
+	args []any
 }
 
 type JoinBuilder struct {
@@ -49,12 +41,8 @@ func (b *JoinBuilder) Reset(ctx context.Context) {
 	b.values = b.values[:0]
 }
 
-func (b *JoinBuilder) JOIN(joinFn func(ctx context.Context) string) {
-	b.joins = append(b.joins, joinPart{fn: joinFn})
-}
-
 func (b *JoinBuilder) JOINOn(sql string, args ...any) {
-	b.joins = append(b.joins, joinPart{sql: sql, args: args, bound: true})
+	b.joins = append(b.joins, joinPart{sql: sql, args: args})
 	if len(args) > 0 {
 		b.values = append(b.values, args...)
 	}
@@ -71,17 +59,11 @@ func (b *JoinBuilder) SQL() string {
 	var sb strings.Builder
 	for i := range b.joins {
 		j := &b.joins[i]
-		var body string
-		if j.bound {
-			body = j.sql
-		} else if j.fn != nil {
-			body = j.fn(b.ctx)
-		}
-		if body == "" {
+		if j.sql == "" {
 			continue
 		}
 		sb.WriteByte(' ')
-		sb.WriteString(body)
+		sb.WriteString(j.sql)
 	}
 	return sb.String()
 }

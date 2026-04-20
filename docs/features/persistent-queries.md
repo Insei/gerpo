@@ -7,7 +7,7 @@
 | Method | Effect |
 |---|---|
 | `Where()` | Filters inserted into every query |
-| `LeftJoin(fn)` / `InnerJoin(fn)` | JOINs — body is returned by a `func(context.Context) string` |
+| `LeftJoinOn(table, on, args...)` / `InnerJoinOn(...)` | Parameter-bound JOINs |
 | `GroupBy(fields...)` | A single GROUP BY applied everywhere (required when a JOIN + aggregate shows up) |
 | `Exclude(fields...)` | Hide a column from every SELECT |
 
@@ -29,14 +29,10 @@ A real example from the integration tests — `User` has a virtual `PostCount` f
 .Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
     c.Field(&m.ID)
     c.Field(&m.Name)
-    c.Field(&m.PostCount).AsVirtual().WithSQL(func(ctx context.Context) string {
-        return "COALESCE(COUNT(posts.id), 0)"
-    })
+    c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 }).
 WithQuery(func(m *User, h query.PersistentHelper[User]) {
-    h.LeftJoin(func(ctx context.Context) string {
-        return "posts ON posts.user_id = users.id"
-    })
+    h.LeftJoinOn("posts", "posts.user_id = users.id")
     h.GroupBy(&m.ID, &m.Name)
     h.Where().Field(&m.DeletedAt).EQ(nil)
 })
@@ -45,13 +41,11 @@ WithQuery(func(m *User, h query.PersistentHelper[User]) {
 Now `PostCount` is automatically included in the SELECT of every request against `users`.
 
 !!! note "InnerJoin vs LeftJoin"
-    `InnerJoin` drops users who have no posts — handy when you only care about active ones. `LeftJoin` keeps them, the aggregate returns `0` for loners.
+    `InnerJoinOn` drops users who have no posts — handy when you only care about active ones. `LeftJoinOn` keeps them, the aggregate returns `0` for loners.
 
-## Bound JOIN parameters — `LeftJoinOn` / `InnerJoinOn`
+## Bound JOIN parameters
 
-When the ON-clause needs runtime values (tenant id, locale, …), use the
-parameter-bound forms. They take the joined table reference, the ON clause
-with `?` placeholders, and bound arguments — exactly like a WHERE.
+When the ON-clause needs runtime values (tenant id, locale, …), pass them as bound arguments alongside the `?` placeholders — exactly like a WHERE:
 
 ```go
 h.LeftJoinOn(
@@ -61,31 +55,9 @@ h.LeftJoinOn(
 )
 ```
 
-The arguments flow through the driver's parameter binding, so values cannot
-turn into SQL — even if `tenantID` originated in user input.
+The arguments flow through the driver's parameter binding, so values cannot turn into SQL — even if `tenantID` originated in user input.
 
-`InnerJoinOn` works the same way for inner joins.
-
-## Legacy callback JOIN (deprecated)
-
-The original `LeftJoin(fn)` / `InnerJoin(fn)` helpers take a callback that
-returns the JOIN body. The callback receives a `context.Context`, but the
-returned string is inlined verbatim — values are NOT parameterised:
-
-```go
-h.LeftJoin(func(ctx context.Context) string {
-    tenantID := ctxpkg.TenantID(ctx)
-    return fmt.Sprintf(
-        "posts ON posts.user_id = users.id AND posts.tenant_id = '%s'",
-        tenantID,
-    )
-})
-```
-
-!!! danger "SQL injection"
-    Anything you splice into the returned string lands in the SQL as text.
-    The callback form remains for backwards compatibility but is **deprecated**;
-    new code should use `LeftJoinOn` / `InnerJoinOn`.
+`LeftJoinOn` / `InnerJoinOn` are the **only** supported JOIN forms. There is no raw-string-callback variant — ctx-dependent SQL was an SQL-injection hazard and has been removed. If you need per-request behaviour, parameterise it through the args or add a matching WHERE condition.
 
 ## Combining with per-request WHERE
 

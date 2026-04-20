@@ -67,9 +67,7 @@ func main() {
 		WithQuery(func(m *test, h query.PersistentHelper[test]) {
 			h.Where().Field(&m.ID).LT(7)
 			h.Exclude(m.UpdatedAt, m.ID)
-			h.LeftJoin(func(ctx context.Context) string {
-				return ``
-			})
+			// h.LeftJoinOn("other_table", "other_table.test_id = tests.id")
 		})
 	repo, err := b.Build()
 

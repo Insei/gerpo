@@ -118,9 +118,7 @@ func TestGetFirst_SQL(t *testing.T) {
 					&mockColumn{name: "categories.name", allowedAction: true},
 				})
 				getFirst.columns = mockColumns
-				getFirst.join.JOIN(func(ctx context.Context) string {
-					return "INNER JOIN categories ON products.category_id = categories.id"
-				})
+				getFirst.join.JOINOn("INNER JOIN categories ON products.category_id = categories.id")
 			},
 			expectedSQL:    "SELECT products.id, categories.name FROM products INNER JOIN categories ON products.category_id = categories.id LIMIT 1",
 			expectedValues: []any{},
@@ -133,9 +131,7 @@ func TestGetFirst_SQL(t *testing.T) {
 					&mockColumn{name: "categories.name", allowedAction: true},
 				})
 				getFirst.columns = mockColumns
-				getFirst.join.JOIN(func(ctx context.Context) string {
-					return "LEFT JOIN categories ON products.category_id = categories.id"
-				})
+				getFirst.join.JOINOn("LEFT JOIN categories ON products.category_id = categories.id")
 				getFirst.where.AppendSQLWithValues("categories.active = ?", true, true)
 			},
 			expectedSQL:    "SELECT products.id, categories.name FROM products LEFT JOIN categories ON products.category_id = categories.id WHERE categories.active = ? LIMIT 1",

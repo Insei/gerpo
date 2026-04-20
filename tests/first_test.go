@@ -53,9 +53,7 @@ func TestGetFirst(t *testing.T) {
 			})
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
-			h.LeftJoin(func(ctx context.Context) string {
-				return `logins ON logins.user_id = users.id`
-			})
+			h.LeftJoinOn("logins", "logins.user_id = users.id")
 			h.Where().Field(&m.DeletedAt).EQ(nil) // Check soft deletion where appending
 		}).
 		Build()

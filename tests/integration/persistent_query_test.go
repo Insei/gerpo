@@ -120,7 +120,7 @@ func TestPersistent_InnerJoin(t *testing.T) {
 				c.Field(&m.DeletedAt).OmitOnInsert()
 			}).
 			WithQuery(func(m *User, h query.PersistentHelper[User]) {
-				h.InnerJoin(func(ctx context.Context) string { return "posts ON posts.user_id = users.id" })
+				h.InnerJoinOn("posts", "posts.user_id = users.id")
 				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 				h.Where().Field(&m.DeletedAt).EQ(nil)
 			}).

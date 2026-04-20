@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/insei/gerpo"
@@ -33,9 +32,7 @@ func newUserRepoComputeDropIn(t *testing.T, ab adapterBundle) gerpo.Repository[U
 			c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
-			h.LeftJoin(func(ctx context.Context) string {
-				return "posts ON posts.user_id = users.id"
-			})
+			h.LeftJoinOn("posts", "posts.user_id = users.id")
 			h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 			h.Where().Field(&m.DeletedAt).EQ(nil)
 		}).
@@ -95,9 +92,7 @@ func newUserRepoAggregate(t *testing.T, ab adapterBundle) gerpo.Repository[User]
 				Compute("COALESCE(COUNT(posts.id), 0)")
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
-			h.LeftJoin(func(ctx context.Context) string {
-				return "posts ON posts.user_id = users.id"
-			})
+			h.LeftJoinOn("posts", "posts.user_id = users.id")
 			h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 		}).
 		Build()
@@ -188,9 +183,7 @@ func TestVirtual_NewAPI_AggregateAcceptsExplicitFilter(t *testing.T) {
 					Filter(types.OperationEQ, virtual.Bound{SQL: "1 = ?"})
 			}).
 			WithQuery(func(m *User, h query.PersistentHelper[User]) {
-				h.LeftJoin(func(ctx context.Context) string {
-					return "posts ON posts.user_id = users.id"
-				})
+				h.LeftJoinOn("posts", "posts.user_id = users.id")
 				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 			}).
 			Build()

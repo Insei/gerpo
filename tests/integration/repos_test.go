@@ -31,9 +31,7 @@ func newUserRepo(t *testing.T, ab adapterBundle) gerpo.Repository[User] {
 			})
 		}).
 		WithQuery(func(m *User, h query.PersistentHelper[User]) {
-			h.LeftJoin(func(ctx context.Context) string {
-				return "posts ON posts.user_id = users.id"
-			})
+			h.LeftJoinOn("posts", "posts.user_id = users.id")
 			h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 			h.Where().Field(&m.DeletedAt).EQ(nil)
 		}).

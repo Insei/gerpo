@@ -1,70 +1,53 @@
 package linq
 
 import (
-	"context"
 	"testing"
 
 	"github.com/insei/gerpo/sqlstmt/sqlpart"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockJoin struct {
 	sqlpart.Join
-	join string
+	calls []string
+	args  [][]any
 }
 
-func (m *mockJoin) JOIN(joinFn func(ctx context.Context) string) {
-	m.join = joinFn(context.Background())
+func (m *mockJoin) JOINOn(sql string, args ...any) {
+	m.calls = append(m.calls, sql)
+	m.args = append(m.args, args)
 }
 
 type mockJoinApplier struct {
 	join *mockJoin
 }
 
-func (a *mockJoinApplier) Join() sqlpart.Join {
-	return a.join
+func (a *mockJoinApplier) Join() sqlpart.Join { return a.join }
+
+func TestJoinBuilder_LeftJoinOn(t *testing.T) {
+	builder := NewJoinBuilder()
+	builder.LeftJoinOn("posts", "posts.user_id = users.id AND posts.tenant = ?", "acme")
+
+	applier := &mockJoinApplier{join: &mockJoin{}}
+	require.NoError(t, builder.Apply(applier))
+	assert.Equal(t, []string{"LEFT JOIN posts ON posts.user_id = users.id AND posts.tenant = ?"}, applier.join.calls)
+	assert.Equal(t, [][]any{{"acme"}}, applier.join.args)
 }
 
-func TestJoinBuilder_LeftJoin(t *testing.T) {
-	testCases := []struct {
-		name         string
-		leftJoinFn   func(ctx context.Context) string
-		expectedJoin string
-	}{
-		{
-			name: "Empty_LeftJoin",
-			leftJoinFn: func(ctx context.Context) string {
-				return ""
-			},
-			expectedJoin: "",
-		},
-		{
-			name: "Simple_LeftJoin",
-			leftJoinFn: func(ctx context.Context) string {
-				return "users ON users.id = posts.user_id"
-			},
-			expectedJoin: "LEFT JOIN users ON users.id = posts.user_id",
-		},
-		{
-			name: "LeftJoin_with_spaces",
-			leftJoinFn: func(ctx context.Context) string {
-				return "   users ON users.id = posts.user_id   "
-			},
-			expectedJoin: "LEFT JOIN users ON users.id = posts.user_id",
-		},
-	}
+func TestJoinBuilder_InnerJoinOn(t *testing.T) {
+	builder := NewJoinBuilder()
+	builder.InnerJoinOn("posts", "posts.user_id = users.id")
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			builder := NewJoinBuilder()
-			builder.LeftJoin(tc.leftJoinFn)
+	applier := &mockJoinApplier{join: &mockJoin{}}
+	require.NoError(t, builder.Apply(applier))
+	assert.Equal(t, []string{"INNER JOIN posts ON posts.user_id = users.id"}, applier.join.calls)
+	assert.Equal(t, [][]any{nil}, applier.join.args)
+}
 
-			applier := &mockJoinApplier{
-				join: &mockJoin{},
-			}
-			err := builder.Apply(applier)
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expectedJoin, applier.join.join)
-		})
-	}
+func TestJoinBuilder_Empty_Noop(t *testing.T) {
+	builder := NewJoinBuilder()
+	applier := &mockJoinApplier{join: &mockJoin{}}
+	require.NoError(t, builder.Apply(applier))
+	assert.Empty(t, applier.join.calls)
 }

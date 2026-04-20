@@ -47,9 +47,7 @@ Virtual columns often aggregate related tables. You need a pair: a JOIN in the p
 c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
 
 .WithQuery(func(m *User, h query.PersistentHelper[User]) {
-    h.LeftJoin(func(ctx context.Context) string {
-        return "posts ON posts.user_id = users.id"
-    })
+    h.LeftJoinOn("posts", "posts.user_id = users.id")
     h.GroupBy(&m.ID, &m.Name /*, every non-aggregate */)
 })
 ```
