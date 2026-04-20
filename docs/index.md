@@ -84,6 +84,10 @@ Full runnable samples live in [`examples/`](https://github.com/Insei/gerpo/tree/
 
     How gerpo compares to GORM, ent, bun, sqlc and sqlx — feature matrix, strengths, weaknesses, and when each tool is the better pick.
 
+-   :material-rocket-launch-outline:{ .lg } **[Production-ready setup →](production-setup.md)**
+
+    Copy-paste starting point: pgx v5 + goose migrations + OpenTelemetry tracer + request-scope cache + domain error mapping + transactions — all in one place.
+
 -   :material-book-open-variant:{ .lg } **[Features →](features/index.md)**
 
     A walkthrough of every repository capability: CRUD, filters, ordering, hooks, soft delete, virtual columns, cache, transactions, adapters.

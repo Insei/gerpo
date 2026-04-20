@@ -70,6 +70,7 @@ extra:
 nav:
   - Get started: index.md
   - Why gerpo?: why-gerpo.md
+  - Production-ready setup: production-setup.md
   - Features:
       - features/index.md
       - Repository builder: features/repository.md
