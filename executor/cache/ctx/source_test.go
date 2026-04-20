@@ -167,3 +167,81 @@ func TestClean(t *testing.T) {
 		})
 	}
 }
+
+// TestClean_CrossRepoInvalidation — the public contract: a write through any
+// Cache instance invalidates every other Cache that shares the same context.
+// This is the fix for the cross-repo staleness gap: usersRepo.Update() used to
+// leave postsRepo's cached JOIN result in place, now it wipes everything.
+func TestClean_CrossRepoInvalidation(t *testing.T) {
+	users := &Cache{log: logger.NoopLogger, key: "users"}
+	posts := &Cache{log: logger.NoopLogger, key: "posts"}
+	ctx := WrapContext(context.Background())
+
+	users.Set(ctx, "user-row", "SELECT * FROM users WHERE id=?", 1)
+	posts.Set(ctx,
+		[]any{"post-1", "post-2"},
+		"SELECT posts.* FROM posts JOIN users ON ...", 1,
+	)
+
+	// Sanity: both repositories see their cached value.
+	got, err := users.Get(ctx, "SELECT * FROM users WHERE id=?", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, "user-row", got)
+
+	got, err = posts.Get(ctx, "SELECT posts.* FROM posts JOIN users ON ...", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, []any{"post-1", "post-2"}, got)
+
+	// A write through the users repo must purge the posts cache too: the JOIN
+	// made posts depend on users' state, and gerpo cannot statically know which
+	// caches are safe to keep.
+	users.Clean(ctx)
+
+	_, err = users.Get(ctx, "SELECT * FROM users WHERE id=?", 1)
+	assert.ErrorIs(t, err, types.ErrNotFound, "writing repo must see its own cache wiped")
+
+	_, err = posts.Get(ctx, "SELECT posts.* FROM posts JOIN users ON ...", 1)
+	assert.ErrorIs(t, err, types.ErrNotFound,
+		"other repositories on the same context must see their cache wiped too")
+}
+
+// TestClean_DifferentContextsIsolated — invalidation stays inside the
+// originating context. Two independent requests never bleed into each other.
+func TestClean_DifferentContextsIsolated(t *testing.T) {
+	cache := &Cache{log: logger.NoopLogger, key: "users"}
+	ctxA := WrapContext(context.Background())
+	ctxB := WrapContext(context.Background())
+
+	cache.Set(ctxA, "A", "SELECT ?", 1)
+	cache.Set(ctxB, "B", "SELECT ?", 1)
+
+	cache.Clean(ctxA)
+
+	_, err := cache.Get(ctxA, "SELECT ?", 1)
+	assert.ErrorIs(t, err, types.ErrNotFound)
+
+	got, err := cache.Get(ctxB, "SELECT ?", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, "B", got, "ctxB must not be affected by a clean on ctxA")
+}
+
+// TestGetSet_NamespaceIsolation — two repositories whose SQL keys collide must
+// still return their own cached values. Per-repo namespacing in Set/Get keeps
+// this property even after Clean dropped its per-repo granularity.
+func TestGetSet_NamespaceIsolation(t *testing.T) {
+	users := &Cache{log: logger.NoopLogger, key: "users"}
+	posts := &Cache{log: logger.NoopLogger, key: "posts"}
+	ctx := WrapContext(context.Background())
+
+	// Same statement string, same args — but stored under different repo keys.
+	users.Set(ctx, "users-row", "SELECT count(*)", 0)
+	posts.Set(ctx, "posts-row", "SELECT count(*)", 0)
+
+	got, err := users.Get(ctx, "SELECT count(*)", 0)
+	assert.NoError(t, err)
+	assert.Equal(t, "users-row", got, "users cache must see its own value")
+
+	got, err = posts.Get(ctx, "SELECT count(*)", 0)
+	assert.NoError(t, err)
+	assert.Equal(t, "posts-row", got, "posts cache must see its own value")
+}

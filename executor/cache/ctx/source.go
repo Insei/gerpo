@@ -108,10 +108,14 @@ func writeArg(sb *strings.Builder, a any) {
 	}
 }
 
+// Clean invalidates every cached read inside the current context, not just the
+// entries belonging to this Cache instance. Any write through any repository
+// bound to the same context wipes the whole per-context storage — the only safe
+// default when repositories can share results through virtual columns or JOINs.
 func (s *Cache) Clean(ctx context.Context) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return
 	}
-	storage.Clean(s.key)
+	storage.Clean()
 }

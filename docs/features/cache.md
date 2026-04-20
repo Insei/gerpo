@@ -1,6 +1,8 @@
 # Cache
 
-gerpo can attach a `cache.Storage` to the executor. The built-in implementation is `Cache`: a cache scoped to a single `context.Context`. It helps when one business operation fetches the same records multiple times.
+gerpo ships a **request-scope** deduplication cache. It helps when one business operation fetches the same records multiple times — same SQL + same args → same result served from memory, no driver round-trip.
+
+**Scope boundary, intentional**: the cache lives inside `context.Context` and dies with it. There is no TTL, no cross-request sharing, and no distributed backend bundled with gerpo. For application-wide or distributed caching — put that layer above gerpo (HTTP middleware, gRPC interceptor, a service-layer wrapper).
 
 ## Wiring
 
@@ -37,32 +39,32 @@ Without `WrapContext(ctx)` the cache just does nothing — a warning goes to the
 | Operation | Effect |
 |---|---|
 | `GetFirst`, `GetList`, `Count` | Read and fill the cache by `sql + args` |
-| `Insert`, `Update`, `Delete` | **Clear** the repo's cache (`Clean`) |
-| External change to the DB | Not observed by the cache — a stale value is served until the next `Insert/Update/Delete` through the repo or until the context ends |
+| `Insert`, `Update`, `Delete` | **Wipe the entire per-context cache** (every repository sharing the context) |
+| External change to the DB | Not observed by the cache — a stale value is served until some repository writes through the context or until the context ends |
+
+### Cross-repo invalidation
+
+A write through any repository wipes **every** cache entry in the current context, not just the writing repo's bucket. That is the only safe default when repositories can share results through virtual columns or JOINs — gerpo cannot statically know whether `postsRepo`'s cached result depends on a users row that `usersRepo` just mutated.
+
+If a heavier-grained invalidation is fine for your workload — keep the cache hot across repositories, invalidate manually when you have to — lift the cache to the application layer and drive it yourself.
 
 ## When it helps
 
-- **N+1 protection:** one business call hits `repo.GetFirst(ctx, id)` from several places — the cache returns the first result.
+- **N+1 protection:** one handler hits `repo.GetFirst(ctx, id)` from several places — the cache returns the first result.
 - **Proxying middleware:** wrap an incoming HTTP request in `WrapContext`, and the whole handler/service tree shares the cache.
 
 ## When to skip
 
-- You need up-to-date reads more than you need fewer round-trips (e.g. view-after-write).
-- A long-running business operation — the cache has no TTL.
-- The same gerpo repository is read across different contexts — distinct contexts have independent caches by design.
+- View-after-write patterns where every read must see the freshest state.
+- Long-running tasks that span many logical operations — request scope is the wrong granularity.
+- Reads across different contexts (cron + HTTP, for instance) — distinct contexts have independent caches by design.
 
-## Custom cache backend
+## Distributed caching — out of scope
 
-`executor.WithCacheStorage` accepts any `cache.Storage` — the interface is defined in `executor/cache/types`. You can implement Redis, memcached, or a `sync.Map` with your own policy.
+`executor.WithCacheStorage` accepts any `cache.Storage`, so a Redis-backed implementation would compile. It is **not a path gerpo supports** — the `Storage` interface has no TTL, no eviction policy, and invalidation assumes a single process. Fitting Redis into that shape invites silent correctness bugs (OOM without TTL, stale reads across pods).
 
-```go
-type Storage interface {
-    Get(ctx context.Context, stmt string, args ...any) (any, error)
-    Set(ctx context.Context, value any, stmt string, args ...any)
-    Clean(ctx context.Context)
-}
-```
+Recommended pattern instead: cache at the **application layer** where you know the business transaction boundaries, and let gerpo talk to the driver directly. The request-scope cache still complements that layer — it deduplicates reads within one handler.
 
 ## Key performance
 
-Starting with the version that introduced the integration tests, cache keys are built with `strings.Builder` plus a type switch over common parameter types — no `fmt.Sprintf`. That saves 3–5 allocations per cache operation.
+Cache keys are built with `strings.Builder` plus a type switch over common parameter types (`string`, integers, `uuid.UUID`, `[]byte`, `bool`, `nil`) — no `fmt.Sprintf`. That saves 3–5 allocations per cache operation.

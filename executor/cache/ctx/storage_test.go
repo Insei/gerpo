@@ -128,52 +128,68 @@ func TestStorageSet(t *testing.T) {
 	}
 }
 
-func TestCacheStorageClean(t *testing.T) {
-	tests := []struct {
-		name     string
-		modelKey string
-		initial  map[string]map[string]any
-		expected map[string]map[string]any
-	}{
-		{
-			name:     "Clean existing model type cache",
-			modelKey: "modelKey",
-			initial: map[string]map[string]any{
-				"modelKey": {
-					"key1": "value1",
-					"key2": "value2",
-				},
-			},
-			expected: map[string]map[string]any{
-				"modelKey": {},
-			},
-		},
-		{
-			name:     "Clean non-existent model type cache",
-			modelKey: "newButCleaned",
-			initial: map[string]map[string]any{
-				"modelKey": {
-					"key1": "value1",
-				},
-			},
-			expected: map[string]map[string]any{
-				"modelKey":      {"key1": "value1"},
-				"newButCleaned": {},
-			},
-		},
+// TestCacheStorage_Concurrent — covers the mutex contract on the three entry
+// points. With -race the test fails immediately if any code path touches the
+// map outside the lock.
+func TestCacheStorage_Concurrent(t *testing.T) {
+	cs := &cacheStorage{
+		mtx: &sync.Mutex{},
+		c:   make(map[string]map[string]any),
 	}
 
-	mtx := &sync.Mutex{}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cs := &cacheStorage{
-				mtx: mtx,
-				c:   tt.initial,
+	const writers, readers, cleaners, iterations = 8, 8, 2, 500
+	var wg sync.WaitGroup
+
+	for w := 0; w < writers; w++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			model := "repo-" + string(rune('A'+id%writers))
+			for i := 0; i < iterations; i++ {
+				cs.Set(model, "sql-"+string(rune(i%26+'a')), i)
 			}
-			cs.Clean(tt.modelKey)
-			assert.Equal(t, tt.expected, cs.c)
-		})
+		}(w)
 	}
+
+	for r := 0; r < readers; r++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			model := "repo-" + string(rune('A'+id%writers))
+			for i := 0; i < iterations; i++ {
+				_, _ = cs.Get(model, "sql-"+string(rune(i%26+'a')))
+			}
+		}(r)
+	}
+
+	for c := 0; c < cleaners; c++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < iterations/10; i++ {
+				cs.Clean()
+			}
+		}()
+	}
+
+	wg.Wait()
+	// No assertions on the final state — the mix of writers/cleaners leaves it
+	// non-deterministic. The point is: the race detector stays quiet.
+}
+
+func TestCacheStorageClean_WipesAllModels(t *testing.T) {
+	cs := &cacheStorage{
+		mtx: &sync.Mutex{},
+		c: map[string]map[string]any{
+			"users":    {"select users": "row-1"},
+			"posts":    {"select posts": []any{"row-a"}},
+			"comments": {"count": uint64(7)},
+		},
+	}
+	cs.Clean()
+	assert.Empty(t, cs.c,
+		"any write must invalidate every repository's cache in the current context "+
+			"— cross-repo dependencies (JOINs, virtual columns) make a per-repo clean unsafe")
 }
 
 func TestNewCtxCache(t *testing.T) {

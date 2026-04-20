@@ -50,10 +50,18 @@ func (s *cacheStorage) Set(modelKey string, key string, value any) {
 	modelCache[key] = value
 }
 
-func (s *cacheStorage) Clean(modelKey string) {
+// Clean wipes every model's cache section inside this context. Per-repo
+// isolation is only used for Get/Set (avoiding accidental key collisions
+// between repositories that happen to encode the same SQL); invalidation
+// fans out to the whole request context because cross-repo dependencies —
+// virtual columns, JOINs — make per-repo clean unsafe. See docs/features/cache.md
+// for the rationale.
+func (s *cacheStorage) Clean() {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	s.c[modelKey] = make(map[string]any)
+	for k := range s.c {
+		delete(s.c, k)
+	}
 }
 
 func WrapContext(ctx context.Context) context.Context {

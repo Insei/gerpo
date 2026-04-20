@@ -1,6 +1,8 @@
 # Caching internals
 
-The cache is a plug-in. `executor/cache/types.Storage` is the interface; `executor/cache/ctx` is the bundled context-scoped implementation.
+The cache is a plug-in. `executor/cache/types.Storage` is the interface; `executor/cache/ctx` is the bundled request-scope implementation.
+
+**Design stance**: gerpo ships a request-scope cache and only a request-scope cache. Distributed / long-lived caching is deliberately out of scope (see the user-facing [Cache](../features/cache.md) page for the rationale). This document describes the internals of the bundled implementation and the contract any `Storage` has to uphold.
 
 ## The Storage interface
 
@@ -14,15 +16,15 @@ type Storage interface {
 
 - **Get** returns the cached value or `cache.ErrNotFound`.
 - **Set** records a value.
-- **Clean** wipes the cache (the executor calls it after INSERT/UPDATE/DELETE so stale reads don't linger).
+- **Clean** wipes every cached entry reachable through the given context — any write through any repository calls it, so stale reads cannot linger between operations.
 
-The executor is the only caller. `executor/cache.go` wraps `Storage` in three helpers (`get[T]`, `set`, `clean`) that accept a nil storage and no-op — so switching the cache off is as simple as not passing `executor.WithCacheStorage`.
+The executor is the only caller. `executor/cache.go` wraps `Storage` in three helpers (`get[T]`, `set`, `clean`) that accept a nil storage and no-op — switching the cache off is as simple as not passing `executor.WithCacheStorage`.
 
-## Cache
+## ctx.Cache (bundled implementation)
 
 Source: `executor/cache/ctx/source.go`, `executor/cache/ctx/storage.go`.
 
-The idea: the cache payload lives **inside the request context**. A repo-level `Cache` object has a stable UUID-shaped `key` that lets it partition the context-scoped storage by repo.
+The payload lives **inside the request context**. A repo-level `Cache` object has a stable UUID-shaped `key` that lets it partition the context-scoped storage by repo — Get/Set stay isolated between repositories so two repos encoding the same SQL don't cross-contaminate.
 
 ```
     ┌────────────────────────────────────────────┐
@@ -41,9 +43,20 @@ The idea: the cache payload lives **inside the request context**. A repo-level `
 
 - `ctx.WrapContext(ctx)` installs a `cacheStorage` into the context.
 - Repo A's reads/writes go to `storage.c["repo-A-uuid"]`.
-- On `Clean` only the repo's bucket is cleared, not the whole tree.
+- On `Clean`, **every** repo's bucket is cleared — not just the caller's.
 
 `cacheStorage.Get` looks up `modelKey → key → value`. `modelKey` is the repo UUID; `key` is `sql + args`.
+
+## Invalidation
+
+The executor calls `clean(ctx, cacheSource)` after successful `InsertOne`, `Update`, `Delete`. Read operations don't invalidate. Thus:
+
+- A repo-managed mutation always clears the entire per-context cache. Every other repository sharing that context misses on its next read and refills from the database.
+- Changes made to the database through a different path (raw SQL, another service) are invisible to the cache until someone writes through gerpo in that context.
+
+### Why wipe everything?
+
+Cross-repo dependencies — virtual columns, JOINs, persistent queries — make it impossible to know statically which cached entries depend on the mutated row. A per-repo clean was the original design and it leaked stale values across repos that shared a JOIN. The request-scope of the cache keeps this over-invalidation cheap: one request typically has a handful of cached reads, and any mutation usually ends the read cycle anyway.
 
 ## Cache key
 
@@ -51,21 +64,12 @@ The idea: the cache payload lives **inside the request context**. A repo-level `
 
 Result: 3–5 fewer allocations per cache operation, no change in key identity.
 
-## Invalidation
-
-The executor calls `clean(ctx, cacheSource)` after successful `InsertOne`, `Update`, `Delete`. Read operations don't invalidate. Thus:
-
-- a repo-managed mutation always clears the repo's cache bucket for the current request context;
-- changes made to the database through a different path (raw SQL, another repo, an external service) are invisible to the cache until someone writes through the repo in that context.
-
 ## Thread safety
 
 `cacheStorage` is protected by a `sync.Mutex`. The lock is fine-grained per write and per read — contention is low in practice because most requests touch distinct keys.
 
 ## Building your own Storage
 
-Anything satisfying `cache.Storage` works. Common candidates:
+Anything satisfying `cache.Storage` works, but any custom implementation has to honour the **wipe-all-on-Clean** contract. A per-key invalidation shim would reintroduce the cross-repo staleness bug the request-scope design exists to prevent.
 
-- Redis — for cross-instance sharing within a trace/tenant.
-- `sync.Map` with TTL — for a process-wide cache, but mind invalidation semantics.
-- `cache.NewModelBundle` — already bundled; combines several storages into one (e.g. ctx + redis).
+If you need distributed caching, don't express it through `cache.Storage` — put it at the application layer (HTTP middleware, gRPC interceptor) where business transaction boundaries are explicit. The bundled `ctx.Cache` can run underneath as an intra-request dedup layer.

@@ -131,6 +131,68 @@ func TestCache_WithoutMiddleware_WorksAsMiss(t *testing.T) {
 	})
 }
 
+// TestCache_WriteOneRepoInvalidatesOther — Update через users-репо должен
+// инвалидировать кеш posts-репо, который привязан к тому же ctx. Раньше это
+// было не так (per-repo Clean), см. gerpo-review.txt пункт 2.2.
+func TestCache_WriteOneRepoInvalidatesOther(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		seed := defaultSeed(t)
+		shared := cachectx.New()
+
+		userRepo, err := gerpo.NewBuilder[User]().
+			DB(ab.adapter, executor.WithCacheStorage(shared)).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).OmitOnUpdate()
+				c.Field(&m.Name)
+				c.Field(&m.Email)
+				c.Field(&m.Age)
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
+			}).
+			Build()
+		require.NoError(t, err)
+
+		postRepo := newCachedPostRepo(t, ab, shared)
+
+		baseCtx, cancel := testCtx(t)
+		defer cancel()
+		ctx := cachectx.WrapContext(baseCtx)
+
+		targetUser := seed.users[0]
+		targetPost := seed.posts[0]
+
+		// Прогреваем кеш обоих репо.
+		_, err = postRepo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
+			h.Where().Field(&m.ID).EQ(targetPost.ID)
+		})
+		require.NoError(t, err)
+
+		// Меняем пост снаружи, чтобы кеш и реальность разошлись.
+		_, err = pgx5Pool.Exec(ctx, `UPDATE posts SET title = $1 WHERE id = $2`, "after-cross-invalidation", targetPost.ID)
+		require.NoError(t, err)
+
+		// Update через users-репо — должен очистить весь per-ctx кеш, в том
+		// числе postRepo's.
+		updated := targetUser
+		updated.Age = targetUser.Age + 1
+		_, err = userRepo.Update(ctx, &updated, func(m *User, h query.UpdateHelper[User]) {
+			h.Where().Field(&m.ID).EQ(updated.ID)
+		})
+		require.NoError(t, err)
+
+		// Следующий GetFirst по posts должен увидеть внешнее изменение —
+		// кеш очищен записью через другой репо в том же контексте.
+		got, err := postRepo.GetFirst(ctx, func(m *Post, h query.GetFirstHelper[Post]) {
+			h.Where().Field(&m.ID).EQ(targetPost.ID)
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "after-cross-invalidation", got.Title,
+			"write through userRepo must invalidate postRepo's cache in the shared context")
+	})
+}
+
 // TestCache_DifferentContextsDoNotShare — разные контексты имеют независимый кеш.
 func TestCache_DifferentContextsDoNotShare(t *testing.T) {
 	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
