@@ -124,22 +124,33 @@ h.Where().Field(&m.ID).In(wanted...) //gerpolint:disable-line=GPL005
 ## `[]any` spread recovery
 
 `In(xs...)` where `xs` is `[]any` would lose element types at the call site,
-so gerpolint recovers them from the backing composite literal. Two shapes
-are understood:
+so gerpolint recovers them from the backing composite literal or
+`append`-chain. Three shapes are understood:
 
 ```go
-// Inline — each element is checked against the field's type.
+// (1) Inline composite literal.
 h.Where().Field(&m.ID).In([]any{id1, id2, id3}...)
 
-// Single-assignment local variable — the initializer's elements are traced.
+// (2) Single-assignment local variable.
 wanted := []any{id1, "oops", id3}
 h.Where().Field(&m.ID).In(wanted...)
 //        ^ GPL002: argument type string is not compatible with field type uuid.UUID
+
+// (3) Accumulator-style append chain.
+var t []any
+t = append(t, id1)
+t = append(t, "oops") // ← GPL002 fires here
+t = append(t, id3)
+h.Where().Field(&m.ID).In(t...)
 ```
 
-A variable that is reassigned after its composite literal, or built up via
-`append` / a function return, falls back to the `GPL005` behavior — the
-analyzer cannot see its elements statically.
+The following usages break static tracking and fall back to `GPL005`:
+
+- Taking the address of the slice (`mutate(&t)`).
+- Reassigning from a function call or another variable (`t = getSlice()`).
+- Writing elements by index (`t[1] = x`).
+- `append(t, xs...)` where `xs` is a named slice variable (only inline
+  `append(t, []any{a, b}...)` is expanded).
 
 ## When to reach for which knob
 
