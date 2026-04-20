@@ -59,7 +59,7 @@ Full runnable samples live in [`examples/`](examples/) and in the [integration t
 | Repository | Type-safe builder, thread-safe, `sync.Pool` backed statements | [Repository builder](https://insei.github.io/gerpo/features/repository/) |
 | Columns | `AsColumn` / `AsVirtual`, insert/update protection, aliases | [Columns](https://insei.github.io/gerpo/features/columns/), [Virtual columns](https://insei.github.io/gerpo/features/virtual-columns/) |
 | Queries | 14 WHERE operators + IC variants, AND/OR/Group, ordering, pagination | [WHERE operators](https://insei.github.io/gerpo/features/where/), [Ordering & pagination](https://insei.github.io/gerpo/features/order-pagination/) |
-| Operations | GetFirst / GetList / Count / Insert / Update / Delete with `Only` / `Exclude` | [CRUD operations](https://insei.github.io/gerpo/features/crud/), [Exclude & Only](https://insei.github.io/gerpo/features/exclude-only/) |
+| Operations | GetFirst / GetList / Count / Insert / InsertMany / Update / Delete with `Only` / `Exclude` | [CRUD operations](https://insei.github.io/gerpo/features/crud/), [Exclude & Only](https://insei.github.io/gerpo/features/exclude-only/) |
 | Persistent queries | Always-on WHERE, JOIN, GROUP BY via `WithQuery` | [Persistent queries](https://insei.github.io/gerpo/features/persistent-queries/) |
 | Soft delete | Rewrite DELETE as UPDATE of a marker field | [Soft delete](https://insei.github.io/gerpo/features/soft-delete/) |
 | Hooks | Before/After for Insert/Update, AfterSelect | [Hooks](https://insei.github.io/gerpo/features/hooks/) |
@@ -112,7 +112,6 @@ The rest of the API is stable and not expected to change in 1.0.0.
 **1.1.0**
 
 - Return inserted IDs and generated timestamps.
-- Batch Insert.
 
 ## Contributing
 

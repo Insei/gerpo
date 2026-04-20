@@ -88,6 +88,37 @@ repo.Insert(ctx, u, func(m *User, h query.InsertHelper[User]) {
 })
 ```
 
+## InsertMany
+
+Bulk-inserts a slice as a single multi-row `INSERT ... VALUES (...), (...), ...`. The call is transparently chunked at PostgreSQL's 65535-placeholder limit, so arbitrarily large slices are safe. Returns the total number of rows written.
+
+```go
+posts := []*Post{
+    {UserID: u.ID, Title: "one"},
+    {UserID: u.ID, Title: "two"},
+    {UserID: u.ID, Title: "three"},
+}
+n, err := repo.InsertMany(ctx, posts)
+```
+
+An empty slice is a no-op: `(0, nil)` with no SQL, no hooks.
+
+`Exclude`/`Only` and `Returning` behave the same as on the single-row `Insert` and apply to **every** row in the batch uniformly — there is no per-row override:
+
+```go
+repo.InsertMany(ctx, posts, func(m *Post, h query.InsertManyHelper[Post]) {
+    h.Exclude(&m.CreatedAt)  // let the DB default NOW() for every row
+    h.Returning(&m.ID)       // pull only IDs back
+})
+```
+
+When `RETURNING` is active, scanned values are written back into each element of the slice by position.
+
+!!! warning "Atomicity across chunks is the caller's job"
+    If a slice exceeds the placeholder budget, `InsertMany` splits it into several SQL statements. A failure mid-batch leaves rows written by prior chunks in place. Wrap the call in `gerpo.RunInTx` if you need all-or-nothing.
+
+Batch-specific hooks (`WithBeforeInsertMany` / `WithAfterInsertMany`) see the full slice in one call — useful for cascading children in one batched child `InsertMany` instead of N serial ones. See [Hooks](hooks.md).
+
 ## Update
 
 Updates records by WHERE. Returns the number of affected rows. When zero rows match, returns `gerpo.ErrNotFound`.

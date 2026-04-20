@@ -16,8 +16,10 @@ type repository[TModel any] struct {
 	// to the caller after the SQL already ran (letting the caller decide
 	// whether to roll back an ambient transaction).
 	beforeInsert     func(ctx context.Context, model *TModel) error
+	beforeInsertMany func(ctx context.Context, models []*TModel) error
 	beforeUpdate     func(ctx context.Context, model *TModel) error
 	afterInsert      func(ctx context.Context, model *TModel) error
+	afterInsertMany  func(ctx context.Context, models []*TModel) error
 	afterUpdate      func(ctx context.Context, model *TModel) error
 	afterSelect      func(ctx context.Context, models []*TModel) error
 	errorTransformer func(err error) error
@@ -54,8 +56,14 @@ func replaceNilCallbacks[TModel any](repo *repository[TModel]) {
 	if repo.beforeUpdate == nil {
 		repo.beforeUpdate = func(_ context.Context, _ *TModel) error { return nil }
 	}
+	if repo.beforeInsertMany == nil {
+		repo.beforeInsertMany = func(_ context.Context, _ []*TModel) error { return nil }
+	}
 	if repo.afterInsert == nil {
 		repo.afterInsert = func(_ context.Context, _ *TModel) error { return nil }
+	}
+	if repo.afterInsertMany == nil {
+		repo.afterInsertMany = func(_ context.Context, _ []*TModel) error { return nil }
 	}
 	if repo.afterUpdate == nil {
 		repo.afterUpdate = func(_ context.Context, _ *TModel) error { return nil }
@@ -224,6 +232,36 @@ func (r *repository[TModel]) Insert(ctx context.Context, model *TModel, qFns ...
 		return r.errorTransformer(err)
 	}
 	return nil
+}
+
+func (r *repository[TModel]) InsertMany(ctx context.Context, models []*TModel, qFns ...func(m *TModel, h query.InsertManyHelper[TModel])) (count int64, err error) {
+	ctx, end := r.startSpan(ctx, "gerpo.InsertMany")
+	defer func() { end(err) }()
+
+	if len(models) == 0 {
+		return 0, nil
+	}
+
+	if err = r.beforeInsertMany(ctx, models); err != nil {
+		return 0, r.errorTransformer(err)
+	}
+
+	stmt := sqlstmt.NewInsertBatch(ctx, r.table, r.columns)
+	q := query.NewInsertMany(r.baseModel)
+	q.HandleFn(qFns...)
+	if err = q.Apply(stmt); err != nil {
+		return 0, r.errorTransformer(fmt.Errorf("%w: %w", ErrApplyQuery, err))
+	}
+
+	count, err = r.executor.InsertMany(ctx, stmt, models)
+	if err != nil {
+		return count, r.errorTransformer(err)
+	}
+
+	if err = r.afterInsertMany(ctx, models); err != nil {
+		return count, r.errorTransformer(err)
+	}
+	return count, nil
 }
 
 func (r *repository[TModel]) Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (count int64, err error) {

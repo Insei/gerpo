@@ -72,6 +72,14 @@ func (b *builder[TModel]) WithBeforeInsert(fn func(ctx context.Context, m *TMode
 	return b
 }
 
+// WithBeforeInsertMany registers a function executed before a batched INSERT.
+// The callback receives the full slice in one call — a non-nil error aborts
+// the call without running any SQL.
+func (b *builder[TModel]) WithBeforeInsertMany(fn func(ctx context.Context, models []*TModel) error) Builder[TModel] {
+	b.opts = append(b.opts, WithBeforeInsertMany[TModel](fn))
+	return b
+}
+
 // WithBeforeUpdate registers a function to be executed before performing an update operation on the model in the database.
 // Returning a non-nil error aborts the UPDATE — the SQL does not run.
 func (b *builder[TModel]) WithBeforeUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel] {
@@ -100,6 +108,14 @@ func (b *builder[TModel]) WithAfterUpdate(fn func(ctx context.Context, m *TModel
 // decides whether to roll back an ambient transaction.
 func (b *builder[TModel]) WithAfterInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel] {
 	b.opts = append(b.opts, WithAfterInsert[TModel](fn))
+	return b
+}
+
+// WithAfterInsertMany registers a callback executed after a successful batched
+// INSERT. The callback receives the full slice — use for cascade inserts in
+// one batched child query rather than calling the single-row hook per parent.
+func (b *builder[TModel]) WithAfterInsertMany(fn func(ctx context.Context, models []*TModel) error) Builder[TModel] {
+	b.opts = append(b.opts, WithAfterInsertMany[TModel](fn))
 	return b
 }
 

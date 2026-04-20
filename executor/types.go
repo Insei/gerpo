@@ -20,6 +20,7 @@ type Executor[TModel any] interface {
 	GetOne(ctx context.Context, stmt Stmt) (*TModel, error)
 	GetMultiple(ctx context.Context, stmt Stmt) ([]*TModel, error)
 	InsertOne(ctx context.Context, stmt Stmt, model *TModel) error
+	InsertMany(ctx context.Context, stmt BatchStmt, models []*TModel) (int64, error)
 	Update(ctx context.Context, stmt Stmt, model *TModel) (int64, error)
 	Count(ctx context.Context, stmt CountStmt) (uint64, error)
 	Delete(ctx context.Context, stmt CountStmt) (int64, error)
@@ -37,6 +38,14 @@ type Columns interface {
 type Stmt interface {
 	CountStmt
 	Columns() types.ExecutionColumns
+}
+
+// BatchStmt is the shape the executor expects for multi-row writes. The
+// executor feeds a chunk of models via SetModels, then asks for the SQL — this
+// lets one InsertBatch value render many chunked statements per call.
+type BatchStmt interface {
+	Stmt
+	SetModels(models []any)
 }
 
 // ReturningStmt is an optional capability of write statements (Insert / Update)

@@ -27,6 +27,20 @@ type Repository[TModel any] interface {
 	Count(ctx context.Context, qFns ...func(m *TModel, h query.CountHelper[TModel])) (count uint64, err error)
 	// Insert adds a new record to the database using the provided model and query options.
 	Insert(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.InsertHelper[TModel])) (err error)
+	// InsertMany bulk-inserts the given slice as a single multi-row INSERT
+	// statement. The call is transparently chunked at the driver's placeholder
+	// limit (PostgreSQL: 65535 bound params per query), so arbitrarily large
+	// slices are safe. Returns the total number of rows written.
+	//
+	// RETURNING — when the repository has columns marked ReturnedOnInsert (or
+	// the per-request helper calls Returning(...)), scanned values are written
+	// back into each model by position. For an empty slice, InsertMany returns
+	// (0, nil) without touching the database or running hooks.
+	//
+	// Failure mid-batch leaves the rows already committed by prior chunks in
+	// place — wrap the call in gerpo.RunInTx if atomicity across chunks is
+	// required.
+	InsertMany(ctx context.Context, models []*TModel, qFns ...func(m *TModel, h query.InsertManyHelper[TModel])) (count int64, err error)
 	// Update modifies an existing record in the database based on the provided model and query options.
 	Update(ctx context.Context, model *TModel, qFns ...func(m *TModel, h query.UpdateHelper[TModel])) (count int64, err error)
 	// Delete removes records from the database based on the query conditions and returns the count of deleted records.
@@ -40,6 +54,11 @@ type Builder[TModel any] interface {
 	// WithBeforeInsert registers a hook called before the INSERT SQL. Returning a
 	// non-nil error aborts the call; the SQL does not run.
 	WithBeforeInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
+	// WithBeforeInsertMany registers a hook called before the batched INSERT
+	// statement. The callback sees the full slice in one call — use this for
+	// bulk validation or resolving shared references in a single round-trip.
+	// Returning a non-nil error aborts the call; the SQL does not run.
+	WithBeforeInsertMany(fn func(ctx context.Context, models []*TModel) error) Builder[TModel]
 	// WithBeforeUpdate registers a hook called before the UPDATE SQL. Returning a
 	// non-nil error aborts the call; the SQL does not run.
 	WithBeforeUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
@@ -52,6 +71,11 @@ type Builder[TModel any] interface {
 	// cascade inserts in the same ctx-bound transaction; the caller decides
 	// whether to roll back.
 	WithAfterInsert(fn func(ctx context.Context, m *TModel) error) Builder[TModel]
+	// WithAfterInsertMany registers a hook called after a successful batched
+	// INSERT. The callback sees the full slice — prefer this over the single-row
+	// hook when cascading, so child rows can be written in one batched query
+	// rather than once per parent.
+	WithAfterInsertMany(fn func(ctx context.Context, models []*TModel) error) Builder[TModel]
 	// WithAfterUpdate registers a hook called after a successful UPDATE.
 	// Same error contract as WithAfterInsert.
 	WithAfterUpdate(fn func(ctx context.Context, m *TModel) error) Builder[TModel]

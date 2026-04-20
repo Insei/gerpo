@@ -120,6 +120,60 @@ func WithAfterInsert[TModel any](fn func(ctx context.Context, model *TModel) err
 	})
 }
 
+// WithBeforeInsertMany registers a callback invoked right before a batch of
+// rows is inserted via InsertMany. The callback receives the full slice in one
+// call — typical use is bulk validation or resolving shared references in a
+// single round-trip. Returning a non-nil error aborts the InsertMany; the SQL
+// does NOT run.
+//
+// Chaining semantics match WithBeforeInsert.
+func WithBeforeInsertMany[TModel any](fn func(ctx context.Context, models []*TModel) error) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) error {
+		if fn == nil {
+			return nil
+		}
+		if o.beforeInsertMany == nil {
+			o.beforeInsertMany = fn
+			return nil
+		}
+		wrap := o.beforeInsertMany
+		o.beforeInsertMany = func(ctx context.Context, models []*TModel) error {
+			if err := wrap(ctx, models); err != nil {
+				return err
+			}
+			return fn(ctx, models)
+		}
+		return nil
+	})
+}
+
+// WithAfterInsertMany registers a callback invoked after a successful
+// InsertMany. The callback receives the full slice — use this for cascade
+// inserts in one batched child query rather than calling the single-row hook
+// once per parent.
+//
+// A non-nil error is surfaced AFTER the rows are already written; the caller
+// decides whether to roll back an ambient transaction.
+func WithAfterInsertMany[TModel any](fn func(ctx context.Context, models []*TModel) error) Option[TModel] {
+	return optionFn[TModel](func(o *repository[TModel]) error {
+		if fn == nil {
+			return nil
+		}
+		if o.afterInsertMany == nil {
+			o.afterInsertMany = fn
+			return nil
+		}
+		wrap := o.afterInsertMany
+		o.afterInsertMany = func(ctx context.Context, models []*TModel) error {
+			if err := wrap(ctx, models); err != nil {
+				return err
+			}
+			return fn(ctx, models)
+		}
+		return nil
+	})
+}
+
 // WithAfterUpdate registers a callback invoked after a successful Update.
 // Returning a non-nil error surfaces it to the caller AFTER the row was
 // already modified — same contract as WithAfterInsert.

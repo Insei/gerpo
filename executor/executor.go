@@ -123,6 +123,107 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 	return nil
 }
 
+// InsertMany emits a multi-row INSERT ... VALUES (...) [RETURNING ...] and
+// transparently chunks the input to stay under the driver's placeholder limit
+// (PostgreSQL caps bound parameters at 65535 per query). When RETURNING is
+// configured on the stmt, scanned rows are written back into models[i] by
+// position; every chunk consumes its slice range in order.
+//
+// Failures leave the work already committed by prior chunks in place: the
+// caller is responsible for wrapping the call in gerpo.RunInTx when atomicity
+// across chunks is required.
+func (e *executor[TModel]) InsertMany(ctx context.Context, stmt BatchStmt, models []*TModel) (int64, error) {
+	if len(models) == 0 {
+		return 0, nil
+	}
+	cols := stmt.Columns().GetAll()
+	activeCols := 0
+	for _, c := range cols {
+		if _, ok := c.Name(); ok {
+			activeCols++
+		}
+	}
+	if activeCols == 0 {
+		return 0, fmt.Errorf("failed to get sql query from stmt: no columns to insert")
+	}
+
+	// PostgreSQL caps bound parameters at 65535. Stay well below that so other
+	// call-site contributions (RETURNING, ON CONFLICT, …) cannot trip it.
+	const placeholderBudget = 65000
+	chunkSize := placeholderBudget / activeCols
+	if chunkSize < 1 {
+		chunkSize = 1
+	}
+
+	returning := returningColumnsOfBatch(stmt)
+	chunkBuf := make([]any, 0, chunkSize)
+
+	var total int64
+	for start := 0; start < len(models); start += chunkSize {
+		end := start + chunkSize
+		if end > len(models) {
+			end = len(models)
+		}
+		chunkBuf = chunkBuf[:0]
+		for _, m := range models[start:end] {
+			chunkBuf = append(chunkBuf, m)
+		}
+		stmt.SetModels(chunkBuf)
+
+		sql, values, err := stmt.SQL()
+		if err != nil {
+			return total, fmt.Errorf("failed to get sql query from stmt: %w", err)
+		}
+
+		if len(returning) > 0 {
+			rows, err := e.getExecQuery(ctx).QueryContext(ctx, sql, values...)
+			if err != nil {
+				return total, err
+			}
+			idx := start
+			for rows.Next() {
+				if idx >= end {
+					_ = rows.Close()
+					return total, fmt.Errorf("RETURNING yielded more rows than sent (chunk [%d..%d))", start, end)
+				}
+				ptrs := scanPointers(returning, models[idx])
+				if err := rows.Scan(ptrs...); err != nil {
+					_ = rows.Close()
+					return total, err
+				}
+				idx++
+				total++
+			}
+			_ = rows.Close()
+			continue
+		}
+		result, err := e.getExecQuery(ctx).ExecContext(ctx, sql, values...)
+		if err != nil {
+			return total, err
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			return total, err
+		}
+		total += n
+	}
+	if total > 0 {
+		clean(ctx, e.cacheSource)
+	}
+	return total, nil
+}
+
+// returningColumnsOfBatch mirrors returningColumnsOf for the BatchStmt shape;
+// BatchStmt embeds Stmt and already carries the ReturningStmt capability via
+// the concrete sqlstmt.InsertBatch.
+func returningColumnsOfBatch(stmt BatchStmt) []types.Column {
+	rs, ok := any(stmt).(ReturningStmt)
+	if !ok {
+		return nil
+	}
+	return rs.ReturningColumns()
+}
+
 func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel) (updatedRows int64, err error) {
 	sql, values, err := stmt.SQL(sqlstmt.WithModelValues(model))
 	if err != nil {

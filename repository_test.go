@@ -16,6 +16,7 @@ type MockExecutor[TModel any] struct {
 	DeleteFunc      func(ctx context.Context, stmt executor.CountStmt) (int64, error)
 	UpdateFunc      func(ctx context.Context, stmt executor.Stmt, model *TModel) (int64, error)
 	InsertOneFunc   func(ctx context.Context, stmt executor.Stmt, model *TModel) error
+	InsertManyFunc  func(ctx context.Context, stmt executor.BatchStmt, models []*TModel) (int64, error)
 	CountFunc       func(ctx context.Context, stmt executor.CountStmt) (uint64, error)
 	GetMultipleFunc func(ctx context.Context, stmt executor.Stmt) ([]*TModel, error)
 	GetOneFunc      func(ctx context.Context, stmt executor.Stmt) (*TModel, error)
@@ -31,6 +32,10 @@ func (m *MockExecutor[TModel]) Update(ctx context.Context, stmt executor.Stmt, m
 
 func (m *MockExecutor[TModel]) InsertOne(ctx context.Context, stmt executor.Stmt, model *TModel) error {
 	return m.InsertOneFunc(ctx, stmt, model)
+}
+
+func (m *MockExecutor[TModel]) InsertMany(ctx context.Context, stmt executor.BatchStmt, models []*TModel) (int64, error) {
+	return m.InsertManyFunc(ctx, stmt, models)
 }
 
 func (m *MockExecutor[TModel]) Count(ctx context.Context, stmt executor.CountStmt) (uint64, error) {

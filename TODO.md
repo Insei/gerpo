@@ -86,3 +86,26 @@ treated as a first-class target.
 - README's "Supported drivers" section should be split into "drivers" vs
   "dialects" — the underlying confusion is exactly the one we're trying to
   resolve in code.
+
+---
+
+## InsertMany — future optimizations
+
+`InsertMany` ships as a multi-row `INSERT ... VALUES (...), (...)` with
+executor-level chunking at PG's 65535-placeholder limit. A few follow-ups worth
+considering when we see real workloads pushing the path hard:
+
+- **PostgreSQL `COPY FROM`.** For multi-tens-of-thousands-row imports `COPY` is
+  materially faster than multi-row VALUES. pgx exposes `CopyFrom` directly.
+  Complicates `RETURNING`: `COPY FROM` in pgx returns affected count only, not
+  per-row generated values. Would need either a capability flag
+  (`AdapterSupportsCopy`) toggling the path, or a separate `BulkCopy` method
+  that explicitly disclaims `RETURNING`.
+
+- **ON CONFLICT / UPSERT.** Currently out of scope (see review item 3.1 —
+  skipped). If/when UPSERT lands, `InsertMany` should accept the same conflict
+  spec so bulk-upserts are one SQL statement.
+
+- **Per-row overrides.** Today `Exclude`/`Only`/`Returning` apply uniformly to
+  every row in the batch. Per-row shaping would double the generated-SQL
+  complexity without a clear user win — defer until a real use case shows up.
