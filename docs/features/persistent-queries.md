@@ -7,7 +7,7 @@
 | Method | Effect |
 |---|---|
 | `Where()` | Filters inserted into every query |
-| `LeftJoinOn(table, on, args...)` / `InnerJoinOn(...)` | Parameter-bound JOINs |
+| `LeftJoinOn(table, on, resolver?)` / `InnerJoinOn(...)` | Static or per-request parameter-bound JOINs |
 | `GroupBy(fields...)` | Override the auto GROUP BY (which kicks in for any aggregate virtual column) |
 | `Exclude(fields...)` | Hide a column from every SELECT |
 
@@ -49,19 +49,31 @@ Now `PostCount` is automatically included in the SELECT of every request against
 
 ## Bound JOIN parameters
 
-When the ON-clause needs runtime values (tenant id, locale, …), pass them as bound arguments alongside the `?` placeholders — exactly like a WHERE:
+When the ON-clause needs runtime values (tenant id, locale, …), supply a resolver as the third argument. The persistent repository is built once, but the resolver runs **per request** and receives that request's `ctx`:
 
 ```go
 h.LeftJoinOn(
     "posts",
     "posts.user_id = users.id AND posts.tenant_id = ?",
-    tenantID,
+    func(ctx context.Context) ([]any, error) {
+        tenantID, ok := ctx.Value(tenantKey{}).(string)
+        if !ok {
+            return nil, errors.New("tenant missing in ctx")
+        }
+        return []any{tenantID}, nil
+    },
 )
 ```
 
-The arguments flow through the driver's parameter binding, so values cannot turn into SQL — even if `tenantID` originated in user input.
+The values returned by the resolver flow through the driver's parameter binding in the order of the `?` placeholders, so they cannot turn into SQL — even if they originated in user input. A non-nil error from the resolver aborts the query: it is wrapped in `query.ErrApplyJoinClause` and surfaced as the `GetList`/`GetFirst`/… return value; no SQL is sent to the database.
 
-`LeftJoinOn` / `InnerJoinOn` are the **only** supported JOIN forms. There is no raw-string-callback variant — ctx-dependent SQL was an SQL-injection hazard and has been removed. If you need per-request behaviour, parameterise it through the args or add a matching WHERE condition.
+Omit the resolver for a static JOIN:
+
+```go
+h.LeftJoinOn("posts", "posts.user_id = users.id")
+```
+
+`LeftJoinOn` / `InnerJoinOn` accept **at most one** resolver — passing two panics at registration time. The SQL template itself is always frozen at `WithQuery` time; the resolver only materialises the values for `?`. A raw-string-callback variant that lets ctx build SQL is deliberately absent — it was an SQL-injection hazard. Everything ctx-dependent must go through the resolver or through a matching per-request WHERE.
 
 ## Combining with per-request WHERE
 

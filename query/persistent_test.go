@@ -35,7 +35,8 @@ func TestPersistent_Apply_AllOpsForwarded(t *testing.T) {
 		h.Where().Field(&m.DeletedAt).EQ(nil)
 		h.GroupBy(&m.ID)
 		h.Exclude(&m.DeletedAt)
-		h.LeftJoinOn("posts", "posts.user_id = users.id AND posts.tenant = ?", "T")
+		h.LeftJoinOn("posts", "posts.user_id = users.id AND posts.tenant = ?",
+			func(ctx context.Context) ([]any, error) { return []any{"T"}, nil })
 	})
 
 	require.NoError(t, h.Apply(a))

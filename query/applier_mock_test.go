@@ -140,6 +140,7 @@ func (m *mockLimitOffset) GetLimit() uint64   { return m.limit }
 // --- Applier — implements every <Op>Applier interface of the query package --
 
 type mockApplier struct {
+	ctx          context.Context
 	storage      *mockColumnsStorage
 	cols         *mockExecCols
 	where        *mockWhere
@@ -157,6 +158,7 @@ func newMockApplier() *mockApplier {
 		execCol: cols,
 	}
 	return &mockApplier{
+		ctx:     context.Background(),
 		storage: storage,
 		cols:    cols,
 		where:   &mockWhere{},
@@ -167,6 +169,7 @@ func newMockApplier() *mockApplier {
 	}
 }
 
+func (m *mockApplier) Ctx() context.Context                 { return m.ctx }
 func (m *mockApplier) ColumnsStorage() types.ColumnsStorage { return m.storage }
 func (m *mockApplier) Columns() types.ExecutionColumns      { return m.cols }
 func (m *mockApplier) Where() sqlpart.Where                 { return m.where }

@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [Unreleased]
+
+### ⚠ BREAKING CHANGES
+
+- **query:** `PersistentHelper.LeftJoinOn` / `InnerJoinOn` no longer accept frozen `args ...any`. Instead they take an optional per-request resolver `func(ctx context.Context) ([]any, error)`. Static JOINs without `?` placeholders are unaffected. Migrate bound forms:
+
+  ```go
+  // before
+  h.LeftJoinOn("posts", "posts.tenant = ?", tenantID)
+
+  // after
+  h.LeftJoinOn("posts", "posts.tenant = ?",
+      func(ctx context.Context) ([]any, error) { return []any{tenantID}, nil })
+  ```
+
+  The resolver is invoked on every request with that request's `ctx`, enabling per-tenant/per-locale JOINs that were previously impossible. A non-nil error aborts the query with `ErrApplyJoinClause`; passing more than one resolver panics. SQL template stays frozen at registration — only values cross from ctx to the JOIN.
+
 ## [1.0.1] - 2026-04-21
 
 ### Documentation

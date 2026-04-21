@@ -8,6 +8,7 @@ import (
 )
 
 type sqlselect struct {
+	ctx            context.Context
 	columnsStorage types.ColumnsStorage
 
 	where *sqlpart.WhereBuilder
@@ -22,6 +23,7 @@ type sqlselect struct {
 func newSelectEmpty() *sqlselect {
 	ctx := context.TODO()
 	return &sqlselect{
+		ctx:   ctx,
 		where: sqlpart.NewWhereBuilder(ctx),
 		join:  sqlpart.NewJoinBuilder(ctx),
 		order: sqlpart.NewOrderBuilder(ctx),
@@ -31,11 +33,18 @@ func newSelectEmpty() *sqlselect {
 
 // reset prepares an sqlselect for reuse by a new query.
 func (f *sqlselect) reset(ctx context.Context, storage types.ColumnsStorage) {
+	f.ctx = ctx
 	f.columnsStorage = storage
 	f.where.Reset(ctx)
 	f.join.Reset(ctx)
 	f.order.Reset(ctx)
 	f.group.Reset(ctx)
+}
+
+// Ctx returns the request-scoped context injected via reset(). JoinApplier uses
+// it to invoke per-request join-argument resolvers.
+func (f *sqlselect) Ctx() context.Context {
+	return f.ctx
 }
 
 func (f *sqlselect) ColumnsStorage() types.ColumnsStorage {

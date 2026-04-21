@@ -3,6 +3,8 @@
 package integration
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -211,7 +213,7 @@ func TestPersistent_LeftJoinOn_BindsArgs(t *testing.T) {
 				h.LeftJoinOn(
 					"posts",
 					"posts.user_id = users.id AND posts.user_id = ?",
-					targetUserID,
+					func(ctx context.Context) ([]any, error) { return []any{targetUserID}, nil },
 				)
 				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 				h.Where().Field(&m.DeletedAt).EQ(nil)
@@ -270,7 +272,7 @@ func TestPersistent_LeftJoinOn_ArgOrder_HoldsAcrossWhereAndCount(t *testing.T) {
 				h.LeftJoinOn(
 					"posts",
 					"posts.user_id = users.id AND posts.user_id = ?",
-					joinedUserID,
+					func(ctx context.Context) ([]any, error) { return []any{joinedUserID}, nil },
 				)
 				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 				h.Where().Field(&m.DeletedAt).EQ(nil)
@@ -347,7 +349,7 @@ func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
 				h.InnerJoinOn(
 					"posts",
 					"posts.user_id = users.id AND posts.user_id = ?",
-					targetUserID,
+					func(ctx context.Context) ([]any, error) { return []any{targetUserID}, nil },
 				)
 				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
 				h.Where().Field(&m.DeletedAt).EQ(nil)
@@ -359,5 +361,119 @@ func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, got, 1)
 		assert.Equal(t, targetUserID, got[0].ID)
+	})
+}
+
+// tenantCtxKey is used by TestPersistent_LeftJoinOn_ResolverReadsCtx to prove
+// that a single persistent repo instance materialises different JOIN args for
+// different request ctxs.
+type tenantCtxKey struct{}
+
+// TestPersistent_LeftJoinOn_ResolverReadsCtx — per-request semantics: the
+// same repository instance is reused across calls with different request
+// ctxs; each call's resolver reads the target user id from ctx.Value and the
+// JOIN binds a different value accordingly.
+func TestPersistent_LeftJoinOn_ResolverReadsCtx(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		seed := defaultSeed(t)
+		baseCtx, cancel := testCtx(t)
+		defer cancel()
+
+		firstID := seed.users[3].ID
+		secondID := seed.users[5].ID
+
+		repo, err := gerpo.New[User]().
+			Adapter(ab.adapter).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).OmitOnUpdate()
+				c.Field(&m.Name)
+				c.Field(&m.Email)
+				c.Field(&m.Age)
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
+				c.Field(&m.PostCount).AsVirtual().Compute("COALESCE(COUNT(posts.id), 0)")
+			}).
+			WithQuery(func(m *User, h query.PersistentHelper[User]) {
+				h.LeftJoinOn(
+					"posts",
+					"posts.user_id = users.id AND posts.user_id = ?",
+					func(ctx context.Context) ([]any, error) {
+						v := ctx.Value(tenantCtxKey{})
+						if v == nil {
+							return nil, errors.New("tenantCtxKey missing")
+						}
+						return []any{v}, nil
+					},
+				)
+				h.GroupBy(&m.ID, &m.Name, &m.Email, &m.Age, &m.CreatedAt, &m.UpdatedAt, &m.DeletedAt)
+				h.Where().Field(&m.DeletedAt).EQ(nil)
+			}).
+			Build()
+		require.NoError(t, err)
+
+		ctxA := context.WithValue(baseCtx, tenantCtxKey{}, firstID)
+		gotA, err := repo.GetList(ctxA)
+		require.NoError(t, err)
+		for _, u := range gotA {
+			if u.ID == firstID {
+				assert.Equal(t, 3, u.PostCount)
+			} else {
+				assert.Equal(t, 0, u.PostCount, "join must have been bound to firstID only")
+			}
+		}
+
+		ctxB := context.WithValue(baseCtx, tenantCtxKey{}, secondID)
+		gotB, err := repo.GetList(ctxB)
+		require.NoError(t, err)
+		for _, u := range gotB {
+			if u.ID == secondID {
+				assert.Equal(t, 3, u.PostCount)
+			} else {
+				assert.Equal(t, 0, u.PostCount, "second request rebinds JOIN to secondID")
+			}
+		}
+	})
+}
+
+// TestPersistent_LeftJoinOn_ResolverError — a resolver returning a non-nil
+// error aborts the query before it reaches the driver, and the repository
+// surfaces the error wrapped in ErrApplyJoinClause.
+func TestPersistent_LeftJoinOn_ResolverError(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		defaultSeed(t)
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		sentinel := errors.New("tenant is not set")
+
+		repo, err := gerpo.New[User]().
+			Adapter(ab.adapter).
+			Table("users").
+			Columns(func(m *User, c *gerpo.ColumnBuilder[User]) {
+				c.Field(&m.ID).OmitOnUpdate()
+				c.Field(&m.Name)
+				c.Field(&m.Email)
+				c.Field(&m.Age)
+				c.Field(&m.CreatedAt).OmitOnUpdate()
+				c.Field(&m.UpdatedAt).OmitOnInsert()
+				c.Field(&m.DeletedAt).OmitOnInsert()
+			}).
+			WithQuery(func(m *User, h query.PersistentHelper[User]) {
+				h.LeftJoinOn(
+					"posts",
+					"posts.user_id = users.id AND posts.user_id = ?",
+					func(ctx context.Context) ([]any, error) { return nil, sentinel },
+				)
+				h.Where().Field(&m.DeletedAt).EQ(nil)
+			}).
+			Build()
+		require.NoError(t, err)
+
+		_, err = repo.GetList(ctx)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, query.ErrApplyJoinClause)
+		assert.ErrorIs(t, err, sentinel)
 	})
 }

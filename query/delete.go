@@ -1,6 +1,7 @@
 package query
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/insei/gerpo/query/linq"
@@ -18,6 +19,7 @@ type DeleteApplier interface {
 	ColumnsStorage() types.ColumnsStorage
 	Where() sqlpart.Where
 	Join() sqlpart.Join
+	Ctx() context.Context
 }
 
 type Delete[TModel any] struct {

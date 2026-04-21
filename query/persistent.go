@@ -18,13 +18,16 @@ type PersistentHelper[TModel any] interface {
 	GroupBy(fieldsPtr ...any) PersistentHelper[TModel]
 
 	// LeftJoinOn adds a LEFT JOIN with a fixed table reference and an ON
-	// clause containing `?` placeholders. Arguments flow through the driver
-	// exactly like WHERE parameters, eliminating the SQL injection risk of
-	// raw string concatenation.
-	LeftJoinOn(table, on string, args ...any) PersistentHelper[TModel]
+	// clause. The SQL template stays frozen at registration time, but `?`
+	// placeholders inside it can be materialised per request by an optional
+	// resolver that receives the request ctx and returns a value list.
+	// Omit the resolver for a static JOIN. Passing more than one resolver
+	// panics. Resolver errors abort the query before it hits the driver.
+	LeftJoinOn(table, on string, resolver ...linq.JoinArgsResolver) PersistentHelper[TModel]
 
-	// InnerJoinOn is the parameter-bound counterpart of LeftJoinOn.
-	InnerJoinOn(table, on string, args ...any) PersistentHelper[TModel]
+	// InnerJoinOn is the INNER counterpart of LeftJoinOn with identical
+	// resolver semantics.
+	InnerJoinOn(table, on string, resolver ...linq.JoinArgsResolver) PersistentHelper[TModel]
 }
 
 type Persistent[TModel any] struct {
@@ -40,13 +43,13 @@ func (h *Persistent[TModel]) Where() types.WhereTarget {
 	return h.whereBuilder
 }
 
-func (h *Persistent[TModel]) LeftJoinOn(table, on string, args ...any) PersistentHelper[TModel] {
-	h.joinBuilder.LeftJoinOn(table, on, args...)
+func (h *Persistent[TModel]) LeftJoinOn(table, on string, resolver ...linq.JoinArgsResolver) PersistentHelper[TModel] {
+	h.joinBuilder.LeftJoinOn(table, on, resolver...)
 	return h
 }
 
-func (h *Persistent[TModel]) InnerJoinOn(table, on string, args ...any) PersistentHelper[TModel] {
-	h.joinBuilder.InnerJoinOn(table, on, args...)
+func (h *Persistent[TModel]) InnerJoinOn(table, on string, resolver ...linq.JoinArgsResolver) PersistentHelper[TModel] {
+	h.joinBuilder.InnerJoinOn(table, on, resolver...)
 	return h
 }
 

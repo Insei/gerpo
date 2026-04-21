@@ -28,6 +28,10 @@ func NewDelete(ctx context.Context, table string, columnsStorage types.ColumnsSt
 	}
 }
 
+func (d *Delete) Ctx() context.Context {
+	return d.ctx
+}
+
 func (d *Delete) Where() sqlpart.Where {
 	return d.where
 }
