@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [1.0.1] - 2026-04-21
+
+### Documentation
+
+- Add gerpolint + golangci-lint plugin page (38e6d99)
+
+### Features
+
+- **gerpolint:** Treat In(slice) same as In(slice...) (f653a82)
+- **gerpolint:** Track append-chain accumulators in []any spread recovery (183d44c)
+- **gerpolint:** Recover element types from []any spreads (5e0e256)
+- Gerpolint golangci-lint v2 module plugin (5af05ff)
+- Gerpolint static analyzer for type-safe WHERE filters (2535b9a)
+
+### Misc
+
+- **examples/todo-api:** Wire gerpolint as a golangci-lint plugin (6d872d6)
+
+### Tests
+
+- **bench:** Add isolated real-PG bench report (ac844de)
 ## [1.0.0] - 2026-04-20
 
 ### Bug Fixes
@@ -14,6 +35,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 ### Documentation
 
+- Prepare changelog for v1.0.0 (db0efb4)
 - Add examples/todo-api callouts across the site (d8c9ff7)
 - Add production-ready setup page (08fd914)
 - Document savepoints deferral (review 3.5) (f5d4e1d)
