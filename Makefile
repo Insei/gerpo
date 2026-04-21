@@ -22,12 +22,18 @@ build: ## Compile all packages
 test: ## Unit tests with the race detector
 	go test -race ./...
 
-.PHONY: custom-gcl
-custom-gcl: ## Build a golangci-lint binary with the gerpolint plugin embedded (./bin/custom-gcl)
+# Source files that, when changed, require a rebuild of ./bin/custom-gcl.
+GERPOLINT_SRC := $(shell find gerpolint gerpolintplugin -name '*.go' -not -path '*/testdata/*')
+CUSTOM_GCL_DEPS := .custom-gcl.yml go.mod $(GERPOLINT_SRC)
+
+bin/custom-gcl: $(CUSTOM_GCL_DEPS)
 	golangci-lint custom
 
+.PHONY: custom-gcl
+custom-gcl: bin/custom-gcl ## Build bin/custom-gcl with gerpolint embedded (rebuilt only when linter sources change)
+
 .PHONY: lint
-lint: custom-gcl ## Build custom-gcl and run the full linter suite (incl. gerpolint) over ./...
+lint: bin/custom-gcl ## Run the full linter suite (incl. gerpolint) over ./...
 	./bin/custom-gcl run ./...
 
 .PHONY: lint-gerpolint

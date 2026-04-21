@@ -21,10 +21,16 @@ compose-up: ## Start Postgres + the service via docker-compose
 compose-down: ## Stop and remove the docker-compose stack
 	docker compose down
 
-.PHONY: custom-gcl
-custom-gcl: ## Build ./bin/custom-gcl with the gerpolint golangci-lint plugin
+# Rebuild bin/custom-gcl only when linter sources or configs change.
+GERPOLINT_SRC := $(shell find ../../gerpolint ../../gerpolintplugin -name '*.go' -not -path '*/testdata/*')
+CUSTOM_GCL_DEPS := .custom-gcl.yml .golangci.yml ../../go.mod $(GERPOLINT_SRC)
+
+bin/custom-gcl: $(CUSTOM_GCL_DEPS)
 	golangci-lint custom
 
+.PHONY: custom-gcl
+custom-gcl: bin/custom-gcl ## Build bin/custom-gcl (rebuilt only when the linter or its config changes)
+
 .PHONY: lint
-lint: custom-gcl ## Build custom-gcl and run the full linter suite over ./...
+lint: bin/custom-gcl ## Build custom-gcl and run the full linter suite over ./...
 	./bin/custom-gcl run ./...
