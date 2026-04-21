@@ -6,27 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
-## [Unreleased]
+## [1.0.2] - 2026-04-21
 
-### ⚠ BREAKING CHANGES
+### CI / Build
 
-- **query:** `PersistentHelper.LeftJoinOn` / `InnerJoinOn` no longer accept frozen `args ...any`. Instead they take an optional per-request resolver `func(ctx context.Context) ([]any, error)`. Static JOINs without `?` placeholders are unaffected. Migrate bound forms:
+- **go:** Work around golangci-lint custom-build bug via source patch (1522703)
+- **go:** Temporary debug — dump git env before custom-gcl build (5267e1c)
+- **go:** Drop persist-credentials in lint job (7a08302)
+- **go:** Verbose custom-gcl build to diagnose git clone failure (2d2883e)
+- **go:** Fix invalid YAML syntax in lint job (18a5e48)
+- **go:** Build custom-gcl so gerpolint runs in the lint job (f853976)
 
-  ```go
-  // before
-  h.LeftJoinOn("posts", "posts.tenant = ?", tenantID)
+### Documentation
 
-  // after
-  h.LeftJoinOn("posts", "posts.tenant = ?",
-      func(ctx context.Context) ([]any, error) { return []any{tenantID}, nil })
-  ```
+- **why-gerpo:** Surface gerpolint, drop stale pre-1.0 caveats (0217d68)
 
-  The resolver is invoked on every request with that request's `ctx`, enabling per-tenant/per-locale JOINs that were previously impossible. A non-nil error aborts the query with `ErrApplyJoinClause`; passing more than one resolver panics. SQL template stays frozen at registration — only values cross from ctx to the JOIN.
+### Features
 
+- **query:** Per-request resolver for LeftJoinOn/InnerJoinOn (2e74379)
+
+### Misc
+
+- **make:** Rebuild custom-gcl only when linter sources change (424023d)
+- **make:** Route `make lint` through custom-gcl so gerpolint runs (9d46149)
 ## [1.0.1] - 2026-04-21
 
 ### Documentation
 
+- Prepare changelog for v1.0.1 (2fb9a13)
 - Add gerpolint + golangci-lint plugin page (38e6d99)
 
 ### Features
