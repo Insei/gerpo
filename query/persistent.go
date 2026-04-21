@@ -19,7 +19,7 @@ type PersistentHelper[TModel any] interface {
 
 	// LeftJoinOn adds a LEFT JOIN with a fixed table reference and an ON
 	// clause. The SQL template stays frozen at registration time, but `?`
-	// placeholders inside it can be materialised per request by an optional
+	// placeholders inside it can be materialized per request by an optional
 	// resolver that receives the request ctx and returns a value list.
 	// Omit the resolver for a static JOIN. Passing more than one resolver
 	// panics. Resolver errors abort the query before it hits the driver.

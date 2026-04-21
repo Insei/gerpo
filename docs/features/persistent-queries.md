@@ -73,7 +73,7 @@ Omit the resolver for a static JOIN:
 h.LeftJoinOn("posts", "posts.user_id = users.id")
 ```
 
-`LeftJoinOn` / `InnerJoinOn` accept **at most one** resolver — passing two panics at registration time. The SQL template itself is always frozen at `WithQuery` time; the resolver only materialises the values for `?`. A raw-string-callback variant that lets ctx build SQL is deliberately absent — it was an SQL-injection hazard. Everything ctx-dependent must go through the resolver or through a matching per-request WHERE.
+`LeftJoinOn` / `InnerJoinOn` accept **at most one** resolver — passing two panics at registration time. The SQL template itself is always frozen at `WithQuery` time; the resolver only materializes the values for `?`. A raw-string-callback variant that lets ctx build SQL is deliberately absent — it was an SQL-injection hazard. Everything ctx-dependent must go through the resolver or through a matching per-request WHERE.
 
 ## Combining with per-request WHERE
 

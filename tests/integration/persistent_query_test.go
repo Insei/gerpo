@@ -365,7 +365,7 @@ func TestPersistent_InnerJoinOn_FiltersByBoundArg(t *testing.T) {
 }
 
 // tenantCtxKey is used by TestPersistent_LeftJoinOn_ResolverReadsCtx to prove
-// that a single persistent repo instance materialises different JOIN args for
+// that a single persistent repo instance materializes different JOIN args for
 // different request ctxs.
 type tenantCtxKey struct{}
 

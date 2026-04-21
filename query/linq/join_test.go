@@ -26,8 +26,8 @@ type mockJoinApplier struct {
 	join *mockJoin
 }
 
-func (a *mockJoinApplier) Join() sqlpart.Join    { return a.join }
-func (a *mockJoinApplier) Ctx() context.Context  { return a.ctx }
+func (a *mockJoinApplier) Join() sqlpart.Join   { return a.join }
+func (a *mockJoinApplier) Ctx() context.Context { return a.ctx }
 
 func newApplier() *mockJoinApplier {
 	return &mockJoinApplier{ctx: context.Background(), join: &mockJoin{}}
