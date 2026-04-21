@@ -16,31 +16,25 @@ jobs:
     name: golangci-lint
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Stop checkout from persisting an auth extraheader via
-          # $GIT_CONFIG_PARAMETERS — it collides with the `-c` flags
-          # that `golangci-lint custom` passes to its internal git clone.
-          persist-credentials: false
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-      - name: Install golangci-lint
+      # golangci-lint v2.5.0 has a bug in pkg/commands/internal/builder.go:95 —
+      # it passes `"-c advice.detachedHead=false"` as one argv token to
+      # `git clone`. Older git trims the leading space; newer git (on
+      # github-hosted runners) doesn't and fails with exit 128 / "invalid
+      # key:  advice.detachedHead" (note the double space). Until fixed
+      # upstream, build golangci-lint from source with the flag split in two.
+      - name: Install golangci-lint (v2.5.0, patched)
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            | sh -s -- -b "$(go env GOPATH)/bin" v2.5.0
+          git clone --depth 1 --branch v2.5.0 \
+            https://github.com/golangci/golangci-lint.git /tmp/glc-src
+          sed -i 's|"-c advice\.detachedHead=false"|"-c", "advice.detachedHead=false"|' \
+            /tmp/glc-src/pkg/commands/internal/builder.go
+          (cd /tmp/glc-src && go build -o "$(go env GOPATH)/bin/golangci-lint" ./cmd/golangci-lint)
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - name: Debug git environment
-        run: |
-          echo "=== env (GIT_*) ==="
-          env | grep -i '^GIT' || true
-          echo "=== git config --list --show-origin ==="
-          git config --list --show-origin || true
-          echo "=== /etc/gitconfig ==="
-          cat /etc/gitconfig 2>/dev/null || echo "(absent)"
-          echo "=== \$HOME/.gitconfig ==="
-          cat "$HOME/.gitconfig" 2>/dev/null || echo "(absent)"
       - name: Build custom-gcl (embeds gerpolint plugin)
-        run: golangci-lint custom -v
+        run: golangci-lint custom
       - name: Run custom-gcl
         run: ./bin/custom-gcl run ./...
 
