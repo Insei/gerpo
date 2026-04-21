@@ -29,8 +29,18 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
             | sh -s -- -b "$(go env GOPATH)/bin" v2.5.0
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Debug git environment
+        run: |
+          echo "=== env (GIT_*) ==="
+          env | grep -i '^GIT' || true
+          echo "=== git config --list --show-origin ==="
+          git config --list --show-origin || true
+          echo "=== /etc/gitconfig ==="
+          cat /etc/gitconfig 2>/dev/null || echo "(absent)"
+          echo "=== \$HOME/.gitconfig ==="
+          cat "$HOME/.gitconfig" 2>/dev/null || echo "(absent)"
       - name: Build custom-gcl (embeds gerpolint plugin)
-        run: golangci-lint custom
+        run: golangci-lint custom -v
       - name: Run custom-gcl
         run: ./bin/custom-gcl run ./...
 
