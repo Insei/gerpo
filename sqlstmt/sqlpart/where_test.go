@@ -977,7 +977,6 @@ func TestGenNEWFn(t *testing.T) {
 	}
 }
 
-
 func TestNeedANDBeforeCondition(t *testing.T) {
 	type testCase struct {
 		name         string

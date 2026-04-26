@@ -16,7 +16,7 @@ import (
 type Filter func(ctx context.Context, value any) (sql string, args []any, err error)
 
 // stockFilter returns the standard sqltpl-based filter for an operation. It is
-// used by buckets to fulfil Allow(); Override() injects user-supplied SQL via
+// used by buckets to fulfill Allow(); Override() injects user-supplied SQL via
 // CompileFilter instead.
 func stockFilter(op types.Operation, columnSQL string) Filter {
 	if gen := stockGenerator(op); gen != nil {

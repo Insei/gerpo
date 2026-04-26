@@ -5,7 +5,7 @@
 //
 // The (string, bool) return shape mirrors the legacy sqlpart contract:
 //   - sql:         the WHERE fragment ending with "?" (or "(?,?,?)" for In, …)
-//                  or a constant predicate ("1 = 1" / "1 = 2" / "IS NULL"),
+//     or a constant predicate ("1 = 1" / "1 = 2" / "IS NULL"),
 //   - appendValue: whether the user value should be appended as a bound arg.
 package sqltpl
 
