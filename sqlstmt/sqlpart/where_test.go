@@ -3,12 +3,11 @@ package sqlpart
 import (
 	"context"
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/insei/fmap/v3"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/insei/gerpo/internal/sqltpl"
 	"github.com/insei/gerpo/types"
 )
 
@@ -370,7 +369,7 @@ func TestGenEQFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genEQFn(tc.query)
+			fn := sqltpl.EQ(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -406,7 +405,7 @@ func TestGenNEQFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotEQFn(tc.query)
+			fn := sqltpl.NotEQ(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -435,7 +434,7 @@ func TestGenLTFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genLTFn(tc.query)
+			fn := sqltpl.LT(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -464,7 +463,7 @@ func TestGenLTEFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genLTEFn(tc.query)
+			fn := sqltpl.LTE(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -493,7 +492,7 @@ func TestGenGTFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genGTFn(tc.query)
+			fn := sqltpl.GT(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -522,7 +521,7 @@ func TestGenGTEFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genGTEFn(tc.query)
+			fn := sqltpl.GTE(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -572,7 +571,7 @@ func TestGenINFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genInFn(tc.query)
+			fn := sqltpl.In(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedNeedAppendValues, ok)
@@ -622,7 +621,7 @@ func TestGenNINFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotInFn(tc.query)
+			fn := sqltpl.NotIn(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedNeedAppendValues, needAppendValues)
@@ -651,7 +650,7 @@ func TestGenCTICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genContainsFoldFn(tc.query)
+			fn := sqltpl.ContainsFold(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, needAppendValues)
@@ -680,7 +679,7 @@ func TestGenNCTICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotContainsFoldFn(tc.query)
+			fn := sqltpl.NotContainsFold(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -709,7 +708,7 @@ func TestGenBWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genStartsWithFoldFn(tc.query)
+			fn := sqltpl.StartsWithFold(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -738,7 +737,7 @@ func TestGenNBWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotStartsWithFoldFn(tc.query)
+			fn := sqltpl.NotStartsWithFold(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -767,7 +766,7 @@ func TestGenEWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genEndsWithFoldFn(tc.query)
+			fn := sqltpl.EndsWithFold(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -796,7 +795,7 @@ func TestGenNEWICFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotEndsWithFoldFn(tc.query)
+			fn := sqltpl.NotEndsWithFold(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -825,7 +824,7 @@ func TestGenCTFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genContainsFn(tc.query)
+			fn := sqltpl.Contains(tc.query)
 			sql, needAppendValues := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, needAppendValues)
@@ -854,7 +853,7 @@ func TestGenNCTFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotContainsFn(tc.query)
+			fn := sqltpl.NotContains(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -883,7 +882,7 @@ func TestGenBWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genStartsWithFn(tc.query)
+			fn := sqltpl.StartsWith(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -912,7 +911,7 @@ func TestGenNBWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotStartsWithFn(tc.query)
+			fn := sqltpl.NotStartsWith(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -941,7 +940,7 @@ func TestGenEWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genEndsWithFn(tc.query)
+			fn := sqltpl.EndsWith(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -970,7 +969,7 @@ func TestGenNEWFn(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fn := genNotEndsWithFn(tc.query)
+			fn := sqltpl.NotEndsWith(tc.query)
 			sql, ok := fn(ctx, tc.value)
 			assert.Equal(t, tc.expectedSQL, sql)
 			assert.Equal(t, tc.expectedOK, ok)
@@ -978,131 +977,6 @@ func TestGenNEWFn(t *testing.T) {
 	}
 }
 
-func TestGetDefaultTypeFilters(t *testing.T) {
-	type testCase struct {
-		name        string
-		fieldName   string
-		expectedOps []types.Operation
-	}
-
-	testCases := []testCase{
-		{
-			name:      "Boolean fieldType",
-			fieldName: "Bool",
-			expectedOps: []types.Operation{
-				types.OperationEQ,
-				types.OperationNotEQ,
-			},
-		},
-		{
-			name:      "String fieldType",
-			fieldName: "String",
-			expectedOps: []types.Operation{
-				types.OperationEQ,
-				types.OperationNotEQ,
-				types.OperationIn,
-				types.OperationNotIn,
-				types.OperationContains,
-				types.OperationNotContains,
-				types.OperationStartsWith,
-				types.OperationNotStartsWith,
-				types.OperationEndsWith,
-				types.OperationNotEndsWith,
-				types.OperationEQFold,
-				types.OperationNotEQFold,
-				types.OperationContainsFold,
-				types.OperationNotContainsFold,
-				types.OperationStartsWithFold,
-				types.OperationNotStartsWithFold,
-				types.OperationEndsWithFold,
-				types.OperationNotEndsWithFold,
-			},
-		},
-		{
-			name:      "Integer fieldType",
-			fieldName: "Int",
-			expectedOps: []types.Operation{
-				types.OperationEQ,
-				types.OperationNotEQ,
-				types.OperationLT,
-				types.OperationLTE,
-				types.OperationGT,
-				types.OperationGTE,
-				types.OperationIn,
-				types.OperationNotIn,
-			},
-		},
-		{
-			name:      "Float fieldType",
-			fieldName: "Float64",
-			expectedOps: []types.Operation{
-				types.OperationEQ,
-				types.OperationNotEQ,
-				types.OperationLT,
-				types.OperationLTE,
-				types.OperationGT,
-				types.OperationGTE,
-				types.OperationIn,
-				types.OperationNotIn,
-			},
-		},
-		{
-			name:      "Time fieldType",
-			fieldName: "Time",
-			expectedOps: []types.Operation{
-				types.OperationLT,
-				types.OperationGT,
-				types.OperationLTE,
-				types.OperationGTE,
-			},
-		},
-		{
-			name:      "UUID fieldType",
-			fieldName: "UUID",
-			expectedOps: []types.Operation{
-				types.OperationEQ,
-				types.OperationNotEQ,
-				types.OperationIn,
-				types.OperationNotIn,
-			},
-		},
-		{
-			name:      "Time ptr fieldType",
-			fieldName: "TimePtr",
-			expectedOps: []types.Operation{
-				types.OperationEQ,
-				types.OperationNotEQ,
-				types.OperationLT,
-				types.OperationGT,
-				types.OperationLTE,
-				types.OperationGTE,
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			type TestModel struct {
-				Int     int
-				Float64 float64
-				String  string
-				Bool    bool
-				Time    time.Time
-				UUID    uuid.UUID
-				TimePtr *time.Time
-			}
-			fields, _ := fmap.Get[TestModel]()
-			field := fields.MustFind(tc.fieldName)
-
-			filters := GetFieldTypeFilters(field, "query")
-			assert.Len(t, filters, len(tc.expectedOps))
-
-			for _, op := range tc.expectedOps {
-				assert.Contains(t, filters, op, "Filter for operation %v is missing", op)
-			}
-		})
-	}
-}
 
 func TestNeedANDBeforeCondition(t *testing.T) {
 	type testCase struct {

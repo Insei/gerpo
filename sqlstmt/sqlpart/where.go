@@ -5,66 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/insei/fmap/v3"
-
-	"github.com/insei/gerpo/filters"
-	"github.com/insei/gerpo/internal/sqltpl"
 	"github.com/insei/gerpo/types"
 )
-
-// Private value-aliases keep where_test.go untouched — every helper used to be
-// a top-level function in this file and is referenced by name from tests.
-// Forwarding to sqltpl ensures one source of truth for the SQL fragments.
-var (
-	genEQFn             = sqltpl.EQ
-	genNotEQFn          = sqltpl.NotEQ
-	genLTFn             = sqltpl.LT
-	genLTEFn            = sqltpl.LTE
-	genGTFn             = sqltpl.GT
-	genGTEFn            = sqltpl.GTE
-	genInFn             = sqltpl.In
-	genNotInFn          = sqltpl.NotIn
-	genContainsFn       = sqltpl.Contains
-	genNotContainsFn    = sqltpl.NotContains
-	genStartsWithFn     = sqltpl.StartsWith
-	genNotStartsWithFn  = sqltpl.NotStartsWith
-	genEndsWithFn       = sqltpl.EndsWith
-	genNotEndsWithFn    = sqltpl.NotEndsWith
-	genContainsFoldFn   = sqltpl.ContainsFold
-	genNotContainsFoldFn = sqltpl.NotContainsFold
-	genStartsWithFoldFn = sqltpl.StartsWithFold
-	genNotStartsWithFoldFn = sqltpl.NotStartsWithFold
-	genEndsWithFoldFn   = sqltpl.EndsWithFold
-	genNotEndsWithFoldFn = sqltpl.NotEndsWithFold
-)
-
-// GetFieldTypeFilters returns the default operator -> SQL fragment mapping
-// for the given field and column SQL reference. Implementation forwards to
-// the global filters.Registry; the (string, bool) shape is preserved so
-// existing callers continue to compile bit-for-bit.
-//
-// Deprecated: use the global filters.Registry directly. The registry exposes
-// named buckets for built-in types (Bool, String, Numeric, Time, UUID) plus
-// Register(example) for custom types — see package github.com/insei/gerpo/filters.
-func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Operation]func(ctx context.Context, value any) (string, bool) {
-	resolved := filters.Registry.Apply(field, sqlColumnString)
-	out := make(map[types.Operation]func(context.Context, any) (string, bool), len(resolved))
-	for op, fn := range resolved {
-		legacyFn := fn
-		// Convert the args-based filter back to the legacy (string, bool) shape:
-		// one bound arg → caller binds the user value (legacy true);
-		// zero args → caller does not bind (legacy false), matches the IS
-		// NULL / "1=2" / constant-predicate paths.
-		out[op] = func(ctx context.Context, value any) (string, bool) {
-			sql, args, err := legacyFn(ctx, value)
-			if err != nil {
-				return "", false
-			}
-			return sql, len(args) == 1
-		}
-	}
-	return out
-}
 
 type Where interface {
 	StartGroup()

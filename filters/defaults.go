@@ -9,9 +9,10 @@ import (
 	"github.com/insei/gerpo/types"
 )
 
-// newRegistry returns a registry pre-populated with the same operator sets
-// that sqlpart.GetFieldTypeFilters used to hardcode. Built-in buckets are
-// exported so users can inspect or extend them via the Registry singleton.
+// newRegistry returns a registry pre-populated with the operator sets that
+// gerpo ships out of the box for primitive Go types, time.Time and uuid.UUID.
+// Built-in buckets are exported on the registry so users can inspect or
+// extend them via the Registry singleton.
 func newRegistry() *registry {
 	r := &registry{
 		custom: map[reflect.Type]*TypeBucket{},
