@@ -23,6 +23,35 @@ type mockColumns struct {
 	types.ExecutionColumns
 }
 
+// returningStubStmt is a Stmt + ReturningStmt double used by tests that need
+// the executor to take the RETURNING branch. The mockStmt with a generated
+// matcher cannot satisfy ReturningStmt, hence the small bespoke type. Scan
+// helpers are intentionally not wired: tests that exercise this stub feed
+// rows that end with rows.Next()==false, so the executor never reaches Scan.
+type returningStubStmt struct {
+	sql       string
+	args      []any
+	returning []types.Column
+}
+
+func (s *returningStubStmt) SQL(_ ...sqlstmt.Option) (string, []interface{}, error) {
+	return s.sql, s.args, nil
+}
+
+func (s *returningStubStmt) Columns() types.ExecutionColumns { return nil }
+
+func (s *returningStubStmt) ReturningColumns() []types.Column { return s.returning }
+
+// returningStubCol is a tiny types.Column implementation that simply forwards a
+// preset pointer from GetPtr — enough for code paths that build a scan-pointer
+// slice before checking whether iteration produced any rows.
+type returningStubCol struct {
+	types.Column
+	ptr any
+}
+
+func (c *returningStubCol) GetPtr(_ any) any { return c.ptr }
+
 func (m *mockColumns) GetModelPointers(model any) []any {
 	rets := m.Called(model)
 	return rets.Get(0).([]any)
@@ -444,6 +473,34 @@ func TestInsertOne(t *testing.T) {
 			expectedErr: ErrNoInsertedRows,
 		},
 		{
+			// PG drivers (lib/pq, pgx via database/sql) defer execution errors
+			// like unique_violation on INSERT … RETURNING until iteration. Before
+			// the fix the executor saw rows.Next()==false and returned
+			// ErrNoInsertedRows, masking the real driver error.
+			name: "RETURNING with deferred driver error surfaces driver error, not ErrNoInsertedRows",
+			withModel: func() *testModel {
+				return &testModel{ID: 1, Age: 28, Name: "John Doe"}
+			},
+			withStmt: func() Stmt {
+				m := &testModel{}
+				return &returningStubStmt{
+					sql:       "INSERT INTO users (id, age, name) VALUES ($1, $2, $3) RETURNING id",
+					args:      []any{1, 28, "John Doe"},
+					returning: []types.Column{&returningStubCol{ptr: &m.ID}},
+				}
+			},
+			setupDb: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"id"}).
+					AddRow(0).
+					RowError(0, fmt.Errorf("pq: duplicate key value violates unique constraint \"users_pkey\""))
+				mock.ExpectQuery(`INSERT INTO users \(id, age, name\) VALUES \(\$1, \$2, \$3\) RETURNING id`).
+					WithArgs(1, 28, "John Doe").
+					WillReturnRows(rows).
+					RowsWillBeClosed()
+			},
+			expectedErr: fmt.Errorf("pq: duplicate key value violates unique constraint \"users_pkey\""),
+		},
+		{
 			name: "Successful insertion",
 			withModel: func() *testModel {
 				return &testModel{
@@ -567,6 +624,34 @@ func TestUpdate(t *testing.T) {
 					WithArgs(28, "John Doe", 1).WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("result error")))
 			},
 			expectedErr: fmt.Errorf("result error"),
+		},
+		{
+			// Mirrors the InsertOne RETURNING bug: PG drivers defer execution
+			// errors (e.g. unique_violation triggered by the UPDATE itself) until
+			// iteration. Without rows.Err() the executor reported (0, nil)
+			// instead of the real failure.
+			name: "RETURNING with deferred driver error surfaces driver error",
+			withModel: func() *testModel {
+				return &testModel{ID: 1, Age: 28, Name: "John Doe"}
+			},
+			withStmt: func() Stmt {
+				m := &testModel{}
+				return &returningStubStmt{
+					sql:       "UPDATE users SET age = $1, name = $2 WHERE id = $3 RETURNING id",
+					args:      []any{28, "John Doe", 1},
+					returning: []types.Column{&returningStubCol{ptr: &m.ID}},
+				}
+			},
+			setupDb: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"id"}).
+					AddRow(0).
+					RowError(0, fmt.Errorf("pq: duplicate key value violates unique constraint \"users_name_key\""))
+				mock.ExpectQuery(`UPDATE users SET age = \$1, name = \$2 WHERE id = \$3 RETURNING id`).
+					WithArgs(28, "John Doe", 1).
+					WillReturnRows(rows).
+					RowsWillBeClosed()
+			},
+			expectedErr: fmt.Errorf("pq: duplicate key value violates unique constraint \"users_name_key\""),
 		},
 		{
 			name: "Rows affected more than 0 rows updated",

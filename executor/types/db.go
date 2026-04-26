@@ -12,6 +12,11 @@ type Result interface {
 type Rows interface {
 	Next() bool
 	Scan(dest ...interface{}) error
+	// Err reports any error that occurred while iterating. It must be checked
+	// after Next returns false: PG drivers (lib/pq, pgx) defer execution
+	// errors — e.g. unique_violation on INSERT … RETURNING — until iteration,
+	// so without an Err check the executor would mask them as "no rows".
+	Err() error
 	Close() error
 }
 

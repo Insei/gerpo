@@ -48,6 +48,10 @@ func (m *mockRows) Scan(dest ...interface{}) error {
 	return nil
 }
 
+func (m *mockRows) Err() error {
+	return nil
+}
+
 func (m *mockRows) Close() error {
 	return nil
 }

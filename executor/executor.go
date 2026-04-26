@@ -99,6 +99,12 @@ func (e *executor[TModel]) InsertOne(ctx context.Context, stmt Stmt, model *TMod
 		}
 		defer rows.Close() //nolint:errcheck
 		if !rows.Next() {
+			// PG drivers (lib/pq, pgx via database/sql) defer execution errors —
+			// e.g. unique_violation on INSERT ... RETURNING — until iteration.
+			// Without this check the real error is masked by ErrNoInsertedRows.
+			if err := rows.Err(); err != nil {
+				return err
+			}
 			return ErrNoInsertedRows
 		}
 		ptrs := scanPointers(returning, model)
@@ -194,6 +200,12 @@ func (e *executor[TModel]) InsertMany(ctx context.Context, stmt BatchStmt, model
 				idx++
 				total++
 			}
+			// PG drivers surface execution errors (e.g. unique_violation) only
+			// after iteration; without this check they are silently swallowed.
+			if err := rows.Err(); err != nil {
+				_ = rows.Close()
+				return total, err
+			}
 			_ = rows.Close()
 			continue
 		}
@@ -244,6 +256,12 @@ func (e *executor[TModel]) Update(ctx context.Context, stmt Stmt, model *TModel)
 				return n, err
 			}
 			n++
+		}
+		// PG drivers defer execution errors (e.g. unique_violation triggered by
+		// the UPDATE itself) until iteration finishes — without this check the
+		// caller would see (0, nil) instead of the real failure.
+		if err := rows.Err(); err != nil {
+			return n, err
 		}
 		if n > 0 {
 			clean(ctx, e.cacheSource)

@@ -14,6 +14,10 @@ func (r *rowsWrap) Scan(dest ...interface{}) error {
 	return r.rows.Scan(dest...)
 }
 
+func (r *rowsWrap) Err() error {
+	return r.rows.Err()
+}
+
 func (r *rowsWrap) Close() error {
 	r.rows.Close()
 	return nil

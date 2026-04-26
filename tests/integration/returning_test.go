@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/insei/gerpo"
+	"github.com/insei/gerpo/executor"
 	"github.com/insei/gerpo/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -147,6 +148,83 @@ func TestReturning_PerRequest_NarrowsList(t *testing.T) {
 		assert.NotEqual(t, uuid.Nil, m.ID, "ID requested explicitly — must be filled")
 		assert.True(t, m.CreatedAt.IsZero(),
 			"CreatedAt was excluded by per-request Returning(); model field stays zero")
+	})
+}
+
+// TestReturning_Insert_UniqueViolation_SurfacesDriverError — INSERT … RETURNING
+// that hits unique_violation must return the driver error, not
+// executor.ErrNoInsertedRows. Regression for the rows.Err() check skipped after
+// rows.Next()==false: PG drivers (lib/pq, pgx via database/sql, pgx native)
+// surface unique_violation from RETURNING queries via Rows.Err()/Next() rather
+// than QueryContext, so the executor used to mask the failure as "no rows".
+func TestReturning_Insert_UniqueViolation_SurfacesDriverError(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		setupReturningSchema(t)
+		// Tweak the repo so the test owns the ID column (no DB DEFAULT path):
+		// keeping ID app-supplied lets us deliberately collide on the PK.
+		repo, err := gerpo.New[returningModel]().
+			Adapter(ab.adapter).
+			Table("returning_demo").
+			Columns(func(m *returningModel, c *gerpo.ColumnBuilder[returningModel]) {
+				c.Field(&m.ID)                                      // app-supplied PK — used to force the conflict
+				c.Field(&m.Title)                                   //
+				c.Field(&m.CreatedAt).ReadOnly().ReturnedOnInsert() // forces RETURNING branch
+				c.Field(&m.UpdatedAt).OmitOnInsert().ReturnedOnUpdate()
+			}).
+			Build()
+		require.NoError(t, err)
+
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		fixedID := uuid.New()
+		first := &returningModel{ID: fixedID, Title: "first"}
+		require.NoError(t, repo.Insert(ctx, first))
+
+		dup := &returningModel{ID: fixedID, Title: "dup"}
+		err = repo.Insert(ctx, dup)
+		require.Error(t, err, "expected unique violation, got nil")
+		assert.NotErrorIs(t, err, executor.ErrNoInsertedRows,
+			"executor must surface the driver's unique_violation, not mask it as ErrNoInsertedRows")
+		assert.Contains(t, err.Error(), "unique",
+			"expected unique-violation message from driver, got: %v", err)
+	})
+}
+
+// TestReturning_InsertMany_UniqueViolation_SurfacesDriverError — same regression
+// as above for the multi-row path.
+func TestReturning_InsertMany_UniqueViolation_SurfacesDriverError(t *testing.T) {
+	forEachAdapter(t, func(t *testing.T, ab adapterBundle) {
+		setupReturningSchema(t)
+		repo, err := gerpo.New[returningModel]().
+			Adapter(ab.adapter).
+			Table("returning_demo").
+			Columns(func(m *returningModel, c *gerpo.ColumnBuilder[returningModel]) {
+				c.Field(&m.ID)
+				c.Field(&m.Title)
+				c.Field(&m.CreatedAt).ReadOnly().ReturnedOnInsert()
+				c.Field(&m.UpdatedAt).OmitOnInsert().ReturnedOnUpdate()
+			}).
+			Build()
+		require.NoError(t, err)
+
+		ctx, cancel := testCtx(t)
+		defer cancel()
+
+		seedID := uuid.New()
+		require.NoError(t, repo.Insert(ctx, &returningModel{ID: seedID, Title: "seed"}))
+
+		batch := []*returningModel{
+			{ID: uuid.New(), Title: "ok-1"},
+			{ID: seedID, Title: "collision"}, // collides with the seed row
+			{ID: uuid.New(), Title: "ok-2"},
+		}
+		_, err = repo.InsertMany(ctx, batch)
+		require.Error(t, err, "expected unique violation from InsertMany, got nil")
+		assert.NotErrorIs(t, err, executor.ErrNoInsertedRows,
+			"executor must surface the driver's unique_violation, not mask it as ErrNoInsertedRows")
+		assert.Contains(t, err.Error(), "unique",
+			"expected unique-violation message from driver, got: %v", err)
 	})
 }
 
