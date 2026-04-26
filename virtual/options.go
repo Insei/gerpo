@@ -3,7 +3,7 @@ package virtual
 import (
 	"context"
 
-	"github.com/insei/gerpo/sqlstmt/sqlpart"
+	"github.com/insei/gerpo/filters"
 	"github.com/insei/gerpo/types"
 )
 
@@ -35,8 +35,8 @@ func WithCompute(sql string, args ...any) Option {
 			c.base.SQLArgs = append([]any(nil), args...)
 		}
 		if !c.base.IsAggregate() {
-			for op, fn := range sqlpart.GetFieldTypeFilters(c.base.Field, wrapped) {
-				c.base.Filters.AddFilterFn(op, fn)
+			for op, fn := range filters.Registry.Apply(c.base.Field, wrapped) {
+				c.base.Filters.AddFilterFnArgsRaw(op, fn)
 			}
 		}
 	})

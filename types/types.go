@@ -207,6 +207,15 @@ type SQLFilterManager interface {
 	// Used by callers that need to bind constants alongside (or instead of) the user value
 	// — e.g. virtual columns with Compute(sql, args...) or Filter(op, virtual.SQLArgs{...}).
 	AddFilterFnArgs(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, []any, error))
+
+	// AddFilterFnArgsRaw registers a filter without the runtime check that the
+	// value's reflect.Type equals the field's dereferenced type. Used by the
+	// global filters.Registry: filters registered there must accept whatever
+	// type the user passes (string-aliases, custom value types, wrappers around
+	// time.Time / uuid.UUID), and the registry already encodes which types are
+	// expected per operator. Direct callers of AddFilterFn / AddFilterFnArgs
+	// keep the strict guard for backward compatibility.
+	AddFilterFnArgsRaw(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, []any, error))
 	SQLFilterGetter
 }
 

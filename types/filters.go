@@ -68,6 +68,27 @@ func (c *column) AddFilterFnArgs(operation Operation, sqlGenFn func(ctx context.
 	}
 }
 
+// AddFilterFnArgsRaw skips the runtime reflect.Type equality check that
+// AddFilterFnArgs imposes. Used by the global filters.Registry path so custom
+// types and string-aliases work — the registry already binds operators to the
+// types that should accept them.
+//
+// Empty slices still collapse to (sql="", nil, nil) so the caller emits no SQL,
+// matching the consumer's expectations.
+func (c *column) AddFilterFnArgsRaw(operation Operation, sqlGenFn func(ctx context.Context, value any) (string, []any, error)) {
+	c.avail = append(c.avail, operation)
+	c.operations[operation] = func(ctx context.Context, value any) (string, []any, error) {
+		// Same empty-slice short-circuit as AddFilterFnArgs — without it the
+		// In/NotIn fragments would render placeholders for zero values.
+		if vType := reflect.TypeOf(value); vType != nil && vType.Kind() == reflect.Slice {
+			if reflect.ValueOf(value).Len() < 1 {
+				return "", nil, nil
+			}
+		}
+		return sqlGenFn(ctx, value)
+	}
+}
+
 func (c *column) GetFilterFn(operation Operation) (func(ctx context.Context, value any) (string, []any, error), bool) {
 	if opFn, ok := c.operations[operation]; ok && opFn != nil {
 		return opFn, true

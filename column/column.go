@@ -8,7 +8,7 @@ import (
 
 	"github.com/insei/fmap/v3"
 
-	"github.com/insei/gerpo/sqlstmt/sqlpart"
+	"github.com/insei/gerpo/filters"
 	"github.com/insei/gerpo/types"
 )
 
@@ -106,9 +106,8 @@ func New(field fmap.Field, opts ...Option) (types.Column, error) {
 		base:  base,
 		query: sqlColumnString,
 	}
-	filters := sqlpart.GetFieldTypeFilters(field, sqlColumnString)
-	for op, filterFn := range filters {
-		c.base.Filters.AddFilterFn(op, filterFn)
+	for op, fn := range filters.Registry.Apply(field, sqlColumnString) {
+		c.base.Filters.AddFilterFnArgsRaw(op, fn)
 	}
 	c.base.AllowedActions = []types.SQLAction{types.SQLActionInsert, types.SQLActionSelect, types.SQLActionUpdate,
 		types.SQLActionSort, types.SQLActionGroup}

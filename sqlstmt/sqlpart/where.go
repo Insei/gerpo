@@ -4,228 +4,66 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
-	"time"
-	"unsafe"
 
-	"github.com/google/uuid"
 	"github.com/insei/fmap/v3"
 
+	"github.com/insei/gerpo/filters"
+	"github.com/insei/gerpo/internal/sqltpl"
 	"github.com/insei/gerpo/types"
 )
 
-func genEQFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		if value == nil {
-			return query + " IS NULL", false
-		}
-		return query + " = ?", true
-	}
-}
-func genNotEQFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		if value == nil {
-			return query + " IS NOT NULL", false
-		}
-		return query + " != ?", true
-	}
-}
+// Private value-aliases keep where_test.go untouched — every helper used to be
+// a top-level function in this file and is referenced by name from tests.
+// Forwarding to sqltpl ensures one source of truth for the SQL fragments.
+var (
+	genEQFn             = sqltpl.EQ
+	genNotEQFn          = sqltpl.NotEQ
+	genLTFn             = sqltpl.LT
+	genLTEFn            = sqltpl.LTE
+	genGTFn             = sqltpl.GT
+	genGTEFn            = sqltpl.GTE
+	genInFn             = sqltpl.In
+	genNotInFn          = sqltpl.NotIn
+	genContainsFn       = sqltpl.Contains
+	genNotContainsFn    = sqltpl.NotContains
+	genStartsWithFn     = sqltpl.StartsWith
+	genNotStartsWithFn  = sqltpl.NotStartsWith
+	genEndsWithFn       = sqltpl.EndsWith
+	genNotEndsWithFn    = sqltpl.NotEndsWith
+	genContainsFoldFn   = sqltpl.ContainsFold
+	genNotContainsFoldFn = sqltpl.NotContainsFold
+	genStartsWithFoldFn = sqltpl.StartsWithFold
+	genNotStartsWithFoldFn = sqltpl.NotStartsWithFold
+	genEndsWithFoldFn   = sqltpl.EndsWithFold
+	genNotEndsWithFoldFn = sqltpl.NotEndsWithFold
+)
 
-func genLTFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " < ?", true
-	}
-}
-func genLTEFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " <= ?", true
-	}
-}
-
-func genGTFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " > ?", true
-	}
-}
-func genGTEFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " >= ?", true
-	}
-}
-
-func genInFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
-		anyArr := (*[]any)(fPtr)
-		if value == nil || len(*anyArr) == 0 {
-			return "1 = 2", false
-		}
-		placeholders := strings.Repeat("?,", len(*anyArr))
-		placeholders = placeholders[:len(placeholders)-1]
-		return query + " IN (" + placeholders + ")", true
-	}
-}
-func genNotInFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		fPtr := ((*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1]
-		anyArr := (*[]any)(fPtr)
-		if value == nil || len(*anyArr) == 0 {
-			return "1 = 1", false
-		}
-		placeholders := strings.Repeat("?,", len(*anyArr))
-		placeholders = placeholders[:len(placeholders)-1]
-		return query + " NOT IN (" + placeholders + ")", true
-	}
-}
-
-// В LIKE-операторах параметр обёрнут в CAST(? AS text), чтобы PostgreSQL мог
-// вывести тип параметра в CONCAT-контексте. CAST(? AS text) работает одинаково
-// в PostgreSQL и MySQL, поэтому переносимость сохраняется.
-
-func genContainsFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " LIKE CONCAT('%', CAST(? AS text), '%')", true
-	}
-}
-func genNotContainsFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " NOT LIKE CONCAT('%', CAST(? AS text), '%')", true
-	}
-}
-
-func genStartsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " LIKE CONCAT(CAST(? AS text), '%')", true
-	}
-}
-
-func genNotStartsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " NOT LIKE CONCAT(CAST(? AS text), '%')", true
-	}
-}
-
-func genEndsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " LIKE CONCAT('%', CAST(? AS text))", true
-	}
-}
-
-func genNotEndsWithFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return query + " NOT LIKE CONCAT('%', CAST(? AS text))", true
-	}
-}
-
-// Case-insensitive "fold" variants — mirrors strings.EqualFold naming.
-
-func genEQFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		if value == nil {
-			return query + " IS NULL", false
-		}
-		return "LOWER(" + query + ") = LOWER(CAST(? AS text))", true
-	}
-}
-func genNotEQFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		if value == nil {
-			return query + " IS NOT NULL", false
-		}
-		return "LOWER(" + query + ") != LOWER(CAST(? AS text))", true
-	}
-}
-
-func genContainsFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
-	}
-}
-func genNotContainsFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text), '%'))", true
-	}
-}
-
-func genStartsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
-	}
-}
-func genNotStartsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT(CAST(? AS text), '%'))", true
-	}
-}
-
-func genEndsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
-	}
-}
-func genNotEndsWithFoldFn(query string) func(ctx context.Context, value any) (string, bool) {
-	return func(ctx context.Context, value any) (string, bool) {
-		return "LOWER(" + query + ") NOT LIKE LOWER(CONCAT('%', CAST(? AS text)))", true
-	}
-}
-
+// GetFieldTypeFilters returns the default operator -> SQL fragment mapping
+// for the given field and column SQL reference. Implementation forwards to
+// the global filters.Registry; the (string, bool) shape is preserved so
+// existing callers continue to compile bit-for-bit.
+//
+// Deprecated: use the global filters.Registry directly. The registry exposes
+// named buckets for built-in types (Bool, String, Numeric, Time, UUID) plus
+// Register(example) for custom types — see package github.com/insei/gerpo/filters.
 func GetFieldTypeFilters(field fmap.Field, sqlColumnString string) map[types.Operation]func(ctx context.Context, value any) (string, bool) {
-	filters := make(map[types.Operation]func(ctx context.Context, value any) (string, bool))
-	if field.GetType().Kind() == reflect.Ptr {
-		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
-	}
-
-	derefType := field.GetDereferencedType()
-	switch derefType.Kind() {
-	case reflect.Bool:
-		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
-	case reflect.String:
-		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
-		filters[types.OperationIn] = genInFn(sqlColumnString)
-		filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
-		filters[types.OperationContains] = genContainsFn(sqlColumnString)
-		filters[types.OperationNotContains] = genNotContainsFn(sqlColumnString)
-		filters[types.OperationStartsWith] = genStartsWithFn(sqlColumnString)
-		filters[types.OperationNotStartsWith] = genNotStartsWithFn(sqlColumnString)
-		filters[types.OperationEndsWith] = genEndsWithFn(sqlColumnString)
-		filters[types.OperationNotEndsWith] = genNotEndsWithFn(sqlColumnString)
-		filters[types.OperationEQFold] = genEQFoldFn(sqlColumnString)
-		filters[types.OperationNotEQFold] = genNotEQFoldFn(sqlColumnString)
-		filters[types.OperationContainsFold] = genContainsFoldFn(sqlColumnString)
-		filters[types.OperationNotContainsFold] = genNotContainsFoldFn(sqlColumnString)
-		filters[types.OperationStartsWithFold] = genStartsWithFoldFn(sqlColumnString)
-		filters[types.OperationNotStartsWithFold] = genNotStartsWithFoldFn(sqlColumnString)
-		filters[types.OperationEndsWithFold] = genEndsWithFoldFn(sqlColumnString)
-		filters[types.OperationNotEndsWithFold] = genNotEndsWithFoldFn(sqlColumnString)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
-		filters[types.OperationEQ] = genEQFn(sqlColumnString)
-		filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
-		filters[types.OperationLT] = genLTFn(sqlColumnString)
-		filters[types.OperationLTE] = genLTEFn(sqlColumnString)
-		filters[types.OperationGT] = genGTFn(sqlColumnString)
-		filters[types.OperationGTE] = genGTEFn(sqlColumnString)
-		filters[types.OperationIn] = genInFn(sqlColumnString)
-		filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
-	default:
-		switch derefType {
-		case reflect.TypeOf(time.Time{}):
-			filters[types.OperationLT] = genLTFn(sqlColumnString)
-			filters[types.OperationGT] = genGTFn(sqlColumnString)
-			filters[types.OperationLTE] = genLTEFn(sqlColumnString)
-			filters[types.OperationGTE] = genGTEFn(sqlColumnString)
-		case reflect.TypeOf(uuid.UUID{}):
-			filters[types.OperationEQ] = genEQFn(sqlColumnString)
-			filters[types.OperationNotEQ] = genNotEQFn(sqlColumnString)
-			filters[types.OperationIn] = genInFn(sqlColumnString)
-			filters[types.OperationNotIn] = genNotInFn(sqlColumnString)
+	resolved := filters.Registry.Apply(field, sqlColumnString)
+	out := make(map[types.Operation]func(context.Context, any) (string, bool), len(resolved))
+	for op, fn := range resolved {
+		legacyFn := fn
+		// Convert the args-based filter back to the legacy (string, bool) shape:
+		// one bound arg → caller binds the user value (legacy true);
+		// zero args → caller does not bind (legacy false), matches the IS
+		// NULL / "1=2" / constant-predicate paths.
+		out[op] = func(ctx context.Context, value any) (string, bool) {
+			sql, args, err := legacyFn(ctx, value)
+			if err != nil {
+				return "", false
+			}
+			return sql, len(args) == 1
 		}
 	}
-	return filters
+	return out
 }
 
 type Where interface {
