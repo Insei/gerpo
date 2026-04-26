@@ -77,6 +77,7 @@ nav:
       - Columns: features/columns.md
       - CRUD operations: features/crud.md
       - WHERE operators: features/where.md
+      - Filter registry: features/filter-registry.md
       - Ordering & pagination: features/order-pagination.md
       - Exclude & Only: features/exclude-only.md
       - Persistent queries: features/persistent-queries.md

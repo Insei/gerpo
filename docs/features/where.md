@@ -94,8 +94,12 @@ h.Where().Group(func(t types.WhereTarget) {
 }).OR().Field(&m.Role).EQ("admin")
 ```
 
+## Custom types and overrides
+
+The list of operators each Go type accepts (and the SQL fragment each one emits) lives in `filters.Registry`. Adding `decimal.Decimal`, a string-alias, or a `Money` struct — and overriding the default SQL for `time.Time.EQ`, for example — happens through that registry. See [Filter registry](filter-registry.md).
+
 ## Limitations
 
 - `LT`/`GT`/`LTE`/`GTE` do not type-check at runtime — the database does. gerpo passes values through as-is.
-- For string LIKE operators the value must be a string; for `EQ`/`NotEQ` the value type must match the field type (nullable types accept `nil`).
+- For string LIKE operators the value must be a string; for `EQ`/`NotEQ` the value type must match the field type (nullable types accept `nil`). String aliases (`type Status string`) and other custom types relax this rule once registered — see [Filter registry](filter-registry.md).
 - A type mismatch produces a descriptive error wrapped with `gerpo.ErrApplyQuery`.

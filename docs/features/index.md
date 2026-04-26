@@ -23,6 +23,7 @@ Reference of gerpo capabilities grouped by area.
 |---|---|
 | [CRUD operations](crud.md) | `GetFirst`, `GetList`, `Count`, `Insert`, `Update`, `Delete` |
 | [WHERE operators](where.md) | EQ, NotEQ, LT/LTE/GT/GTE, In/NotIn, Contains/StartsWith/EndsWith (+Fold variants), AND/OR/Group |
+| [Filter registry](filter-registry.md) | Adding custom Go types, overriding default operators, FilterSpec variants, test snapshots |
 | [Ordering & pagination](order-pagination.md) | `OrderBy`, `Page`, `Size` |
 | [Exclude & Only](exclude-only.md) | Narrowing columns in SELECT/INSERT/UPDATE |
 | [Transactions](transactions.md) | `BeginTx`, `gerpo.WithTx(ctx, tx)`, `gerpo.RunInTx`, `Commit`, `Rollback`, `RollbackUnlessCommitted` |
